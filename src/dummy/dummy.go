@@ -1,5 +1,5 @@
 package dummy
 
 func Dummy() string {
-	return "v0.1.1 "
+	return "v0.1.2"
 }
