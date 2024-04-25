@@ -1,3 +1,3 @@
-module github.com/tcodes0/go/dummy
+module github.com/tcodes0/go/src/dummy
 
 go 1.22
