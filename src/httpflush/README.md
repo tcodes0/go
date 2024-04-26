@@ -21,7 +21,7 @@ var w http.ResponseWriter
 
 // wrap w with httpflush.MaxSize
 m := httpflush.MaxSize{
-		Max:    1024,
+		Max:    1024, // set your desired size
 		Writer: w,
 	}
 
