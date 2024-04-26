@@ -14,9 +14,15 @@
   +#+       +#+     +#+ +#+        +#+  +#+   +#+     +#+ +#+   +#+# +#+              +#+
  #+#       #+#     #+# #+#    #+# #+#   #+#  #+#     #+# #+#    #+# #+#       #+#    #+#
 ###       ###     ###  ########  ###    ### ###     ###  ########  ########## ########
-
-
 </pre>
-<i>http://www.patorjk.com/software/taag/#p=display&f=Alligator&t=packages</i>
+<details>
+  <summary>art info </summary>
+  http://www.patorjk.com/software/taag/#p=display&f=Alligator&t=packages
+</details>
 
-> tcodes go packages
+<br/>
+<br/>
+
+# tcodes0 go packages
+
+Documentation [is on the wiki](https://github.com/tcodes0/go/wiki)
