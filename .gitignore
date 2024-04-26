@@ -32,7 +32,6 @@ go.work
 run/*
 .env
 notes.md
-mock_*.go
 banner*.txt
 *__debug_bin*
 *pgdump

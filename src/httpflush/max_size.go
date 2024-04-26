@@ -12,7 +12,7 @@ var ErrWriterNotFlusher = errors.New("http.ResponseWriter does not implement htt
 type MaxSize struct {
 	writtenSinceLastFlush int
 
-	Size   int
+	Max    int
 	Writer http.ResponseWriter
 }
 
@@ -22,7 +22,7 @@ func (maxSize *MaxSize) Write(b []byte) (n int, err error) {
 	n, err = maxSize.Writer.Write(b)
 	maxSize.writtenSinceLastFlush += n
 
-	if maxSize.writtenSinceLastFlush >= maxSize.Size {
+	if maxSize.writtenSinceLastFlush >= maxSize.Max {
 		f, ok := maxSize.Writer.(http.Flusher)
 		if !ok {
 			return 0, ErrWriterNotFlusher
