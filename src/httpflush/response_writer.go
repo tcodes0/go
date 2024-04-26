@@ -4,5 +4,5 @@ import "net/http"
 
 type ResponseWriter interface {
 	http.ResponseWriter
-	Flush()
+	http.Flusher
 }
