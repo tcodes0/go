@@ -7,8 +7,8 @@ import (
 
 var ErrWriterNotFlusher = errors.New("http.ResponseWriter does not implement http.Flusher")
 
-// MaxSize wraps an http.ResponseWriter and flushes every time more than size bytes are written.
-// If size is smaller than first write, it will never flush.
+// MaxSize wraps an http.ResponseWriter and flushes every time more than max bytes are written.
+// If max is smaller than the first write, it will never flush.
 type MaxSize struct {
 	writtenSinceLastFlush int
 
@@ -22,7 +22,7 @@ func (maxSize *MaxSize) Write(b []byte) (n int, err error) {
 	n, err = maxSize.Writer.Write(b)
 	maxSize.writtenSinceLastFlush += n
 
-	if maxSize.writtenSinceLastFlush >= maxSize.Max {
+	if maxSize.writtenSinceLastFlush > maxSize.Max {
 		f, ok := maxSize.Writer.(http.Flusher)
 		if !ok {
 			return 0, ErrWriterNotFlusher
