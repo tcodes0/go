@@ -10,7 +10,7 @@ import (
 
 func Test_MaxSize_NoFlushSmaller(t *testing.T) {
 	assert := require.New(t)
-	writer := httpflush.NewMockResponseWriter(t)
+	writer := httpflush.NewMockresponseWriter(t)
 	maxSize := httpflush.MaxSize{
 		Max:    10,
 		Writer: writer,
@@ -25,7 +25,7 @@ func Test_MaxSize_NoFlushSmaller(t *testing.T) {
 
 func Test_MaxSize_NoFlushEqual(t *testing.T) {
 	assert := require.New(t)
-	writer := httpflush.NewMockResponseWriter(t)
+	writer := httpflush.NewMockresponseWriter(t)
 	maxSize := httpflush.MaxSize{
 		Max:    10,
 		Writer: writer,
@@ -40,7 +40,7 @@ func Test_MaxSize_NoFlushEqual(t *testing.T) {
 
 func Test_MaxSize_FlushesLarger(t *testing.T) {
 	assert := require.New(t)
-	writer := httpflush.NewMockResponseWriter(t)
+	writer := httpflush.NewMockresponseWriter(t)
 	maxSize := httpflush.MaxSize{
 		Max:    10,
 		Writer: writer,
@@ -55,7 +55,7 @@ func Test_MaxSize_FlushesLarger(t *testing.T) {
 }
 func Test_MaxSize_FlushesMany(t *testing.T) {
 	assert := require.New(t)
-	writer := httpflush.NewMockResponseWriter(t)
+	writer := httpflush.NewMockresponseWriter(t)
 	maxSize := httpflush.MaxSize{
 		Max:    10,
 		Writer: writer,

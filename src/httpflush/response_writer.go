@@ -2,7 +2,8 @@ package httpflush
 
 import "net/http"
 
-type ResponseWriter interface {
+// nolint
+type responseWriter interface {
 	http.ResponseWriter
 	http.Flusher
 }
