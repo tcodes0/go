@@ -89,9 +89,10 @@ jobs:
     name: Debug
     needs: changed-files
     runs-on: ubuntu-latest
-    if: false # change to debug
+    if: true # change to debug
     env:
       HAS_CHANGES: ${{ needs.changed-files.outputs.hasChanges }}
+      REF: ${{ github.baseRef }}
     steps:
       - name: Debug step
         run: true
@@ -144,12 +145,12 @@ jobs:
             exit 1
           fi
 
-  httpflush_workflow:
-    name: httpflush workflow
-    needs: changed-files
-    if: needs.changed-files.outputs.pkgHttpflushGoChanged
-    uses: tcodes0/go/.github/workflows/package.yml@main
-    with:
-      goVersion: 1.22
-      packagePath: src/httpflush
-      branch: ${{ github.baseRef }}
+  # httpflush_workflow:
+  #   name: httpflush workflow
+  #   needs: changed-files
+  #   if: needs.changed-files.outputs.pkgHttpflushGoChanged
+  #   uses: tcodes0/go/.github/workflows/package.yml@main
+  #   with:
+  #     goVersion: 1.22
+  #     packagePath: src/httpflush
+  #     branch: ${{ github.baseRef }}
