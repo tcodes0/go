@@ -13,9 +13,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: brokeyourbike/go-mockery-action@v0
-          with:
-            mockery-version: '2.42.3'
-        - run: true
+        with:
+          mockery-version: "2.42.3"
+      - run: true
 
       - name: Check mocks are up to date
         shell: bash
