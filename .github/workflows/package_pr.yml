@@ -20,7 +20,6 @@ jobs:
   build:
     name: Build ${{ inputs.packagePath }}
     runs-on: ubuntu-latest
-    needs: changed-files
     steps:
       - uses: actions/checkout@v4
         with:
@@ -37,7 +36,6 @@ jobs:
   test:
     name: Test ${{ inputs.packagePath }}
     runs-on: ubuntu-latest
-    needs: changed-files
     steps:
       - uses: actions/checkout@v4
 
