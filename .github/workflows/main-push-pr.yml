@@ -60,9 +60,7 @@ jobs:
           pkgHttpflushGoChanged="true"
           if [ -n "$PKG_HTTPFLUSH_GO" ]; then pkgHttpflushGoChanged=""; fi
 
-          anyPkgGoChanged=(\
-          $pkgHttpflushGoChanged\
-          )
+          anyPkgGoChanged=(${pkgHttpflushGoChanged})
 
           echo "goModChanged=$goModChanged"                   >> $GITHUB_OUTPUT
           echo "configChanged=$configChanged"                 >> $GITHUB_OUTPUT
@@ -74,9 +72,9 @@ jobs:
     name: Debug
     needs: changed-files
     runs-on: ubuntu-latest
-    if: false # change to debug
+    if: true # change to debug
     env:
-      REF: ${{ github.head_ref }}
+      - TEST: ${{ needs.changed-files.outputs.pkgHttpflushGoChanged }}
     steps:
       - name: Debug step
         run: true
