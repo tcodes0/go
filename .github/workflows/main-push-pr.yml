@@ -62,6 +62,12 @@ jobs:
 
           anyPkgGoChanged=(${pkgHttpflushGoChanged})
 
+          echo _$goModChanged_
+          echo _$configChanged_
+          echo _$docChanged_
+          echo _$pkgHttpflushGoChanged_
+          echo _$anyPkgGoChanged_
+
           echo "goModChanged=$goModChanged"                   >> $GITHUB_OUTPUT
           echo "configChanged=$configChanged"                 >> $GITHUB_OUTPUT
           echo "docChanged=$docChanged"                       >> $GITHUB_OUTPUT
