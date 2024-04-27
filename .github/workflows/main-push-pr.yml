@@ -153,7 +153,7 @@ jobs:
       PKG_HTTPFLUSH_GO: ${{ needs.changed-files.outputs.pkgHttpflushGoChanged }}
     steps:
       - name: httpflush workflow
-        uses: "github.com/tcodes0/go/.github/workflows/package.yml@${GITHUB_REF}"
+        uses: "tcodes0/go/.github/workflows/package.yml@${GITHUB_REF}"
         if: env.PKG_HTTPFLUSH_GO
         with:
           goVersion: 1.22
