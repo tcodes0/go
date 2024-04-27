@@ -144,17 +144,11 @@ jobs:
             exit 1
           fi
 
-  package_workflow:
-    name: Create child package workflow
-    runs-on: ubuntu-latest
+  httpflush_workflow:
+    name: httpflush workflow
     needs: changed-files
-    if: needs.changed-files.outputs.anyPkgGoChanged
-    env:
-      PKG_HTTPFLUSH_GO: ${{ needs.changed-files.outputs.pkgHttpflushGoChanged }}
-    steps:
-      - name: httpflush workflow
-        uses: "tcodes0/go/.github/workflows/package.yml@${GITHUB_REF}"
-        if: env.PKG_HTTPFLUSH_GO
-        with:
-          goVersion: 1.22
-          packagePath: src/httpflush
+    if: needs.changed-files.outputs.pkgHttpflushGoChanged
+    uses: "tcodes0/go/.github/workflows/package.yml@${GITHUB_REF}"
+      with:
+        goVersion: 1.22
+        packagePath: src/httpflush
