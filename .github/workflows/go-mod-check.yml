@@ -17,10 +17,9 @@ jobs:
         uses: tj-actions/changed-files@v44
         with:
           files: |
-            files:
-              - *.go
-              - go.mod
-              - go.sum
+            - *.go
+            - go.mod
+            - go.sum
 
       - name: Set up Go
         if: ${{ steps.changed-go-files.outputs.added_files_count != 0 || steps.changed-go-files.outputs.modified_files_count != 0 || steps.changed-go-files.outputs.deleted_files_count != 0 }}
