@@ -18,6 +18,6 @@ jobs:
           go-version: 1.22
 
       - name: go mod check
-      - uses: j0hnsmith/go-mod-check@v1
+        uses: j0hnsmith/go-mod-check@v1
         with:
           working-directory: .
