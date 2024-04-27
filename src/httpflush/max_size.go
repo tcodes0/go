@@ -28,13 +28,12 @@ func (maxSize *MaxSize) Write(b []byte) (n int, err error) {
 	maxSize.writtenSinceLastFlush += n
 
 	if maxSize.writtenSinceLastFlush > maxSize.Max {
-		f, ok := maxSize.Writer.(http.Flusher)
+		_, ok := maxSize.Writer.(http.Flusher)
 		if !ok {
 			return n, ErrWriterNotFlusher
 		}
 
-		f.Flush()
-		maxSize.writtenSinceLastFlush = 0
+		maxSize.Flush()
 	}
 
 	return n, err
@@ -48,6 +47,7 @@ func (maxSize MaxSize) WriteHeader(statusCode int) {
 	maxSize.Writer.WriteHeader(statusCode)
 }
 
-func (maxSize MaxSize) Flush() {
+func (maxSize *MaxSize) Flush() {
 	maxSize.Writer.(http.Flusher).Flush()
+	maxSize.writtenSinceLastFlush = 0
 }

@@ -7,9 +7,16 @@
 ╚═╝  ╚═╝   ╚═╝      ╚═╝   ╚═╝     ╚═╝     ╚══════╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝
 </pre>
 
+## Versions
+
 | **`root version`** | **`package version`** |
 | ------------------ | --------------------- |
 | `v0.1.4`           | `v0.1.0`              |
+
+## Description
+
+Calls `Flush()` on the `http.ResponseWriter` when the size of the response body exceeds a set max size in bytes.
+Flushing the writer sends the buffered bytes to the client.
 
 ## Usage
 
@@ -28,7 +35,7 @@ m := httpflush.MaxSize{
 // use m as the writer moving forward, pass it to other functions
 ```
 
-## see also
+## See also
 
 [max_size.go](https://github.com/tcodes0/go/tree/main/src/httpflush/max_size.go)<br/>
 [max_size_test.go](https://github.com/tcodes0/go/tree/main/src/httpflush/test/max_size_test.go)<br/>
