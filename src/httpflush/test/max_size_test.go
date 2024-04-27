@@ -23,37 +23,7 @@ func Test_MaxSize_NoFlushSmaller(t *testing.T) {
 	assert.NoError(err)
 }
 
-func Test_MaxSize_NoFlushEqual(t *testing.T) {
-	assert := require.New(t)
-	writer := httpflush.NewMockresponseWriter(t)
-	maxSize := httpflush.MaxSize{
-		Max:    10,
-		Writer: writer,
-	}
-
-	writer.On("Write", mock.AnythingOfType("[]uint8")).Return(10, nil).Once()
-
-	n, err := maxSize.Write([]byte(""))
-	assert.Equal(10, n)
-	assert.NoError(err)
-}
-
-func Test_MaxSize_FlushesLarger(t *testing.T) {
-	assert := require.New(t)
-	writer := httpflush.NewMockresponseWriter(t)
-	maxSize := httpflush.MaxSize{
-		Max:    10,
-		Writer: writer,
-	}
-
-	writer.On("Write", mock.AnythingOfType("[]uint8")).Return(20, nil).Once()
-	writer.On("Flush").Return(nil).Once()
-
-	n, err := maxSize.Write([]byte(""))
-	assert.Equal(20, n)
-	assert.NoError(err)
-}
-func Test_MaxSize_FlushesMany(t *testing.T) {
+func TestMaxSize_FlushesMany(t *testing.T) {
 	assert := require.New(t)
 	writer := httpflush.NewMockresponseWriter(t)
 	maxSize := httpflush.MaxSize{

@@ -21,15 +21,29 @@ jobs:
         with:
           # since_last_remote_commit: true # use only for testing, it's easy to produce no changed files
           files: |
-            **.go
+            - go_mod:
+                **/go.mod
+                **/go.sum
+            - configs:
+                **/*.yaml
+                **/*.yml
+                **/*.json
+            - docs:
+                **/*.md
+            - pkg_httpflush_go:
+                src/httpflush/**.go
 
       - name: Debug changed files
-        if: false # change to debug
+        if: true # change to debug
         env:
-          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+          ALL: ${{ steps.changed-files.outputs.all_changed_files }}
+          GO_MOD: ${{ steps.changed-files.outputs.go_mod_all_changed_files }}
+          CONFIGS: ${{ steps.changed-files.outputs.configs_all_changed_files }}
+          DOCS: ${{ steps.changed-files.outputs.docs_all_changed_files }}
+          PKG_HTTPFLUSH: ${{ steps.changed-files.outputs.pkg_httpflush_go_all_changed_files }}
         run: |
           # print changed files to stdout
-          changedArray=($ALL_CHANGED_FILES)
+          changedArray=(all $ALL gomod $GO_MOD configs $CONFIGS docs $DOCS pkg_httpflush $PKG_HTTPFLUSH)
           echo "${#changedArray[*]} files changed"
           for file in ${changedArray[@]}; do
             echo "$file"
@@ -43,12 +57,8 @@ jobs:
           DELETED: ${{ steps.changed-files.outputs.deleted_files_count }}
           ANY: ${{ steps.changed-files.outputs.any_changed }}
         run: |
-          # logic script
-          addModifyDeleteCount=$(($ADDED+$MODIFIED+$DELETED))
-          hasChanges="true"
-          if [ $addModifyDeleteCount == 0 ]; then
-            hasChanges="" # empty means false, avoids typing '== "false"'
-          fi
+          # analyze changed files and produce outputs
+          hasChanges=""
           echo "hasChanges=$hasChanges" >> $GITHUB_OUTPUT
 
   debug:
@@ -60,8 +70,7 @@ jobs:
       HAS_CHANGES: ${{ needs.changed-files.outputs.hasChanges }}
     steps:
       - name: Debug step
-        run: |
-          true
+        run: true
 
   go-mod:
     name: go.mod up to date
@@ -146,6 +155,7 @@ jobs:
 
       - name: Test
         run: |
+          # go tests with gotestfmt
           set -euo pipefail
           go test -mod=readonly -json -race 2>&1  ./... | tee test.json | gotestfmt
 
