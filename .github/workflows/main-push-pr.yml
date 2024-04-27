@@ -14,8 +14,8 @@ jobs:
       goModChanged: ${{ steps.output-changed-files.outputs.goModChanged }}
       configChanged: ${{ steps.output-changed-files.outputs.configChanged }}
       docChanged: ${{ steps.output-changed-files.outputs.docChanged }}
-      anyPkgGoChanged: ${{ steps.output-changed-files.outputs.anyPkgGoChanged }}
-      pkgHttpflushGoChanged: ${{ steps.output-changed-files.outputs.pkgHttpflushGoChanged }}
+      anyGoPkgChanged: ${{ steps.output-changed-files.outputs.anyGoPkgChanged }}
+      goPkgHttpflushChanged: ${{ steps.output-changed-files.outputs.goPkgHttpflushChanged }}
     steps:
       - uses: actions/checkout@v4
 
@@ -34,7 +34,7 @@ jobs:
               - '**/*.json'
             doc:
               - '**/*.md'
-            pkg_httpflush_go:
+            go_pkg_httpflush:
               - src/httpflush/**.go
 
       - name: Output Changed files
@@ -43,29 +43,28 @@ jobs:
           GO_MOD: ${{ steps.list-changed-files.outputs.go_mod_all_changed_files }}
           CONFIG: ${{ steps.list-changed-files.outputs.config_all_changed_files }}
           DOC: ${{ steps.list-changed-files.outputs.doc_all_changed_files }}
-          PKG_HTTPFLUSH_GO: ${{ steps.list-changed-files.outputs.pkg_httpflush_go_all_changed_files }}
+          GO_PKG_HTTPFLUSH: ${{ steps.list-changed-files.outputs.go_pkg_httpflush_all_changed_files }}
         run: |
           # analyze changed files and produce outputs
           set -e
 
-          # trailing _ to visualize empty values
-          echo "GO_MOD=${GO_MOD}_"
+          echo "GO_MOD=${GO_MOD}"
           goModChanged="true"
           if [ -z "$GO_MOD" ]; then goModChanged=""; fi
 
-          echo "CONFIG=${CONFIG}_"
+          echo "CONFIG=${CONFIG}"
           configChanged="true"
           if [ -z "$CONFIG" ]; then configChanged=""; fi
 
-          echo "DOC=${DOC}_"
+          echo "DOC=${DOC}"
           docChanged="true"
           if [ -z "$DOC" ]; then docChanged=""; fi
 
-          echo "PKG_HTTPFLUSH_GO=${PKG_HTTPFLUSH_GO}_"
-          pkgHttpflushGoChanged="true"
-          if [ -z "$PKG_HTTPFLUSH_GO" ]; then pkgHttpflushGoChanged=""; fi
+          echo "GO_PKG_HTTPFLUSH=${GO_PKG_HTTPFLUSH}"
+          goPkgHttpflushChanged="true"
+          if [ -z "$GO_PKG_HTTPFLUSH" ]; then goPkgHttpflushChanged=""; fi
 
-          anyPkgGoChanged=(${pkgHttpflushGoChanged})
+          anyGoPkgChanged=(${goPkgHttpflushChanged})
 
           echo "goModChanged=$goModChanged"                   >> $GITHUB_OUTPUT
           echo "goModChanged=$goModChanged"
@@ -73,10 +72,10 @@ jobs:
           echo "configChanged=$configChanged"
           echo "docChanged=$docChanged"                       >> $GITHUB_OUTPUT
           echo "docChanged=$docChanged"
-          echo "pkgHttpflushGoChanged=$pkgHttpflushGoChanged" >> $GITHUB_OUTPUT
-          echo "pkgHttpflushGoChanged=$pkgHttpflushGoChanged"
-          echo "anyPkgGoChanged=${anyPkgGoChanged[*]}"        >> $GITHUB_OUTPUT
-          echo "anyPkgGoChanged=${anyPkgGoChanged[*]}_"
+          echo "goPkgHttpflushChanged=$goPkgHttpflushChanged" >> $GITHUB_OUTPUT
+          echo "goPkgHttpflushChanged=$goPkgHttpflushChanged"
+          echo "anyGoPkgChanged=${anyGoPkgChanged[*]}"        >> $GITHUB_OUTPUT
+          echo "anyGoPkgChanged=${anyGoPkgChanged[*]}"
 
   debug:
     name: Debug
@@ -84,16 +83,16 @@ jobs:
     runs-on: ubuntu-latest
     if: false # change to debug
     env:
-      TEST: ${{ needs.changed-files.outputs.pkgHttpflushGoChanged }}
+      TEST: ${{ needs.changed-files.outputs.goPkgHttpflushChanged }}
     steps:
       - name: Debug step
         run: true
 
   go-mod:
-    name: go.mod up to date
+    name: Go.mod up to date
     runs-on: ubuntu-latest
     needs: changed-files
-    if: needs.changed-files.outputs.anyPkgGoChanged || needs.changed-files.outputs.goModChanged
+    if: needs.changed-files.outputs.anyGoPkgChanged || needs.changed-files.outputs.goModChanged
     steps:
       - uses: actions/checkout@v4
 
@@ -111,7 +110,7 @@ jobs:
     name: Go mocks up to date
     runs-on: ubuntu-latest
     needs: changed-files
-    if: needs.changed-files.outputs.anyPkgGoChanged
+    if: needs.changed-files.outputs.anyGoPkgChanged
     steps:
       - uses: actions/checkout@v4
 
@@ -142,7 +141,7 @@ jobs:
   httpflush_pr:
     name: httpflush PR
     needs: changed-files
-    if: needs.changed-files.outputs.pkgHttpflushGoChanged
+    if: needs.changed-files.outputs.goPkgHttpflushChanged
     uses: ./.github/workflows/package-pr.yml
     with:
       goVersion: 1.22
