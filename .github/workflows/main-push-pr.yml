@@ -91,7 +91,7 @@ jobs:
     runs-on: ubuntu-latest
     if: true # change to debug
     env:
-      REF: ${{ github.base_ref }}
+      REF: ${{ github.head_ref }}
     steps:
       - name: Debug step
         run: true
