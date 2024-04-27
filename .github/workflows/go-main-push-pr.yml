@@ -20,7 +20,7 @@ jobs:
         uses: tj-actions/changed-files@v44
         with:
           # since_last_remote_commit: true # use only for testing, it's easy to produce no changed files
-          files: |
+          files_yml: |
               go_mod:
                 - **/go.mod
                 - **/go.sum
