@@ -144,12 +144,12 @@ jobs:
             exit 1
           fi
 
-  # httpflush_workflow:
-  #   name: httpflush workflow
-  #   needs: changed-files
-  #   if: needs.changed-files.outputs.pkgHttpflushGoChanged
-  #   uses: tcodes0/go/.github/workflows/package.yml@main
-  #   with:
-  #     goVersion: 1.22
-  #     packagePath: src/httpflush
-  #     branch: ${{ github.baseRef }}
+  httpflush_pr_workflow:
+    name: httpflush PR workflow
+    needs: changed-files
+    if: needs.changed-files.outputs.pkgHttpflushGoChanged
+    uses: tcodes0/go/.github/workflows/package.yml@main
+    with:
+      goVersion: 1.22
+      packagePath: src/httpflush
+      branch: ${{ github.head_ref }}
