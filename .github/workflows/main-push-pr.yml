@@ -48,15 +48,20 @@ jobs:
           # analyze changed files and produce outputs
           set -e
 
+          # trailing _ to visualize empty values
+          echo "GO_MOD=${GO_MOD}_"
           goModChanged="true"
           if [ -n "$GO_MOD" ]; then goModChanged=""; fi
 
+          echo "CONFIG=${CONFIG}_"
           configChanged="true"
           if [ -n "$CONFIG" ]; then configChanged=""; fi
 
+          echo "DOC=${DOC}_"
           docChanged="true"
           if [ -n "$DOC" ]; then docChanged=""; fi
 
+          echo "PKG_HTTPFLUSH_GO=${PKG_HTTPFLUSH_GO}_"
           pkgHttpflushGoChanged="true"
           if [ -n "$PKG_HTTPFLUSH_GO" ]; then pkgHttpflushGoChanged=""; fi
 
@@ -71,7 +76,7 @@ jobs:
           echo "pkgHttpflushGoChanged=$pkgHttpflushGoChanged" >> $GITHUB_OUTPUT
           echo "pkgHttpflushGoChanged=$pkgHttpflushGoChanged"
           echo "anyPkgGoChanged=${anyPkgGoChanged[*]}"        >> $GITHUB_OUTPUT
-          echo "anyPkgGoChanged=${anyPkgGoChanged[*]}"
+          echo "anyPkgGoChanged=${anyPkgGoChanged[*]}_"
 
   debug:
     name: Debug
