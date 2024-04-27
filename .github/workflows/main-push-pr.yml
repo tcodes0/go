@@ -148,7 +148,7 @@ jobs:
     name: httpflush PR
     needs: changed-files
     if: needs.changed-files.outputs.pkgHttpflushGoChanged
-    uses: ./.github/workflows/package_pr.yml@main
+    uses: ./.github/workflows/package_pr.yml
     with:
       goVersion: 1.22
       packagePath: src/httpflush
