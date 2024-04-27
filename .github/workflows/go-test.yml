@@ -22,11 +22,12 @@ jobs:
       - name: Changed files logic
         id: changed-files-logic
         env:
-          ADDED: ${{ steps.changed-files.outputs.added_files }}
-          MODIFIED: ${{ steps.changed-files.outputs.modified_files }}
-          DELETED: ${{ steps.changed-files.outputs.deleted_files }}
+          ADDED: ${{ steps.changed-files.outputs.added_files_count }}
+          MODIFIED: ${{ steps.changed-files.outputs.modified_files_count }}
+          DELETED: ${{ steps.changed-files.outputs.deleted_files_count }}
           ANY: ${{ steps.changed-files.outputs.any_changed }}
         run: |
+          # logic script
           addModifyDeleteCount=$(($ADDED+$MODIFIED+$DELETED))
           shouldRun="true"
           if [ $addModifyDeleteCount == 0 ]; then
