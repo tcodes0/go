@@ -26,7 +26,7 @@ jobs:
         env:
           ALL_CHANGED_FILES: ${{ steps.changed-go-files.outputs.all_changed_files }}
         run: |
-          local changedArray=($ALL_CHANGED_FILES)
+          changedArray=($ALL_CHANGED_FILES)
           echo "${#changedArray[*]} files changed"
           for file in ${changedArray}; do
             echo "$file was changed"
