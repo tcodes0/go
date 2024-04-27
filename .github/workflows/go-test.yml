@@ -16,15 +16,19 @@ jobs:
         id: changed-go-files
         uses: tj-actions/changed-files@v44
         with:
+          # diff the last two commits on the PR branch, not main and the PR branch
+          # most of the time, this is not desireable
+          since_last_remote_commit: true
           files: |
             **.go
 
       - name: Set up Go
+        id: setup-up-go
         if: ${{ steps.changed-go-files.outputs.added_files_count != 0 || steps.changed-go-files.outputs.modified_files_count != 0 || steps.changed-go-files.outputs.deleted_files_count != 0 }}
         uses: actions/setup-go@v5
         with:
           go-version: 1.22
 
       - name: Test
-        if: ${{ steps.changed-go-files.outputs.added_files_count != 0 || steps.changed-go-files.outputs.modified_files_count != 0 || steps.changed-go-files.outputs.deleted_files_count != 0 }}
+        needs: setup-up-go
         run: go test -mod=readonly -v ./... -race
