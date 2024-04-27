@@ -17,15 +17,16 @@ jobs:
         uses: tj-actions/changed-files@v44
         with:
           files: |
-            - *.go
-            - go.mod
-            - go.sum
+            *.go
+            go.mod
+            go.sum
 
       - name: Debug changed files
         if: true # set to false when not needed
         env:
           ALL_CHANGED_FILES: ${{ steps.changed-go-files.outputs.all_changed_files }}
         run: |
+          # print changed files to stdout
           changedArray=($ALL_CHANGED_FILES)
           echo "${#changedArray[*]} files changed"
           for file in ${changedArray[@]}; do
