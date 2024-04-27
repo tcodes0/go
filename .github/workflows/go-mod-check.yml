@@ -7,17 +7,26 @@ on:
     branches: ["main"]
 
 jobs:
-  build:
+  go-mod-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
+      - name: Get all changed go files
+        id: changed-go-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files: |
+            **.go
+
       - name: Set up Go
+        if: ${{ steps.changed-go-files.outputs.added_files_count + steps.changed-go-files.outputs.modified_files_count + steps.changed-go-files.outputs.deleted_files_count > 0}}
         uses: actions/setup-go@v5
         with:
           go-version: 1.22
 
       - name: go mod check
+        if: ${{ steps.changed-go-files.outputs.added_files_count + steps.changed-go-files.outputs.modified_files_count + steps.changed-go-files.outputs.deleted_files_count > 0}}
         uses: j0hnsmith/go-mod-check@v1
         with:
           working-directory: .
