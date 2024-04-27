@@ -21,6 +21,17 @@ jobs:
             - go.mod
             - go.sum
 
+      - name: Debug changed files
+        if: true # set to false when not needed
+        env:
+          ALL_CHANGED_FILES: ${{ steps.changed-go-files.outputs.all_changed_files }}
+        run: |
+          local changedArray=($ALL_CHANGED_FILES)
+          echo "${#changedArray[*]} files changed"
+          for file in ${changedArray}; do
+            echo "$file was changed"
+          done
+
       - name: Set up Go
         if: ${{ steps.changed-go-files.outputs.added_files_count != 0 || steps.changed-go-files.outputs.modified_files_count != 0 || steps.changed-go-files.outputs.deleted_files_count != 0 }}
         uses: actions/setup-go@v5
