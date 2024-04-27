@@ -91,8 +91,7 @@ jobs:
     runs-on: ubuntu-latest
     if: true # change to debug
     env:
-      HAS_CHANGES: ${{ needs.changed-files.outputs.hasChanges }}
-      REF: ${{ github.baseRef }}
+      REF: ${{ github.base_ref }}
     steps:
       - name: Debug step
         run: true
