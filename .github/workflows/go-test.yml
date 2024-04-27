@@ -32,7 +32,7 @@ jobs:
           addModifyDeleteCount=$(($ADDED+$MODIFIED+$DELETED))
           shouldRun="true"
           if [ $addModifyDeleteCount == 0 ]; then
-            shouldRun="false"
+            shouldRun=""
           fi
           echo "shouldRun=$shouldRun" >> $GITHUB_OUTPUT
 
