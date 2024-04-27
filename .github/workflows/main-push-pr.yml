@@ -154,7 +154,7 @@ jobs:
     steps:
       - name: httpflush workflow
         uses: "github.com/tcodes0/go/.github/workflows/package.yml@${GITHUB_REF}"
-        if: $PKG_HTTPFLUSH_GO
+        if: "${PKG_HTTPFLUSH_GO}"
         with:
           goVersion: 1.22
           packagePath: src/httpflush
