@@ -12,6 +12,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.22
+
       - uses: brokeyourbike/go-mockery-action@v0
         with:
           mockery-version: "2.42.3"
