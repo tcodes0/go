@@ -148,7 +148,7 @@ jobs:
     name: httpflush workflow
     needs: changed-files
     if: needs.changed-files.outputs.pkgHttpflushGoChanged
-    uses: "tcodes0/go/.github/workflows/package.yml@${GITHUB_REF}"
+    uses: "tcodes0/go/.github/workflows/package.yml@${env.GITHUB_REF}"
     with:
       goVersion: 1.22
       packagePath: src/httpflush
