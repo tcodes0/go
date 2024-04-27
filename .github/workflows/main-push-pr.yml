@@ -37,22 +37,6 @@ jobs:
             pkg_httpflush_go:
               - src/httpflush/**.go
 
-      - name: Debug changed files
-        if: true # change to debug
-        env:
-          GO_MOD: ${{ steps.list-changed-files.outputs.go_mod_all_changed_files }}
-          CONFIG: ${{ steps.list-changed-files.outputs.config_all_changed_files }}
-          DOC: ${{ steps.list-changed-files.outputs.doc_all_changed_files }}
-          PKG_HTTPFLUSH_GO: ${{ steps.list-changed-files.outputs.pkg_httpflush_go_all_changed_files }}
-        run: |
-          # print changed files to stdout
-
-          changedArray=(all $ALL gomod $GO_MOD config $CONFIG doc $DOC pkg_httpflush $PKG_HTTPFLUSH_GO)
-          echo "${#changedArray[*]} files changed"
-          for file in ${changedArray[@]}; do
-            echo "$file"
-          done
-
       - name: Output Changed files
         id: output-changed-files
         env:
@@ -74,7 +58,7 @@ jobs:
           if [ -n "$DOC" ]; then docChanged=""; fi
 
           pkgHttpflushGoChanged="true"
-          if [ -n "$PKG_HTTPFLUSH" ]; then pkgHttpflushGoChanged=""; fi
+          if [ -n "$PKG_HTTPFLUSH_GO" ]; then pkgHttpflushGoChanged=""; fi
 
           anyPkgGoChanged=(\
           $pkgHttpflushGoChanged\
