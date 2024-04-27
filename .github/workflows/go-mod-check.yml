@@ -12,8 +12,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get all changed go files
-        id: changed-go-files
+      - name: Changed files
+        id: changed-files
         uses: tj-actions/changed-files@v44
         with:
           # the glob is not intuitive, ** is required on all lines
@@ -23,9 +23,9 @@ jobs:
             **/go.sum
 
       - name: Debug changed files
-        if: true # set to false when not needed
+        if: false # set to false when not needed
         env:
-          ALL_CHANGED_FILES: ${{ steps.changed-go-files.outputs.all_changed_files }}
+          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
           # print changed files to stdout
           changedArray=($ALL_CHANGED_FILES)
@@ -35,13 +35,13 @@ jobs:
           done
 
       - name: Set up Go
-        if: ${{ steps.changed-go-files.outputs.added_files_count != 0 || steps.changed-go-files.outputs.modified_files_count != 0 || steps.changed-go-files.outputs.deleted_files_count != 0 }}
+        if: ${{ steps.changed-files.outputs.added_files_count != 0 || steps.changed-files.outputs.modified_files_count != 0 || steps.changed-files.outputs.deleted_files_count != 0 }}
         uses: actions/setup-go@v5
         with:
           go-version: 1.22
 
       - name: Go mod check
-        if: ${{ steps.changed-go-files.outputs.added_files_count != 0 || steps.changed-go-files.outputs.modified_files_count != 0 || steps.changed-go-files.outputs.deleted_files_count != 0 }}
+        if: ${{ steps.changed-files.outputs.added_files_count != 0 || steps.changed-files.outputs.modified_files_count != 0 || steps.changed-files.outputs.deleted_files_count != 0 }}
         uses: j0hnsmith/go-mod-check@v1
         with:
           working-directory: .

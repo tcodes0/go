@@ -12,19 +12,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get all changed go files
-        id: changed-go-files
+      - name: Changed files
+        id: changed-files
         uses: tj-actions/changed-files@v44
         with:
           files: |
             **.go
 
       - name: Set up Go
-        if: ${{ steps.changed-go-files.outputs.added_files_count != 0 || steps.changed-go-files.outputs.modified_files_count != 0 || steps.changed-go-files.outputs.deleted_files_count != 0 }}
+        if: ${{ steps.changed-files.outputs.added_files_count != 0 || steps.changed-files.outputs.modified_files_count != 0 || steps.changed-files.outputs.deleted_files_count != 0 }}
         uses: actions/setup-go@v5
         with:
           go-version: 1.22
 
       - name: Build
-        if: ${{ steps.changed-go-files.outputs.added_files_count != 0 || steps.changed-go-files.outputs.modified_files_count != 0 || steps.changed-go-files.outputs.deleted_files_count != 0 }}
+        if: ${{ steps.changed-files.outputs.added_files_count != 0 || steps.changed-files.outputs.modified_files_count != 0 || steps.changed-files.outputs.deleted_files_count != 0 }}
         run: go build -mod=readonly -v ./...
