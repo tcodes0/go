@@ -1,4 +1,4 @@
-name: Package
+name: Package PR
 
 on:
   workflow_call:

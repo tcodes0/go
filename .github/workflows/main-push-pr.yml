@@ -89,7 +89,7 @@ jobs:
     name: Debug
     needs: changed-files
     runs-on: ubuntu-latest
-    if: true # change to debug
+    if: false # change to debug
     env:
       REF: ${{ github.head_ref }}
     steps:
@@ -144,11 +144,11 @@ jobs:
             exit 1
           fi
 
-  httpflush_pr_workflow:
-    name: httpflush PR workflow
+  httpflush_pr:
+    name: httpflush PR
     needs: changed-files
     if: needs.changed-files.outputs.pkgHttpflushGoChanged
-    uses: tcodes0/go/.github/workflows/package.yml@main
+    uses: .github/workflows/package_pr.yml@main
     with:
       goVersion: 1.22
       packagePath: src/httpflush
