@@ -62,18 +62,19 @@ jobs:
           PKG_HTTPFLUSH_GO: ${{ steps.list-changed-files.outputs.pkg_httpflush_go_all_changed_files }}
         run: |
           # analyze changed files and produce outputs
+          set -e
 
           goModChanged="true"
-          if [-n "$GO_MOD"]; then goModChanged=""; fi
+          if [ -n "$GO_MOD" ]; then goModChanged=""; fi
 
           configChanged="true"
-          if [-n "$CONFIG"]; then configChanged=""; fi
+          if [ -n "$CONFIG" ]; then configChanged=""; fi
 
           docChanged="true"
-          if [-n "$DOC"]; then docChanged=""; fi
+          if [ -n "$DOC" ]; then docChanged=""; fi
 
           pkgHttpflushGoChanged="true"
-          if [-n "$PKG_HTTPFLUSH"]; then pkgHttpflushGoChanged=""; fi
+          if [ -n "$PKG_HTTPFLUSH" ]; then pkgHttpflushGoChanged=""; fi
 
           anyPkgGoChanged=(\
           $pkgHttpflushGoChanged\
@@ -136,7 +137,9 @@ jobs:
         working-directory: .
         run: |
           # diff mockery changes
+          set -e
           mockery
+
           DIFF=$(git diff .)
           if [ -n "$DIFF" ]; then
             echo "$DIFF"
