@@ -74,7 +74,7 @@ jobs:
     runs-on: ubuntu-latest
     if: true # change to debug
     env:
-      - TEST: ${{ needs.changed-files.outputs.pkgHttpflushGoChanged }}
+      TEST: ${{ needs.changed-files.outputs.pkgHttpflushGoChanged }}
     steps:
       - name: Debug step
         run: true
