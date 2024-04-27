@@ -22,7 +22,7 @@ jobs:
             **.go
 
       - name: Debug changed files
-        if: false # changed to debug
+        if: true # changed to debug
         env:
           ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
