@@ -21,17 +21,17 @@ jobs:
         with:
           # since_last_remote_commit: true # use only for testing, it's easy to produce no changed files
           files: |
-            - go_mod:
-                **/go.mod
-                **/go.sum
-            - configs:
-                **/*.yaml
-                **/*.yml
-                **/*.json
-            - docs:
-                **/*.md
-            - pkg_httpflush_go:
-                src/httpflush/**.go
+              go_mod:
+                - **/go.mod
+                - **/go.sum
+              configs:
+                - **/*.yaml
+                - **/*.yml
+                - **/*.json
+              docs:
+                - **/*.md
+              pkg_httpflush_go:
+                - src/httpflush/**.go
 
       - name: Debug changed files
         if: true # change to debug
