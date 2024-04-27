@@ -16,11 +16,11 @@ jobs:
         id: changed-go-files
         uses: tj-actions/changed-files@v44
         with:
-          # * is required on all lines
+          # ** is required on all lines
           files: |
-            *.go
-            *go.mod
-            *go.sum
+            **.go
+            **/go.mod
+            **/go.sum
 
       - name: Debug changed files
         if: true # set to false when not needed
