@@ -51,19 +51,19 @@ jobs:
           # trailing _ to visualize empty values
           echo "GO_MOD=${GO_MOD}_"
           goModChanged="true"
-          if [ -n "$GO_MOD" ]; then goModChanged=""; fi
+          if [ -z "$GO_MOD" ]; then goModChanged=""; fi
 
           echo "CONFIG=${CONFIG}_"
           configChanged="true"
-          if [ -n "$CONFIG" ]; then configChanged=""; fi
+          if [ -z "$CONFIG" ]; then configChanged=""; fi
 
           echo "DOC=${DOC}_"
           docChanged="true"
-          if [ -n "$DOC" ]; then docChanged=""; fi
+          if [ -z "$DOC" ]; then docChanged=""; fi
 
           echo "PKG_HTTPFLUSH_GO=${PKG_HTTPFLUSH_GO}_"
           pkgHttpflushGoChanged="true"
-          if [ -n "$PKG_HTTPFLUSH_GO" ]; then pkgHttpflushGoChanged=""; fi
+          if [ -z "$PKG_HTTPFLUSH_GO" ]; then pkgHttpflushGoChanged=""; fi
 
           anyPkgGoChanged=(${pkgHttpflushGoChanged})
 
@@ -82,7 +82,7 @@ jobs:
     name: Debug
     needs: changed-files
     runs-on: ubuntu-latest
-    if: true # change to debug
+    if: false # change to debug
     env:
       TEST: ${{ needs.changed-files.outputs.pkgHttpflushGoChanged }}
     steps:
