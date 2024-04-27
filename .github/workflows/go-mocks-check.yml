@@ -36,6 +36,7 @@ jobs:
         shell: bash
         working-directory: .
         run: |
+          # diff mockery changes
           mockery;
           DIFF=$(git diff .);
           if [ -n "$DIFF" ]; then

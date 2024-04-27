@@ -16,6 +16,7 @@ jobs:
         id: changed-files
         uses: tj-actions/changed-files@v44
         with:
+          since_last_remote_commit: true # use only for testing, it's easy to produce no changed files
           files: |
             **.go
 
