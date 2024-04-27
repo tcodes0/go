@@ -22,7 +22,7 @@ jobs:
             **.go
 
       - name: Debug changed files
-        if: true # changed to debug
+        if: false # change to debug
         env:
           ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
@@ -48,6 +48,18 @@ jobs:
             hasChanges="" # "if:" returns false if a var is empty
           fi
           echo "hasChanges=$hasChanges" >> $GITHUB_OUTPUT
+
+  debug-job:
+    name: Debug job
+    needs: changed-files
+    runs-on: ubuntu-latest
+    if: true # change to debug
+    env:
+      HAS_CHANGES: ${{ needs.changed-files.output.hasChanges }}
+    steps:
+      - name: Debug step
+      - run: |
+          true
 
   go-mod-check:
     name: Go mod check
