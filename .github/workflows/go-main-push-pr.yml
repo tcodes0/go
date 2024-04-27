@@ -58,7 +58,7 @@ jobs:
       HAS_CHANGES: ${{ needs.changed-files.output.hasChanges }}
     steps:
       - name: Debug step
-      - run: |
+        run: |
           true
 
   go-mod-check:
