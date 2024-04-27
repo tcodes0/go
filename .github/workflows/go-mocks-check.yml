@@ -1,0 +1,28 @@
+name: go mocks check
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: brokeyourbike/go-mockery-action@v0
+          with:
+            mockery-version: '2.42.3'
+        - run: true
+
+      - name: Check mocks are up to date
+        shell: bash
+        working-directory: .
+        run: |
+          mockery;
+          DIFF=$(git diff .);
+          if [ -n "$DIFF" ]; then
+            echo "$DIFF" && echo "run 'mockery' and commit the changes" && exit 1;
+          fi
