@@ -22,14 +22,14 @@ jobs:
           # since_last_remote_commit: true # use only for testing, it's easy to produce no changed files
           files_yaml: |
               go_mod:
-                - **/go.mod
-                - **/go.sum
+                - '**/go.mod'
+                - '**/go.sum'
               configs:
-                - **/*.yaml
-                - **/*.yml
-                - **/*.json
+                - '**/*.yaml'
+                - '**/*.yml'
+                - '**/*.json'
               docs:
-                - **/*.md
+                - '**/*.md'
               pkg_httpflush_go:
                 - src/httpflush/**.go
 
