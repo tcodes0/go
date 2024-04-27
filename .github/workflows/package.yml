@@ -11,6 +11,10 @@ on:
         description: "Package path"
         required: true
         type: string
+      branch:
+        description: "Branch to checkout"
+        required: true
+        type: string
 
 jobs:
   build:
@@ -19,6 +23,8 @@ jobs:
     needs: changed-files
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
 
       - name: Set up Go
         uses: actions/setup-go@v5
