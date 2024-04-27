@@ -1,0 +1,62 @@
+name: Package PR
+
+on:
+  workflow_call:
+    inputs:
+      goVersion:
+        description: "Go version"
+        required: true
+        type: number
+      packagePath:
+        description: "Package path"
+        required: true
+        type: string
+      branch:
+        description: "Branch to checkout"
+        required: true
+        type: string
+
+jobs:
+  build:
+    name: Build ${{ inputs.packagePath }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ inputs.goVersion }}
+
+      - name: Build
+        run: go build -mod=readonly -v ./${{ inputs.packagePath }}
+
+  test:
+    name: Test ${{ inputs.packagePath }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        id: setup-up-go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ inputs.goVersion }}
+
+      - name: Install gotestfmt
+        run: go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt@latest
+
+      - name: Test
+        run: |
+          # go tests with gotestfmt
+          set -euo pipefail
+          go test -mod=readonly -json -race 2>&1  ./${{ inputs.packagePath }}/test | tee test.json | gotestfmt
+
+      - name: Annotate tests
+        if: always()
+        uses: guyarb/golang-test-annotations@v0.8.0
+        with:
+          test-results: test.json
+          package-name: github.com/tcodes0/go
