@@ -57,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     if: true # change to debug
     env:
-      HAS_CHANGES: ${{ needs.changed-files.output.hasChanges }}
+      HAS_CHANGES: ${{ needs.changed-files.outputs.hasChanges }}
     steps:
       - name: Debug step
         run: |
@@ -67,7 +67,7 @@ jobs:
     name: Go mod check
     runs-on: ubuntu-latest
     needs: changed-files
-    if: needs.changed-files.output.hasChanges
+    if: needs.changed-files.outputs.hasChanges
     steps:
       - uses: actions/checkout@v4
 
