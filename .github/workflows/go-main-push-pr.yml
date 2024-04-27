@@ -5,61 +5,92 @@ on:
     branches: ["main"]
   pull_request:
     branches: ["main"]
+  workflow_call:
+    inputs:
+      goVersion:
+        description: 'A valid version of Go'
+        default: 1.22
+        required: false
+        type: number
 
 jobs:
   changed-files:
     name: Analyze changed files
     runs-on: ubuntu-latest
     outputs:
-      hasChanges: ${{ steps.changed-files-logic.outputs.hasChanges }}
+      goModChanged: ${{ steps.output-changed-files.outputs.goModChanged }}
+      configChanged: ${{ steps.output-changed-files.outputs.configChanged }}
+      docChanged: ${{ steps.output-changed-files.outputs.docChanged }}
+      anyPkgGoChanged: ${{ steps.output-changed-files.outputs.anyPkgGoChanged }}
+      pkgHttpflushGoChanged: ${{ steps.output-changed-files.outputs.pkgHttpflushGoChanged }}
     steps:
       - uses: actions/checkout@v4
 
       - name: List changed files
-        id: changed-files
+        id: list-changed-files
         uses: tj-actions/changed-files@v44
         with:
           # since_last_remote_commit: true # use only for testing, it's easy to produce no changed files
           files_yaml: |
-              go_mod:
-                - '**/go.mod'
-                - '**/go.sum'
-              configs:
-                - '**/*.yaml'
-                - '**/*.yml'
-                - '**/*.json'
-              docs:
-                - '**/*.md'
-              pkg_httpflush_go:
-                - src/httpflush/**.go
+            go_mod:
+              - '**/go.mod'
+              - '**/go.sum'
+            config:
+              - '**/*.yaml'
+              - '**/*.yml'
+              - '**/*.json'
+            doc:
+              - '**/*.md'
+            pkg_httpflush_go:
+              - src/httpflush/**.go
 
       - name: Debug changed files
-        if: true # change to debug
+        if: false # change to debug
         env:
-          ALL: ${{ steps.changed-files.outputs.all_changed_files }}
-          GO_MOD: ${{ steps.changed-files.outputs.go_mod_all_changed_files }}
-          CONFIGS: ${{ steps.changed-files.outputs.configs_all_changed_files }}
-          DOCS: ${{ steps.changed-files.outputs.docs_all_changed_files }}
-          PKG_HTTPFLUSH: ${{ steps.changed-files.outputs.pkg_httpflush_go_all_changed_files }}
+          GO_MOD: ${{ steps.list-changed-files.outputs.go_mod_all_changed_files }}
+          CONFIG: ${{ steps.list-changed-files.outputs.config_all_changed_files }}
+          DOC: ${{ steps.list-changed-files.outputs.doc_all_changed_files }}
+          PKG_HTTPFLUSH: ${{ steps.list-changed-files.outputs.pkg_httpflush_go_all_changed_files }}
         run: |
           # print changed files to stdout
-          changedArray=(all $ALL gomod $GO_MOD configs $CONFIGS docs $DOCS pkg_httpflush $PKG_HTTPFLUSH)
+
+          changedArray=(all $ALL gomod $GO_MOD config $CONFIG doc $DOC pkg_httpflush $PKG_HTTPFLUSH)
           echo "${#changedArray[*]} files changed"
           for file in ${changedArray[@]}; do
             echo "$file"
           done
 
       - name: Changed files logic
-        id: changed-files-logic
+        id: output-changed-files
         env:
-          ADDED: ${{ steps.changed-files.outputs.added_files_count }}
-          MODIFIED: ${{ steps.changed-files.outputs.modified_files_count }}
-          DELETED: ${{ steps.changed-files.outputs.deleted_files_count }}
-          ANY: ${{ steps.changed-files.outputs.any_changed }}
+          GO_MOD: ${{ steps.list-changed-files.outputs.go_mod_all_changed_files }}
+          CONFIG: ${{ steps.list-changed-files.outputs.config_all_changed_files }}
+          DOC: ${{ steps.list-changed-files.outputs.doc_all_changed_files }}
+          PKG_HTTPFLUSH_GO: ${{ steps.list-changed-files.outputs.pkg_httpflush_go_all_changed_files }}
         run: |
           # analyze changed files and produce outputs
-          hasChanges=""
-          echo "hasChanges=$hasChanges" >> $GITHUB_OUTPUT
+
+          goModChanged="true"
+          if [-n "$GO_MOD"]; then goModChanged=""; fi
+
+          configChanged="true"
+          if [-n "$CONFIG"]; then configChanged=""; fi
+
+          docChanged="true"
+          if [-n "$DOC"]; then docChanged=""; fi
+
+          pkgHttpflushGoChanged="true"
+          if [-n "$PKG_HTTPFLUSH"]; then pkgHttpflushGoChanged=""; fi
+
+          anyPkgGoChanged=(\
+          $pkgHttpflushGoChanged\
+          )
+
+          echo "goModChanged=$goModChanged"                   >> $GITHUB_OUTPUT
+          echo "configChanged=$configChanged"                 >> $GITHUB_OUTPUT
+          echo "docChanged=$docChanged"                       >> $GITHUB_OUTPUT
+          echo "pkgHttpflushGoChanged=$pkgHttpflushGoChanged" >> $GITHUB_OUTPUT
+          echo "anyPkgGoChanged=${anyPkgGoChanged[*]}"        >> $GITHUB_OUTPUT
 
   debug:
     name: Debug
@@ -76,14 +107,14 @@ jobs:
     name: go.mod up to date
     runs-on: ubuntu-latest
     needs: changed-files
-    if: needs.changed-files.outputs.hasChanges
+    if: needs.changed-files.outputs.anyPkgGoChanged || needs.changed-files.outputs.goModChanged
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22
+          go-version: ${{ inputs.goVersion }}
 
       - name: Go mod check
         uses: j0hnsmith/go-mod-check@v1
@@ -94,14 +125,14 @@ jobs:
     name: Go mocks up to date
     runs-on: ubuntu-latest
     needs: changed-files
-    if: needs.changed-files.outputs.hasChanges
+    if: needs.changed-files.outputs.anyPkgGoChanged
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22
+          go-version: ${{ inputs.goVersion }}
 
       - uses: brokeyourbike/go-mockery-action@v0
         with:
@@ -120,27 +151,27 @@ jobs:
             exit 1
           fi
 
-  build:
-    name: Build
+  build-httpflush:
+    name: Build Httpflush
     runs-on: ubuntu-latest
     needs: changed-files
-    if: needs.changed-files.outputs.hasChanges
+    if: needs.changed-files.outputs.pkgHttpflushGoChanged
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22
+          go-version: ${{ inputs.goVersion }}
 
       - name: Build
-        run: go build -mod=readonly -v ./...
+        run: go build -mod=readonly -v ./src/httpflush
 
-  test:
-    name: Test
+  test-httpflush:
+    name: Test Httpflush
     runs-on: ubuntu-latest
     needs: changed-files
-    if: needs.changed-files.outputs.hasChanges
+    if: needs.changed-files.outputs.pkgHttpflushGoChanged
     steps:
       - uses: actions/checkout@v4
 
@@ -148,7 +179,7 @@ jobs:
         id: setup-up-go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22
+          go-version: ${{ inputs.goVersion }}
 
       - name: Set up gotestfmt
         run: go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt@latest
@@ -157,7 +188,7 @@ jobs:
         run: |
           # go tests with gotestfmt
           set -euo pipefail
-          go test -mod=readonly -json -race 2>&1  ./... | tee test.json | gotestfmt
+          go test -mod=readonly -json -race 2>&1  ./src/httpflush/test | tee test.json | gotestfmt
 
       - name: Annotate tests
         if: always()
