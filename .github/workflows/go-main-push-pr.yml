@@ -10,6 +10,8 @@ jobs:
   changed-files:
     name: Changed files
     runs-on: ubuntu-latest
+    outputs:
+      hasChanges: ${{ steps.changed-files-logic.outputs.hasChanges }}
     steps:
       - uses: actions/checkout@v4
 
