@@ -38,7 +38,7 @@ jobs:
               - src/httpflush/**.go
 
       - name: Debug changed files
-        if: false # change to debug
+        if: true # change to debug
         env:
           GO_MOD: ${{ steps.list-changed-files.outputs.go_mod_all_changed_files }}
           CONFIG: ${{ steps.list-changed-files.outputs.config_all_changed_files }}
@@ -53,7 +53,7 @@ jobs:
             echo "$file"
           done
 
-      - name: Changed files logic
+      - name: Output Changed files
         id: output-changed-files
         env:
           GO_MOD: ${{ steps.list-changed-files.outputs.go_mod_all_changed_files }}
