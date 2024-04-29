@@ -17,7 +17,8 @@ jobs:
       anyGoPkgChanged: ${{ steps.output-changed-files.outputs.anyGoPkgChanged }}
       goPkgHttpflushChanged: ${{ steps.output-changed-files.outputs.goPkgHttpflushChanged }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: List changed files
         id: list-changed-files
@@ -44,38 +45,7 @@ jobs:
           CONFIG: ${{ steps.list-changed-files.outputs.config_all_changed_files }}
           DOC: ${{ steps.list-changed-files.outputs.doc_all_changed_files }}
           GO_PKG_HTTPFLUSH: ${{ steps.list-changed-files.outputs.go_pkg_httpflush_all_changed_files }}
-        run: |
-          # analyze changed files and produce outputs
-          set -e
-
-          echo "GO_MOD=${GO_MOD}"
-          goModChanged="true"
-          if [ -z "$GO_MOD" ]; then goModChanged=""; fi
-
-          echo "CONFIG=${CONFIG}"
-          configChanged="true"
-          if [ -z "$CONFIG" ]; then configChanged=""; fi
-
-          echo "DOC=${DOC}"
-          docChanged="true"
-          if [ -z "$DOC" ]; then docChanged=""; fi
-
-          echo "GO_PKG_HTTPFLUSH=${GO_PKG_HTTPFLUSH}"
-          goPkgHttpflushChanged="true"
-          if [ -z "$GO_PKG_HTTPFLUSH" ]; then goPkgHttpflushChanged=""; fi
-
-          anyGoPkgChanged=(${goPkgHttpflushChanged})
-
-          echo "goModChanged=$goModChanged"                   >> $GITHUB_OUTPUT
-          echo "goModChanged=$goModChanged"
-          echo "configChanged=$configChanged"                 >> $GITHUB_OUTPUT
-          echo "configChanged=$configChanged"
-          echo "docChanged=$docChanged"                       >> $GITHUB_OUTPUT
-          echo "docChanged=$docChanged"
-          echo "goPkgHttpflushChanged=$goPkgHttpflushChanged" >> $GITHUB_OUTPUT
-          echo "goPkgHttpflushChanged=$goPkgHttpflushChanged"
-          echo "anyGoPkgChanged=${anyGoPkgChanged[*]}"        >> $GITHUB_OUTPUT
-          echo "anyGoPkgChanged=${anyGoPkgChanged[*]}"
+        run: ./src/sh/workflows/mainpushpr/output_changed_files.sh
 
   debug:
     name: Debug
@@ -85,7 +55,7 @@ jobs:
     env:
       TEST: ${{ needs.changed-files.outputs.goPkgHttpflushChanged }}
     steps:
-      - name: Debug step
+      - name: Debug
         run: true
 
   go-mod:
@@ -94,7 +64,8 @@ jobs:
     needs: changed-files
     if: needs.changed-files.outputs.anyGoPkgChanged || needs.changed-files.outputs.goModChanged
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -112,33 +83,25 @@ jobs:
     needs: changed-files
     if: needs.changed-files.outputs.anyGoPkgChanged
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: 1.22
 
-      - uses: brokeyourbike/go-mockery-action@v0
+      - name: Run Mockery
+        uses: brokeyourbike/go-mockery-action@v0
         with:
           mockery-version: "2.42.3"
       - run: true
 
       - name: Check mocks are up to date
         working-directory: .
-        run: |
-          # diff mockery changes
-          set -e
-          mockery
+        run: ./src/sh/workflows/mainpushpr/diff_mockery.sh
 
-          DIFF=$(git diff .)
-          if [ -n "$DIFF" ]; then
-            echo "$DIFF"
-            echo "run 'mockery' and commit the changes"
-            exit 1
-          fi
-
-  httpflush_pr:
+  httpflush-pr:
     name: httpflush PR
     needs: changed-files
     if: needs.changed-files.outputs.goPkgHttpflushChanged
