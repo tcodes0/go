@@ -17,6 +17,12 @@
 
 
 </pre>
+
 <i>http://www.patorjk.com/software/taag/#p=display&f=Alligator&t=packages</i>
 
 > tcodes go packages
+
+```bash
+# To install any package
+go get github.com/tcodes/go
+```
