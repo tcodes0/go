@@ -21,7 +21,8 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch }}
 
@@ -37,7 +38,8 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up Go
         id: setup-up-go
@@ -46,11 +48,14 @@ jobs:
           go-version: ${{ inputs.goVersion }}
 
       - name: Install gotestfmt
-        run: go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt@latest
-
-      - name: Test
         run: |
-          # go tests with gotestfmt
+          # install gotestfmt
+          go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt@latest
+          go mod tidy # prevent flakes in next step due to go test sometimes updating go.mod
+
+      - name: Test with gotestfmt
+        run: |
+          # test with gotestfmt
           set -euo pipefail
           go test -mod=readonly -json -race 2>&1  ./${{ inputs.packagePath }}/test | tee test.json | gotestfmt
 
