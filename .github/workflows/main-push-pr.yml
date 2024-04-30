@@ -45,7 +45,7 @@ jobs:
           CONFIG: ${{ steps.list-changed-files.outputs.config_all_changed_files }}
           DOC: ${{ steps.list-changed-files.outputs.doc_all_changed_files }}
           GO_PKG_HTTPFLUSH: ${{ steps.list-changed-files.outputs.go_pkg_httpflush_all_changed_files }}
-        run: ./src/sh/workflows/mainpushpr/output_changed_files.sh
+        run: ./src/sh/workflows/main-push-pr/output-changed-files.sh
 
   debug:
     name: Debug
@@ -99,7 +99,7 @@ jobs:
 
       - name: Check mocks are up to date
         working-directory: .
-        run: ./src/sh/workflows/mainpushpr/diff_mockery.sh
+        run: ./src/sh/workflows/main-push-pr/diff-mockery.sh
 
   httpflush-pr:
     name: httpflush PR

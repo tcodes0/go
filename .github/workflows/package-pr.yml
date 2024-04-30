@@ -54,10 +54,10 @@ jobs:
           go mod tidy # prevent flakes in next step due to go test sometimes updating go.mod
 
       - name: Test with gotestfmt
-        run: |
-          # test with gotestfmt
-          set -euo pipefail
-          go test -mod=readonly -json -race 2>&1  ./${{ inputs.packagePath }}/test | tee test.json | gotestfmt
+        env:
+          PKG: ${{ inputs.packagePath }}
+          CACHE: true
+        run: ./src/sh/workflows/package-pr/go-test.sh
 
       - name: Annotate tests
         if: always()
