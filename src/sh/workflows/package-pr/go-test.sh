@@ -2,15 +2,6 @@
 
 set -euo pipefail
 
-fmt() {
-  if [ -n "$CI" ]; then
-    # on CI there is a step after this one that will process the tmpfile
-    tee "$(tmpfile)" | gotestfmt
-  else
-    gotestfmt
-  fi
-}
-
 # fail if any dependencies are missing
 flags+=(-mod=readonly)
 # output test results in json format for gotestfmt
@@ -28,7 +19,7 @@ fi
 tmpfile=$(mktemp)
 echo "$tmpfile"
 
-go test "${flags[@]}" "./$PKG/test" 2>&1 | fmt
+go test "${flags[@]}" "./$PKG/test" 2>&1 | tee "$tmpfile" | gotestfmt
 
 # a copy of test output is saved to a file for further processing in next workflow steps
-echo "tmpfile=$tmpfile" #>>"$GITHUB_OUTPUT"
+echo "tmpfile=$tmpfile" >>"$GITHUB_OUTPUT"
