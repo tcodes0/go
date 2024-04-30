@@ -18,7 +18,7 @@ on:
 
 jobs:
   build:
-    name: Build ${{ inputs.packagePath }}
+    name: Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,7 +34,7 @@ jobs:
         run: go build -mod=readonly -v ./${{ inputs.packagePath }}
 
   test:
-    name: Test ${{ inputs.packagePath }}
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
