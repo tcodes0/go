@@ -50,16 +50,16 @@ jobs:
       - name: Install gotestfmt
         run: go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt@latest
 
-      - name: Test and format
-        id: test-and-format
+      - name: Test pretty
+        id: test-pretty
         env:
           PKG: ${{ inputs.packagePath }}
           CACHE: true
-        run: ./src/sh/workflows/package-pr/go-test.sh
+        run: ./src/sh/workflows/package-pr/test-pretty.sh
 
       - name: Annotate tests
         if: always()
         uses: guyarb/golang-test-annotations@v0.8.0
         with:
-          test-results: ${{ steps.test-and-format.outputs.testOutputJson }}
+          test-results: ${{ steps.test-pretty.outputs.testOutputJson }}
           package-name: github.com/tcodes0/go
