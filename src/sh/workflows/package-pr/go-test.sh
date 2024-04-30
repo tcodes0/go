@@ -16,10 +16,10 @@ if [ "$CACHE" == "false" ]; then
   flags+=(-count=1)
 fi
 
-tmpfile=$(mktemp)
-echo "$tmpfile"
+testOutputJson=$(mktemp)
 
-go test "${flags[@]}" "./$PKG/test" 2>&1 | tee "$tmpfile" | gotestfmt
+go test "${flags[@]}" "./$PKG/test" 2>&1 | tee "$testOutputJson" | gotestfmt
 
 # a copy of test output is saved to a file for further processing in next workflow steps
-echo "tmpfile=$tmpfile" >>"$GITHUB_OUTPUT"
+echo "testOutputJson=$testOutputJson"
+echo "testOutputJson=$testOutputJson" >>"$GITHUB_OUTPUT"

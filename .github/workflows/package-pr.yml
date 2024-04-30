@@ -48,12 +48,10 @@ jobs:
           go-version: ${{ inputs.goVersion }}
 
       - name: Install gotestfmt
-        run: |
-          # install gotestfmt
-          go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt@latest
-          go mod tidy # prevent flakes in next step due to go test sometimes updating go.mod
+        run: go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt@latest
 
-      - name: Test with gotestfmt
+      - name: Test and format
+        id: test-and-format
         env:
           PKG: ${{ inputs.packagePath }}
           CACHE: true
@@ -63,5 +61,5 @@ jobs:
         if: always()
         uses: guyarb/golang-test-annotations@v0.8.0
         with:
-          test-results: test.json
+          test-results: ${{ steps.test-and-format.outputs.testOutputJson }}
           package-name: github.com/tcodes0/go
