@@ -32,6 +32,8 @@ jobs:
           go-version: ${{ inputs.goVersion }}
 
       - name: Build
+        env:
+          PKG: ${{ inputs.packagePath }}
         run: go build -mod=readonly -v ./${{ inputs.packagePath }}
 
   test:
