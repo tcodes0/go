@@ -46,6 +46,7 @@ linters:
   disable:
     - gofmt
     - gomoddirectives
+    - testpackage
 
   presets:
     - bugs
@@ -72,7 +73,9 @@ linters-settings:
 
   importas:
     no-unaliased: true
-    no-extra-aliases: true
+    alias:
+      - pkg: example.dev/serving/pkg/apis/v1
+        alias: examplev1
 
   paralleltest:
     ignore-missing: false
@@ -108,3 +111,11 @@ linters-settings:
       - map
     ignore-enum-members: ""
     ignore-enum-types: ""
+
+  depguard:
+    rules:
+      main:
+        list-mode: lax
+        deny:
+          - pkg: "github.com/example/example"
+            desc: a bad example

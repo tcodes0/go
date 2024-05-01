@@ -67,7 +67,7 @@ jobs:
           package-name: github.com/tcodes0/go
 
   lint:
-    name: lint
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -84,4 +84,5 @@ jobs:
         with:
           version: latest
           working-directory: ${{ inputs.packagePath }}
-          # skip-cache: true
+          skip-cache: false
+          args: --print-issued-lines=false

@@ -28,8 +28,18 @@ prefix=src/
 commandArg=$1
 packageArg=$2
 
+if ! [[ " ${commands[*]} " =~ $commandArg ]]; then
+  echo "Invalid command: $commandArg"
+  usageExit
+fi
+
+if ! [[ " ${packages[*]} " =~ $packageArg ]]; then
+  echo "Invalid package: $packageArg"
+  usageExit
+fi
+
 runLint() {
-  golangci-lint run --timeout 10s "$prefix$packageArg"
+  golangci-lint run --timeout 10s --print-issued-lines=false "$prefix$packageArg"
 }
 
 runFormat() {
@@ -47,16 +57,6 @@ runBuild() {
   PKG="$prefix$packageArg" \
     ./src/sh/workflows/package-pr/build-go.sh && echo ok
 }
-
-if ! [[ " ${commands[*]} " =~ $commandArg ]]; then
-  echo "Invalid command: $commandArg"
-  usageExit
-fi
-
-if ! [[ " ${packages[*]} " =~ $packageArg ]]; then
-  echo "Invalid package: $packageArg"
-  usageExit
-fi
 
 case $commandArg in
 "${commands[0]}")
