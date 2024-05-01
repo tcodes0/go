@@ -11,11 +11,11 @@ jobs:
     name: Analyze changed files
     runs-on: ubuntu-latest
     outputs:
-      goModChanged: ${{ steps.output-changed-files.outputs.goModChanged }}
-      configChanged: ${{ steps.output-changed-files.outputs.configChanged }}
-      docChanged: ${{ steps.output-changed-files.outputs.docChanged }}
-      anyGoPkgChanged: ${{ steps.output-changed-files.outputs.anyGoPkgChanged }}
-      goPkgHttpflushChanged: ${{ steps.output-changed-files.outputs.goPkgHttpflushChanged }}
+      goModChanged: ${{ steps.output-changed-vars.outputs.goModChanged }}
+      configChanged: ${{ steps.output-changed-vars.outputs.configChanged }}
+      docChanged: ${{ steps.output-changed-vars.outputs.docChanged }}
+      anyGoPkgChanged: ${{ steps.output-changed-vars.outputs.anyGoPkgChanged }}
+      goPkgHttpflushChanged: ${{ steps.output-changed-vars.outputs.goPkgHttpflushChanged }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,14 +38,14 @@ jobs:
             go_pkg_httpflush:
               - src/httpflush/**.go
 
-      - name: Output Changed files
-        id: output-changed-files
+      - name: Output changed variables
+        id: output-changed-vars
         env:
           GO_MOD: ${{ steps.list-changed-files.outputs.go_mod_all_changed_files }}
           CONFIG: ${{ steps.list-changed-files.outputs.config_all_changed_files }}
           DOC: ${{ steps.list-changed-files.outputs.doc_all_changed_files }}
           GO_PKG_HTTPFLUSH: ${{ steps.list-changed-files.outputs.go_pkg_httpflush_all_changed_files }}
-        run: ./src/sh/workflows/main-push-pr/output-changed-files.sh
+        run: ./src/sh/workflows/main-push-pr/output-changed-vars.sh
 
   debug:
     name: Debug
