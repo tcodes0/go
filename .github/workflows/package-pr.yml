@@ -63,3 +63,23 @@ jobs:
         with:
           test-results: ${{ steps.test-pretty.outputs.testOutputJson }}
           package-name: github.com/tcodes0/go
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        id: setup-up-go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ inputs.goVersion }}
+
+      - name: Lint go
+        uses: golangci/golangci-lint-action@v5.1.0
+        with:
+          version: latest
+          working-directory: ${{ inputs.packagePath }}
+          # skip-cache: true

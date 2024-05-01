@@ -1,0 +1,1 @@
+/home/vacation/Desktop/tcodes-go/src/sh/run.sh

@@ -8,11 +8,11 @@ flags+=(-mod=readonly)
 flags+=(-json)
 # detect race conditions
 flags+=(-race)
-# run all go vet checks, a linter
-flags+=(-vet=all)
-# disable passed test caching
+# go vet linter is handled by lint step
+flags+=(-vet=off)
 
 if [ "$CACHE" == "false" ]; then
+  # disable passed test caching
   flags+=(-count=1)
 fi
 
