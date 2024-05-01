@@ -1,1 +1,1 @@
-/home/vacation/Desktop/tcodes-go/src/sh/run.sh
+./src/sh/run.sh
