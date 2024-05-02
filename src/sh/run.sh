@@ -5,10 +5,11 @@ set -euo pipefail
 # we use find to find folders directly under ./src/that have at least 1 *.go file
 read -r -a packages <<<"$(find src -mindepth 2 -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort | uniq | sed 's/^src\///' | tr '\n' '|')"
 commands=(
-  lint   # 0
-  format # 1
-  test   # 2
-  build  # 3
+  lint    # 0
+  lintfix # 1
+  format  # 2
+  test    # 3
+  build   # 4
 )
 
 usageExit() {
@@ -24,7 +25,6 @@ if [ $# -lt 2 ]; then
   usageExit
 fi
 
-prefix=src/
 commandArg=$1
 packageArg=$2
 
@@ -38,37 +38,48 @@ if ! [[ " ${packages[*]} " =~ $packageArg ]]; then
   usageExit
 fi
 
+lintFlags=(--timeout 10s --print-issued-lines=false)
+prefix=src/
+prefixedPkgArg=$prefix$packageArg
+
 runLint() {
-  golangci-lint run --timeout 10s --print-issued-lines=false "$prefix$packageArg"
+  golangci-lint run "${lintFlags[@]}" "$prefixedPkgArg"
+}
+
+runLintFix() {
+  ./src/sh/lint-fix.sh "$prefixedPkgArg"
 }
 
 runFormat() {
-  gofumpt -l -w "$prefix$packageArg"
+  gofumpt -l -w "$prefixedPkgArg"
 }
 
 runTest() {
-  PKG="$prefix$packageArg" \
+  PKG="$prefixedPkgArg" \
     CACHE="true" \
     GITHUB_OUTPUT="/dev/null" \
     ./src/sh/workflows/package-pr/test-pretty.sh
 }
 
 runBuild() {
-  PKG="$prefix$packageArg" \
+  PKG="$prefixedPkgArg" \
     ./src/sh/workflows/package-pr/build-go.sh && echo ok
 }
 
 case $commandArg in
 "${commands[0]}")
-  runLint "$packageArg"
+  runLint "$prefixedPkgArg"
   ;;
 "${commands[1]}")
-  runFormat "$packageArg"
+  runLintFix "$prefixedPkgArg"
   ;;
 "${commands[2]}")
-  runTest "$packageArg"
+  runFormat "$prefixedPkgArg"
   ;;
 "${commands[3]}")
-  runBuild "$packageArg"
+  runTest "$prefixedPkgArg"
+  ;;
+"${commands[4]}")
+  runBuild "$prefixedPkgArg"
   ;;
 esac
