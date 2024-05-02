@@ -47,10 +47,12 @@ runLint() {
 }
 
 runLintFix() {
+  requireGitClean
   ./src/sh/lint-fix.sh "$prefixedPkgArg"
 }
 
 runFormat() {
+  requireGitClean
   gofumpt -l -w "$prefixedPkgArg"
 }
 
@@ -64,6 +66,14 @@ runTest() {
 runBuild() {
   PKG="$prefixedPkgArg" \
     ./src/sh/workflows/package-pr/build-go.sh && echo ok
+}
+
+requireGitClean() {
+  if [ -n "$(git diff --exit-code)" ]; then
+    echo "There are uncommitted changes, please commit or stash"
+  fi
+
+  return 1
 }
 
 case $commandArg in

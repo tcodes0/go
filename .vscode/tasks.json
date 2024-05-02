@@ -1,0 +1,46 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "shell",
+      "label": "run.sh",
+      "command": "./run.sh",
+      "args": ["${input:command}", "${input:package}"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "type": "shell",
+      "label": "run.sh: format, lintfix, test",
+      "command": "./run.sh format ${input:package} && ./run.sh lintfix ${input:package} && ./run.sh test ${input:package}",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "type": "pickString",
+      "id": "package",
+      "description": "Package",
+      "options": ["dummy", "httpflush"],
+      "default": ""
+    },
+    {
+      "type": "pickString",
+      "id": "command",
+      "description": "Command",
+      "options": ["lint", "lintfix", "format", "test", "build"],
+      "default": ""
+    }
+  ]
+}

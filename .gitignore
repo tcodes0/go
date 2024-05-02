@@ -32,7 +32,6 @@ go.work
 run/*
 .env
 notes.md
-.aliases.sh
 banner*.txt
 *__debug_bin*
 *pgdump
