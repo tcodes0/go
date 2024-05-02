@@ -1,4 +1,4 @@
-name: Main push or PR
+name: Main
 
 on:
   push:
@@ -13,6 +13,7 @@ jobs:
     outputs:
       goModChanged: ${{ steps.output-changed-vars.outputs.goModChanged }}
       configChanged: ${{ steps.output-changed-vars.outputs.configChanged }}
+      shellChanged: ${{ steps.output-changed-vars.outputs.shellChanged }}
       docChanged: ${{ steps.output-changed-vars.outputs.docChanged }}
       anyGoPkgChanged: ${{ steps.output-changed-vars.outputs.anyGoPkgChanged }}
       goPkgHttpflushChanged: ${{ steps.output-changed-vars.outputs.goPkgHttpflushChanged }}
@@ -35,6 +36,8 @@ jobs:
               - '**/*.json'
             doc:
               - '**/*.md'
+            shell:
+              - src/sh/**.sh
             go_pkg_httpflush:
               - src/httpflush/**.go
 
@@ -44,6 +47,7 @@ jobs:
           GO_MOD: ${{ steps.list-changed-files.outputs.go_mod_all_changed_files }}
           CONFIG: ${{ steps.list-changed-files.outputs.config_all_changed_files }}
           DOC: ${{ steps.list-changed-files.outputs.doc_all_changed_files }}
+          SHELL: ${{ steps.list-changed-files.outputs.shell_all_changed_files }}
           GO_PKG_HTTPFLUSH: ${{ steps.list-changed-files.outputs.go_pkg_httpflush_all_changed_files }}
         run: ./src/sh/workflows/main-push-pr/output-changed-vars.sh
 
@@ -100,6 +104,21 @@ jobs:
       - name: Check mocks are up to date
         working-directory: .
         run: ./src/sh/workflows/main-push-pr/diff-mockery.sh
+
+  shell:
+    name: Lint shell
+    runs-on: ubuntu-latest
+    needs: changed-files
+    if: needs.changed-files.outputs.shellChanged
+    steps:
+      - name: Setup annotations
+        uses: pr-annotators/shellcheck-pr-annotator@master
+
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          format: gcc
+          scandir: "src/sh"
 
   httpflush-pr:
     name: httpflush PR

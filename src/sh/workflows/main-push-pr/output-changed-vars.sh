@@ -20,6 +20,12 @@ if [ -z "$DOC" ]; then
   docChanged=""
 fi
 
+echo "SHELL=${SHELL}"
+shellChanged="true"
+if [ -z "$SHELL" ]; then
+  shellChanged=""
+fi
+
 echo "GO_PKG_HTTPFLUSH=${GO_PKG_HTTPFLUSH}"
 goPkgHttpflushChanged="true"
 if [ -z "$GO_PKG_HTTPFLUSH" ]; then
@@ -34,6 +40,8 @@ echo "configChanged=$configChanged"                 >> "$GITHUB_OUTPUT"
 echo "configChanged=$configChanged"
 echo "docChanged=$docChanged"                       >> "$GITHUB_OUTPUT"
 echo "docChanged=$docChanged"
+echo "shellChanged=$shellChanged"                   >> "$GITHUB_OUTPUT"
+echo "shellChanged=$shellChanged"
 echo "goPkgHttpflushChanged=$goPkgHttpflushChanged" >> "$GITHUB_OUTPUT"
 echo "goPkgHttpflushChanged=$goPkgHttpflushChanged"
 echo "anyGoPkgChanged=${anyGoPkgChanged[*]}"        >> "$GITHUB_OUTPUT"
