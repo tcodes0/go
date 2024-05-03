@@ -16,12 +16,13 @@ import
 # we use find to find folders directly under ./src/that have at least 1 *.go file
 read -r -a packages <<<"$(find src -mindepth 2 -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort | uniq | sed 's/^src\///' | tr '\n' '|')"
 commands=(
-  lint    # 0
-  lintfix # 1
-  format  # 2
-  test    # 3
-  build   # 4
-  ci      # 5
+  lint          # 0
+  lintfix       # 1
+  format        # 2
+  test          # 3
+  build         # 4
+  ci            # 5
+  formatConfigs # 6
 )
 
 usage() {
@@ -63,6 +64,12 @@ runLintFix() {
 runFormat() {
   requireGitClean
   gofumpt -l -w "$prefixedPkgArg"
+  npx prettier --write "$prefixedPkgArg"
+}
+
+runFormatConfigs() {
+  requireGitClean
+  npx prettier --write ./**/*{.yml,.yaml,.json}
 }
 
 runTest() {
@@ -99,5 +106,8 @@ case $commandArg in
   ;;
 "${commands[5]}")
   runCi
+  ;;
+"${commands[6]}")
+  runFormatConfigs
   ;;
 esac
