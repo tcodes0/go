@@ -11,10 +11,6 @@ on:
         description: "Package path"
         required: true
         type: string
-      branch:
-        description: "Branch to checkout"
-        required: true
-        type: string
 
 jobs:
   build:

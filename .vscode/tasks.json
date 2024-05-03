@@ -16,6 +16,18 @@
     },
     {
       "type": "shell",
+      "label": "CI",
+      "command": "./run.sh ci dummy",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "type": "shell",
       "label": "run.sh: format, lintfix, test",
       "command": "./run.sh format ${input:package} && ./run.sh lintfix ${input:package} && ./run.sh test ${input:package}",
       "options": {

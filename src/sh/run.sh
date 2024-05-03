@@ -21,6 +21,7 @@ commands=(
   format  # 2
   test    # 3
   build   # 4
+  ci      # 5
 )
 
 usage() {
@@ -76,6 +77,10 @@ runBuild() {
     ./src/sh/workflows/package-pr/build-go.sh && echo ok
 }
 
+runCi() {
+  ./src/sh/ci/pull-request.sh
+}
+
 case $commandArg in
 "${commands[0]}")
   runLint "$prefixedPkgArg"
@@ -91,5 +96,8 @@ case $commandArg in
   ;;
 "${commands[4]}")
   runBuild "$prefixedPkgArg"
+  ;;
+"${commands[5]}")
+  runCi
   ;;
 esac
