@@ -21,5 +21,9 @@ testOutputJson=$(mktemp)
 go test "${flags[@]}" "./$PKG/test" 2>&1 | tee "$testOutputJson" | gotestfmt
 
 # a copy of test output is saved to a file for further processing in next workflow steps
+# delete lines starting with "go:" as they are not parseable as json
+# these lines are sometimes output from 'go test', when packages are not in cache
+sed -i '/^go:/d' "$testOutputJson"
+
 echo "testOutputJson=$testOutputJson"
 echo "testOutputJson=$testOutputJson" >>"$GITHUB_OUTPUT"

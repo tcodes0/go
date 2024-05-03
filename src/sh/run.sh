@@ -2,6 +2,17 @@
 
 set -euo pipefail
 
+import() {
+  relativePath="go\/src\/sh\/shared-functions.sh"
+  regex="(.*)\/go\/?.*" # \1 will capture base path
+  functions=$(sed -E "s/$regex/\1\/$relativePath/g" <<<"$PWD")
+
+  # shellcheck disable=SC1090
+  source "$functions"
+}
+
+import
+
 # we use find to find folders directly under ./src/that have at least 1 *.go file
 read -r -a packages <<<"$(find src -mindepth 2 -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort | uniq | sed 's/^src\///' | tr '\n' '|')"
 commands=(
@@ -12,30 +23,27 @@ commands=(
   build   # 4
 )
 
-usageExit() {
-  echo "Usage: $0 [$(
+usage() {
+  commandInfo=$(
     IFS=\|
-    echo "${commands[*]}"
-  )] [${packages[*]}]"
-  exit 1
+    printf "%s" "${commands[*]}"
+  )
+  msg "Usage: $0 [$commandInfo] [${packages[*]}]"
 }
 
 if [ $# -lt 2 ]; then
-  echo "Invalid number of arguments $# ($*)"
-  usageExit
+  msgExit "Invalid number of arguments $# ($*)" "\n$(usage)"
 fi
 
 commandArg=$1
 packageArg=$2
 
 if ! [[ " ${commands[*]} " =~ $commandArg ]]; then
-  echo "Invalid command: $commandArg"
-  usageExit
+  msgExit "Invalid command: $commandArg"
 fi
 
 if ! [[ " ${packages[*]} " =~ $packageArg ]]; then
-  echo "Invalid package: $packageArg"
-  usageExit
+  msgExit "Invalid package: $packageArg"
 fi
 
 lintFlags=(--timeout 10s --print-issued-lines=false)
@@ -66,14 +74,6 @@ runTest() {
 runBuild() {
   PKG="$prefixedPkgArg" \
     ./src/sh/workflows/package-pr/build-go.sh && echo ok
-}
-
-requireGitClean() {
-  if [ -n "$(git diff --exit-code)" ]; then
-    echo "There are uncommitted changes, please commit or stash"
-  fi
-
-  return 1
 }
 
 case $commandArg in

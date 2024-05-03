@@ -21,7 +21,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: List changed files
+      - name: Changed files
         id: list-changed-files
         uses: tj-actions/changed-files@v44
         with:
@@ -76,7 +76,7 @@ jobs:
         with:
           go-version: 1.22
 
-      - name: Go mod check
+      - name: Go mod
         uses: j0hnsmith/go-mod-check@v1
         with:
           working-directory: .
@@ -95,13 +95,13 @@ jobs:
         with:
           go-version: 1.22
 
-      - name: Run Mockery
+      - name: Mockery
         uses: brokeyourbike/go-mockery-action@v0
         with:
           mockery-version: "2.42.3"
       - run: true
 
-      - name: Check mocks are up to date
+      - name: Diff mocks
         working-directory: .
         run: ./src/sh/workflows/main-push-pr/diff-mockery.sh
 
@@ -111,10 +111,10 @@ jobs:
     needs: changed-files
     if: needs.changed-files.outputs.shellChanged
     steps:
-      - name: Setup annotations
-        uses: pr-annotators/shellcheck-pr-annotator@0.0.1
+      - name: Annotations
+        uses: pr-annotators/shellcheck-pr-annotator@v0.0.1
 
-      - name: Run ShellCheck
+      - name: ShellCheck
         uses: ludeeus/action-shellcheck@2.0.0
         with:
           format: gcc

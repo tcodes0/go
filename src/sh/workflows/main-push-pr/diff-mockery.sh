@@ -1,11 +1,12 @@
 #! /usr/bin/env bash
 
-set -e
+set -euo pipefail
+
 mockery
 
-DIFF=$(git diff .)
-if [ -n "$DIFF" ]; then
-  echo "$DIFF"
+diff=$(git diff .)
+if [ -n "$diff" ]; then
+  echo "$diff"
   echo "run 'mockery' and commit the changes"
   exit 1
 fi

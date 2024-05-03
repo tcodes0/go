@@ -2,8 +2,19 @@
 
 set -euo pipefail
 
+import() {
+  relativePath="go\/src\/sh\/shared-functions.sh"
+  regex="(.*)\/go\/?.*" # \1 will capture base path
+  functions=$(sed -E "s/$regex/\1\/$relativePath/g" <<<"$PWD")
+
+  # shellcheck disable=SC1090
+  source "$functions"
+}
+
+import
+
 alreadyInstalled() {
-  echo -e "$1\t\t is already installed"
+  msg "$1\t\t is already installed"
 }
 
 # $1 - package, $2 - binary, $3 - comment
@@ -16,17 +27,17 @@ echoInstall() {
 
   if ! command -v "$binary" >/dev/null; then
     if [ -n "$comment" ]; then
-      echo "$comment"
+      msg "$comment"
     fi
 
-    echo go install "$pkg"
-    echo
+    msg go install "$pkg"
+    printf '\n'
   else
     alreadyInstalled "$binary"
   fi
 }
 
-echo -e "\n\topen source tools"
+msg "\topen source tools"
 echoInstall mvdan.cc/gofumpt@latest gofumpt gofumpt is a stricter gofmt
 echoInstall github.com/go-delve/delve/cmd/dlv@latest dlv delve go debugger
 echoInstall github.com/joho/godotenv/cmd/godotenv@latest godotenv godotenv runs go programs with a .env local file
@@ -49,7 +60,8 @@ else
   alreadyInstalled golangci-lint
 fi
 
-echo -e "\n\tofficial auto fix go vet tools"
+printf "\n"
+msg "\tofficial auto fix go vet tools"
 echoInstall golang.org/x/tools/go/analysis/passes/defers/cmd/defers@latest defers
 echoInstall golang.org/x/tools/go/analysis/passes/fieldalignment/cmd/fieldalignment@latest fieldalignment
 echoInstall golang.org/x/tools/go/analysis/passes/findcall/cmd/findcall@latest findcall

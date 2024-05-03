@@ -29,8 +29,8 @@ go.work
 .vscode/launch.json
 
 # Project files
-run/*
 .env
+.ci/*
 notes.md
 banner*.txt
 *__debug_bin*
