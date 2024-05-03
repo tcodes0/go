@@ -2,11 +2,9 @@
 
 set -euo pipefail
 
-mockery
-
 diff=$(git diff .)
 if [ -n "$diff" ]; then
   echo "$diff"
-  echo "run 'mockery' and commit the changes"
+  echo "update files and commit changes"
   exit 1
 fi

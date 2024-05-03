@@ -13,6 +13,7 @@ jobs:
     outputs:
       goModChanged: ${{ steps.output-changed-vars.outputs.goModChanged }}
       configChanged: ${{ steps.output-changed-vars.outputs.configChanged }}
+      configFilesChanged: ${{ steps.list-changed-files.outputs.config_all_changed_files }}
       shellChanged: ${{ steps.output-changed-vars.outputs.shellChanged }}
       docChanged: ${{ steps.output-changed-vars.outputs.docChanged }}
       anyGoPkgChanged: ${{ steps.output-changed-vars.outputs.anyGoPkgChanged }}
@@ -99,11 +100,11 @@ jobs:
         uses: brokeyourbike/go-mockery-action@v0
         with:
           mockery-version: "2.42.3"
-      - run: true
+      - run: mockery
 
       - name: Diff mocks
         working-directory: .
-        run: ./src/sh/workflows/main-push-pr/diff-mockery.sh
+        run: ./src/sh/workflows/main-push-pr/diff.sh
 
   shell:
     name: Lint shell
@@ -111,6 +112,9 @@ jobs:
     needs: changed-files
     if: needs.changed-files.outputs.shellChanged
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Annotations
         uses: pr-annotators/shellcheck-pr-annotator@v0.0.1
 
@@ -119,6 +123,22 @@ jobs:
         with:
           format: gcc
           scandir: "src/sh"
+
+  config:
+    name: Format config
+    runs-on: ubuntu-latest
+    needs: changed-files
+    if: needs.changed-files.outputs.configChanged
+    env:
+      FILES_CHANGED: ${{ needs.changed-files.outputs.configFilesChanged }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prettier
+        uses: actionsx/prettier@v3
+        with:
+          args: --check ${{ env.FILES_CHANGED }}
 
   httpflush-pr:
     name: httpflush PR

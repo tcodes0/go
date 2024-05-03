@@ -62,7 +62,8 @@ fi
 ciCommandArgs=(-e "$eventJson")
 ciCommandArgs+=(-s GITHUB_TOKEN="$(gh auth token)")
 
-set +e # allow ci to fail without killing script
+# allow ci and grep to fail without killing script
+set +e
 if [ -n "$verbose" ]; then
   $ciCommand "${ciCommandArgs[@]}" 2>&1 | tee "$log"
 else
@@ -70,7 +71,7 @@ else
   $ciCommand "${ciCommandArgs[@]}" 2>&1 | tee "$log" >/dev/null
   msg "ci exited with $?"
 fi
-set -e
+
 
 if [ -z "$verbose" ]; then
   successToken="Job succeeded"

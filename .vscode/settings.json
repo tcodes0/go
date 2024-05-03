@@ -1,5 +1,5 @@
 {
-  "cSpell.words": ["golangci", "govet"],
+  "cSpell.words": ["golangci", "govet", "scandir"],
   "go.testFlags": ["-race"],
   "go.lintTool": "golangci-lint",
   "go.lintFlags": ["--print-issued-lines=false"]
