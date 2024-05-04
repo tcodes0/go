@@ -1,6 +1,7 @@
 #! /usr/bin/env bash
 
 set -euo pipefail
+shopt -s globstar
 
 import() {
   relativePath="go\/src\/sh\/shared-functions.sh"
@@ -15,37 +16,54 @@ import
 
 # we use find to find folders directly under ./src/that have at least 1 *.go file
 read -r -a packages <<<"$(find src -mindepth 2 -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort | uniq | sed 's/^src\///' | tr '\n' '|')"
+commandsWithArgs=(
+  lint    # 0
+  lintfix # 1
+  format  # 2
+  test    # 3
+  build   # 4
+)
 commands=(
-  lint          # 0
-  lintfix       # 1
-  format        # 2
-  test          # 3
-  build         # 4
-  ci            # 5
-  formatConfigs # 6
+  ci            # 0
+  formatConfigs # 1
 )
 
-usage() {
+usageExit() {
+  commandArgsInfo=$(
+    IFS=\|
+    printf "%s" "${commandsWithArgs[*]}"
+  )
   commandInfo=$(
     IFS=\|
     printf "%s" "${commands[*]}"
   )
-  msg "Usage: $0 [$commandInfo] [${packages[*]}]"
+
+  msg "$*\n"
+  msg "Usage: $0 [$commandArgsInfo] [${packages[*]}]"
+  msg "Usage: $0 [$commandInfo]"
+
+  exit 1
 }
 
-if [ $# -lt 2 ]; then
-  msgExit "Invalid number of arguments $# ($*)" "\n$(usage)"
+if [ $# -lt 1 ]; then
+  usageExit "Invalid number of arguments $# ($*)"
 fi
 
 commandArg=$1
-packageArg=$2
+packageArg=${2:-}
 
-if ! [[ " ${commands[*]} " =~ $commandArg ]]; then
-  msgExit "Invalid command: $commandArg"
+if ! [[ " ${commandsWithArgs[*]}${commands[*]} " =~ $commandArg ]]; then
+  usageExit "Invalid command: $commandArg"
 fi
 
-if ! [[ " ${packages[*]} " =~ $packageArg ]]; then
-  msgExit "Invalid package: $packageArg"
+if [[ " ${commandsWithArgs[*]} " =~ $commandArg ]]; then
+  if [ -z "$packageArg" ]; then
+    usageExit "Command $commandArg requires a package"
+  fi
+
+  if ! [[ " ${packages[*]} " =~ $packageArg ]]; then
+    usageExit "Invalid package: $packageArg"
+  fi
 fi
 
 lintFlags=(--timeout 10s --print-issued-lines=false)
@@ -89,25 +107,25 @@ runCi() {
 }
 
 case $commandArg in
-"${commands[0]}")
+"${commandsWithArgs[0]}")
   runLint "$prefixedPkgArg"
   ;;
-"${commands[1]}")
+"${commandsWithArgs[1]}")
   runLintFix "$prefixedPkgArg"
   ;;
-"${commands[2]}")
+"${commandsWithArgs[2]}")
   runFormat "$prefixedPkgArg"
   ;;
-"${commands[3]}")
+"${commandsWithArgs[3]}")
   runTest "$prefixedPkgArg"
   ;;
-"${commands[4]}")
+"${commandsWithArgs[4]}")
   runBuild "$prefixedPkgArg"
   ;;
-"${commands[5]}")
+"${commands[0]}")
   runCi
   ;;
-"${commands[6]}")
+"${commands[1]}")
   runFormatConfigs
   ;;
 esac

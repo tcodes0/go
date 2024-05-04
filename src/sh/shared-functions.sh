@@ -1,5 +1,8 @@
 #! /usr/bin/env bash
 
+set -euo pipefail
+shopt -s globstar
+
 msg() {
   echo -e "> $*"
 }

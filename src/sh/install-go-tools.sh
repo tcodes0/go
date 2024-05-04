@@ -1,6 +1,7 @@
 #! /usr/bin/env bash
 
 set -euo pipefail
+shopt -s globstar
 
 import() {
   relativePath="go\/src\/sh\/shared-functions.sh"

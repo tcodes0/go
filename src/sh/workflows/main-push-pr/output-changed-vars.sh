@@ -1,6 +1,7 @@
 #! /usr/bin/env bash
 
-set -e
+set -euo pipefail
+shopt -s globstar
 
 echo "GO_MOD=${GO_MOD}"
 goModChanged="true"

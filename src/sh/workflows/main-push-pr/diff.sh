@@ -1,6 +1,7 @@
 #! /usr/bin/env bash
 
 set -euo pipefail
+shopt -s globstar
 
 diff=$(git diff .)
 if [ -n "$diff" ]; then
