@@ -2,6 +2,6 @@
 
 General purpose scripts.
 
-## Shared-functions.sh
+## lib.sh
 
-A collection of functions that is sourced in other scripts by relative path to repo root, watch out if moving or renaming.
+Sourced in other scripts by relative path to repo root, watch out if moving or renaming.

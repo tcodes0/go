@@ -30,7 +30,6 @@ go.work
 
 # Project files
 .env
-.ci/*
 notes.md
 banner*.txt
 *__debug_bin*

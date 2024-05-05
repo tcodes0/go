@@ -3,6 +3,17 @@
 set -euo pipefail
 shopt -s globstar
 
+import() {
+  relativePath="go\/src\/sh\/lib.sh"
+  regExpBasePath="(.*)\/go\/?.*"
+  functions=$(sed -E "s/$regExpBasePath/\1\/$relativePath/g" <<<"$PWD")
+
+  # shellcheck disable=SC1090
+  source "$functions"
+}
+
+import
+
 # fail if any dependencies are missing
 flags+=(-mod=readonly)
 # output test results in json format for gotestfmt
@@ -17,7 +28,12 @@ if [ "$CACHE" == "false" ]; then
   flags+=(-count=1)
 fi
 
-testOutputJson=$(mktemp)
+testOutputJson=$(mktemp /tmp/go-test-XXXXXX.json)
+
+if ! [ -d "./$PKG/test" ]; then
+  msg "not found: ./$PKG/test"
+  exit 0
+fi
 
 go test "${flags[@]}" "./$PKG/test" 2>&1 | tee "$testOutputJson" | gotestfmt
 

@@ -3,9 +3,9 @@
   "tasks": [
     {
       "type": "shell",
-      "label": "run.sh",
-      "command": "./run.sh",
-      "args": ["${input:command}", "${input:package}"],
+      "label": "Package tasks",
+      "command": "./src/sh/run.sh",
+      "args": ["${input:commandPackage}", "${input:package}"],
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -16,8 +16,8 @@
     },
     {
       "type": "shell",
-      "label": "CI",
-      "command": "./run.sh ci dummy",
+      "label": "Repo tasks",
+      "command": "./src/sh/run.sh ${input:commandRepo}",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -28,8 +28,8 @@
     },
     {
       "type": "shell",
-      "label": "run.sh: format, lintfix, test",
-      "command": "./run.sh format ${input:package} && ./run.sh lintfix ${input:package} && ./run.sh test ${input:package}",
+      "label": "Package: format, lintfix, test",
+      "command": "./src/sh/run.sh format ${input:package} && ./src/sh/run.sh lintfix ${input:package} && ./src/sh/run.sh test ${input:package}",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -49,9 +49,16 @@
     },
     {
       "type": "pickString",
-      "id": "command",
-      "description": "Command",
+      "id": "commandPackage",
+      "description": "Package Commands",
       "options": ["lint", "lintfix", "format", "test", "build"],
+      "default": ""
+    },
+    {
+      "type": "pickString",
+      "id": "commandRepo",
+      "description": "Repo Commands",
+      "options": ["ci", "formatConfigs"],
       "default": ""
     }
   ]

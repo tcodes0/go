@@ -7,7 +7,7 @@ type Pet struct {
 	Age  int
 }
 
-type MyTestType struct {
+type Human struct {
 	Birthday time.Time
 	Name     string
 	LastName string

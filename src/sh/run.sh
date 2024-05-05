@@ -4,7 +4,7 @@ set -euo pipefail
 shopt -s globstar
 
 import() {
-  relativePath="go\/src\/sh\/shared-functions.sh"
+  relativePath="go\/src\/sh\/lib.sh"
   regExpBasePath="(.*)\/go\/?.*"
   functions=$(sed -E "s/$regExpBasePath/\1\/$relativePath/g" <<<"$PWD")
 
@@ -70,6 +70,7 @@ fi
 lintFlags=(--timeout 10s --print-issued-lines=false)
 prefix=src/
 prefixedPkgArg=$prefix$packageArg
+prettierFileGlob="**/*{.yml,.yaml,.json}"
 
 runLint() {
   golangci-lint run "${lintFlags[@]}" "$prefixedPkgArg"
@@ -83,12 +84,12 @@ runLintFix() {
 runFormat() {
   requireGitClean
   gofumpt -l -w "$prefixedPkgArg"
-  npx prettier --write "$prefixedPkgArg"
+  npx prettier --write "$prefixedPkgArg/$prettierFileGlob" 2>/dev/null || true
 }
 
 runFormatConfigs() {
   requireGitClean
-  npx prettier --write ./**/*{.yml,.yaml,.json}
+  npx prettier --write "./$prettierFileGlob" 2>/dev/null || true
 }
 
 runTest() {

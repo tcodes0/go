@@ -4,7 +4,7 @@ set -euo pipefail
 shopt -s globstar
 
 import() {
-  relativePath="go\/src\/sh\/shared-functions.sh"
+  relativePath="go\/src\/sh\/lib.sh"
   regExpBasePath="(.*)\/go\/?.*"
   functions=$(sed -E "s/$regExpBasePath/\1\/$relativePath/g" <<<"$PWD")
 
