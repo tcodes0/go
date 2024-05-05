@@ -14,8 +14,8 @@ import() {
 
 import
 
-# we use find to find folders directly under ./src/that have at least 1 *.go file
-read -r -a packages <<<"$(find src -mindepth 2 -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort | uniq | sed 's/^src\///' | tr '\n' '|')"
+# we use find to find folders directly under ./src that have at least 1 *.go file
+packages="$(find src -mindepth 2 -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort | uniq | sed 's/^src\///' | tr '\n' '|')"
 commandsWithArgs=(
   lint    # 0
   lintfix # 1
@@ -39,7 +39,7 @@ usageExit() {
   )
 
   msg "$*\n"
-  msg "Usage: $0 [$commandArgsInfo] [${packages[*]}]"
+  msg "Usage: $0 [$commandArgsInfo] [$packages]"
   msg "Usage: $0 [$commandInfo]"
 
   exit 1
@@ -61,7 +61,7 @@ if [[ " ${commandsWithArgs[*]} " =~ $commandArg ]]; then
     usageExit "Command $commandArg requires a package"
   fi
 
-  if ! [[ " ${packages[*]} " =~ $packageArg ]]; then
+  if ! [[ " $packages " =~ $packageArg ]]; then
     usageExit "Invalid package: $packageArg"
   fi
 fi

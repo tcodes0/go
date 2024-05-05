@@ -107,7 +107,7 @@ jobs:
         run: ./src/sh/workflows/main-push-pr/diff.sh
 
   shell:
-    name: Lint shell
+    name: Lint and format shell
     runs-on: ubuntu-latest
     needs: changed-files
     if: needs.changed-files.outputs.shellChanged
@@ -115,14 +115,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Annotations
-        uses: pr-annotators/shellcheck-pr-annotator@v0.0.1
-
-      - name: ShellCheck
-        uses: ludeeus/action-shellcheck@2.0.0
+      - name: Lint and format
+        uses: luizm/action-sh-checker@v0.8.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHFMT_OPTS: -d -i 2 -ln bash
+          SHELLCHECK_OPTS: -x
         with:
-          format: gcc
-          scandir: "src/sh"
+          sh_checker_only_diff: true
+          sh_checker_comment: true
 
   config:
     name: Format config

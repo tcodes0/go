@@ -1,6 +1,25 @@
 {
-  "cSpell.words": ["golangci", "govet", "scandir"],
+  "cSpell.words": ["golangci", "govet", "scandir", "SHELLCHECK", "SHFMT"],
+  // - - - - - - - - GO - - - - - - - - -
+  "go.useLanguageServer": true,
+  "[go]": {
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+  "go.testOnSave": false,
+  "go.delveConfig": {
+    "debugAdapter": "dlv-dap"
+  },
   "go.testFlags": ["-race"],
   "go.lintTool": "golangci-lint",
-  "go.lintFlags": ["--print-issued-lines=false"]
+  "go.lintFlags": ["--print-issued-lines=false"],
+  // - - - - - - - - BASH - - - - - - - - -
+  "shellformat.path": "/usr/local/bin/shfmt",
+  "shellformat.flag": "-i 2 -ln bash",
+  "shellcheck.customArgs": ["-x"],
+  "[shellscript]": {
+    "editor.defaultFormatter": "foxundermoon.shell-format"
+  }
 }
