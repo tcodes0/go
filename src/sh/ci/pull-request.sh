@@ -65,6 +65,7 @@ tput sc
 
 linesPrinted=0
 firstFailedJob=""
+hasSuccessfulJob=""
 while ps -p $ciPid >/dev/null; do
   successToken="succeeded"
   failedToken="failed"
@@ -86,6 +87,7 @@ while ps -p $ciPid >/dev/null; do
 
         if [ "$status" == "$successToken" ]; then
           printf "%b %b%s%b\n" "$PASS_GREEN" "$COLOR_DIM" "$job" "$COLOR_END"
+          hasSuccessfulJob=true
         else
           printf "%b %b\n" "$FAIL_RED" "$job"
           if [ -z "$firstFailedJob" ]; then
@@ -105,6 +107,12 @@ if [ -n "$firstFailedJob" ]; then
   msg "above: logs for '$firstFailedJob'"
 fi
 
+if [ -z "$hasSuccessfulJob" ]; then
+  printf "\n"
+  grep --color=always -Eie "error" "$ciLog"
+  msg "error: no jobs suceeded"
+fi
+
 printf "\n"
 msg full logs
 msg eventJson:\\t\\t"$eventJson"
@@ -112,3 +120,7 @@ msg ciLog:\\t\\t"$ciLog"
 
 printf "\n"
 msg took $(($(date +%s) - start))s
+
+if [ -z "$hasSuccessfulJob" ]; then
+  exit 1
+fi

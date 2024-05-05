@@ -1,5 +1,4 @@
 {
-  "cSpell.words": ["golangci", "govet", "scandir", "SHELLCHECK", "SHFMT"],
   // - - - - - - - - GO - - - - - - - - -
   "go.useLanguageServer": true,
   "[go]": {
