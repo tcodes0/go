@@ -52,17 +52,16 @@ ciLog=$(mktemp /tmp/ci-XXXXXX.log)
 $ciCommand "${ciCommandArgs[@]}" 2>&1 | tee "$ciLog" >/dev/null || true &
 ciPid=$!
 
-currentLine=$(currentTerminalLine)
 lastLine=$(tput lines)
-firstColumn=0
 
-if [ "$currentLine" -gt "$((lastLine - 10))" ]; then
+if [ "$(currentTerminalLine)" -gt "$((lastLine - 10))" ]; then
   clear -x
   msg "running ci... (terminal cleared to make room for output)"
-  currentLine=$(currentTerminalLine)
 else
   msg "running ci..."
 fi
+
+tput sc
 
 linesPrinted=0
 firstFailedJob=""
@@ -70,8 +69,7 @@ while ps -p $ciPid >/dev/null; do
   successToken="succeeded"
   failedToken="failed"
 
-  # reset cursor
-  tput cup "$currentLine" "$firstColumn"
+  tput rc
   grepOut=$(grep -Eie "Job ($successToken|$failedToken)" "$ciLog" || true)
   linesPrinted=$(wc -l <<<"$grepOut" | sed 's/ .*//')
 
@@ -99,9 +97,6 @@ while ps -p $ciPid >/dev/null; do
 
   sleep 1s
 done
-
-# move cursor to end of last loop output
-tput cup "$((currentLine + linesPrinted))" "$firstColumn"
 
 if [ -n "$firstFailedJob" ]; then
   printf "\n"
