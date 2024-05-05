@@ -5,8 +5,8 @@ shopt -s globstar
 
 import() {
   relativePath="go\/src\/sh\/shared-functions.sh"
-  regex="(.*)\/go\/?.*" # \1 will capture base path
-  functions=$(sed -E "s/$regex/\1\/$relativePath/g" <<<"$PWD")
+  regExpBasePath="(.*)\/go\/?.*"
+  functions=$(sed -E "s/$regExpBasePath/\1\/$relativePath/g" <<<"$PWD")
 
   # shellcheck disable=SC1090
   source "$functions"
@@ -15,7 +15,8 @@ import() {
 import
 
 # we use find to find folders directly under ./src that have at least 1 *.go file
-packages="$(find src -mindepth 2 -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort | uniq | sed 's/^src\///' | tr '\n' '|')"
+regExpSrcPrefix="^src\/"
+packages="$(find src -mindepth 2 -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort | uniq | sed "s/$regExpSrcPrefix//" | tr '\n' '|')"
 commandsWithArgs=(
   lint    # 0
   lintfix # 1

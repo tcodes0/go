@@ -7,8 +7,8 @@ start=$(date +%s)
 
 import() {
   relativePath="go\/src\/sh\/shared-functions.sh"
-  regex="(.*)\/go\/?.*" # \1 will capture base path
-  functions=$(sed -E "s/$regex/\1\/$relativePath/g" <<<"$PWD")
+  regExpBasePath="(.*)\/go\/?.*"
+  functions=$(sed -E "s/$regExpBasePath/\1\/$relativePath/g" <<<"$PWD")
 
   # shellcheck disable=SC1090
   source "$functions"
@@ -71,7 +71,8 @@ while ps -p $ciPid >/dev/null; do
 
   tput rc
   grepOut=$(grep -Eie "Job ($successToken|$failedToken)" "$ciLog" || true)
-  linesPrinted=$(wc -l <<<"$grepOut" | sed 's/ .*//')
+  regExpAfterSpace=" .*"
+  linesPrinted=$(wc -l <<<"$grepOut" | sed "s/$regExpAfterSpace//")
 
   if [ "$linesPrinted" != 0 ]; then
     while read -r line; do

@@ -1,5 +1,4 @@
 # Workflow scripts
 
 Scripts in this directory are used in github workflows.
-See the workflow for more context and ENV definitions.
-To run locally, define all ENVs.
+See the workflow on `.github` for more context.

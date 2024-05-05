@@ -5,8 +5,8 @@ shopt -s globstar
 
 import() {
   relativePath="go\/src\/sh\/shared-functions.sh"
-  regex="(.*)\/go\/?.*" # \1 will capture base path
-  functions=$(sed -E "s/$regex/\1\/$relativePath/g" <<<"$PWD")
+  regExpBasePath="(.*)\/go\/?.*"
+  functions=$(sed -E "s/$regExpBasePath/\1\/$relativePath/g" <<<"$PWD")
 
   # shellcheck disable=SC1090
   source "$functions"

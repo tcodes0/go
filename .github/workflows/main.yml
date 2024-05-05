@@ -50,7 +50,7 @@ jobs:
           DOC: ${{ steps.list-changed-files.outputs.doc_all_changed_files }}
           SHELL: ${{ steps.list-changed-files.outputs.shell_all_changed_files }}
           GO_PKG_HTTPFLUSH: ${{ steps.list-changed-files.outputs.go_pkg_httpflush_all_changed_files }}
-        run: ./src/sh/workflows/main-push-pr/output-changed-vars.sh
+        run: ./src/sh/workflows/main/output-changed-vars.sh
 
   debug:
     name: Debug
@@ -104,7 +104,7 @@ jobs:
 
       - name: Diff mocks
         working-directory: .
-        run: ./src/sh/workflows/main-push-pr/diff.sh
+        run: ./src/sh/workflows/main/diff.sh
 
   shell:
     name: Lint and format shell

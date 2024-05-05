@@ -1,7 +1,7 @@
 # Sh
 
-Project scripts for general purpose tasks.
+General purpose scripts.
 
 ## Shared-functions.sh
 
-A collection of functions that issourced in other scripts by relative path to repo root, watch out if moving or renaming.
+A collection of functions that is sourced in other scripts by relative path to repo root, watch out if moving or renaming.
