@@ -16,28 +16,19 @@ import() {
 
 import
 
-flagVerbose="-v"
-ciCommand="act"
-
 usageExit() {
-  msg "Usage: $0 [$flagVerbose]"
-  msg "$flagVerbose: print to console"
+  msg "Usage: $0 "
   exit 1
 }
 
-if [ $# == 1 ] && [ "$1" != "$flagVerbose" ]; then
+if [ $# != 0 ]; then
   msg "Invalid argument: $1"
-  usageExit
-fi
-
-if [ $# -gt 1 ]; then
-  msg "Invalid number of arguments: $# ($*)"
   usageExit
 fi
 
 requireGitClean
 
-eventJson=$(mktemp)
+eventJson=$(mktemp /tmp/ci-event-XXXXXX.json)
 gitLocalBranch=$(git branch --show-current)
 
 printf %s "
@@ -53,49 +44,75 @@ printf %s "
 }
 " >"$eventJson"
 
-log=$(mktemp /tmp/ci-pull-request-XXXXXX.log)
-
-verbose=""
-if [[ "$*" == *${flagVerbose}* ]]; then
-  verbose="true"
-fi
-
+ciCommand="act"
 ciCommandArgs=(-e "$eventJson")
 ciCommandArgs+=(-s GITHUB_TOKEN="$(gh auth token)")
+ciLog=$(mktemp /tmp/ci-XXXXXX.log)
 
-# allow ci and grep to fail without killing script
-set +e
-if [ -n "$verbose" ]; then
-  $ciCommand "${ciCommandArgs[@]}" 2>&1 | tee "$log"
+$ciCommand "${ciCommandArgs[@]}" 2>&1 | tee "$ciLog" >/dev/null || true &
+ciPid=$!
+
+currentLine=$(currentTerminalLine)
+lastLine=$(tput lines)
+firstColumn=0
+
+if [ "$currentLine" -gt "$((lastLine - 10))" ]; then
+  clear -x
+  msg "running ci... (terminal cleared to make room for output)"
+  currentLine=$(currentTerminalLine)
 else
   msg "running ci..."
-  $ciCommand "${ciCommandArgs[@]}" 2>&1 | tee "$log" >/dev/null
-  msg "ci exited with $?"
 fi
 
+linesPrinted=0
+firstFailedJob=""
+while ps -p $ciPid >/dev/null; do
+  successToken="succeeded"
+  failedToken="failed"
 
-if [ -z "$verbose" ]; then
-  successToken="Job succeeded"
-  grep --color=always -Eie "$successToken" "$log" || true
+  # reset cursor
+  tput cup "$currentLine" "$firstColumn"
+  grepOut=$(grep -Eie "Job ($successToken|$failedToken)" "$ciLog" || true)
+  linesPrinted=$(wc -l <<<"$grepOut" | sed 's/ .*//')
 
-  printf "\n"
-  failedToken="Job failed"
-  grep --color=always -Eie "$failedToken" "$log" || true
-  regex="1s/\[([^]]+)\].*/\1/p"
-  firstFailedJobName=$(grep "$failedToken" "$log" | sed -nE "$regex")
+  if [ "$linesPrinted" != 0 ]; then
+    while read -r line; do
+      if [ -z "$line" ]; then
+        continue
+      fi
 
-  if [ -n "$firstFailedJobName" ]; then
-    printf "\n"
-    msg "logs for '$firstFailedJobName':"
-    grep --color=always -Eie "$firstFailedJobName" "$log" || true
+      if [[ "$line" =~ \[([^]]+)\].*(succeeded|failed) ]]; then
+        job="${BASH_REMATCH[1]}"
+        status="${BASH_REMATCH[2]}"
+
+        if [ "$status" == "$successToken" ]; then
+          printf "%b %b%s%b\n" "$PASS_GREEN" "$COLOR_DIM" "$job" "$COLOR_END"
+        else
+          printf "%b %b\n" "$FAIL_RED" "$job"
+          if [ -z "$firstFailedJob" ]; then
+            firstFailedJob="$job"
+          fi
+        fi
+      fi
+    done <<<"$grepOut"
   fi
+
+  sleep 1s
+done
+
+# move cursor to end of last loop output
+tput cup "$((currentLine + linesPrinted))" "$firstColumn"
+
+if [ -n "$firstFailedJob" ]; then
+  printf "\n"
+  grep --color=always -Eie "$firstFailedJob" "$ciLog"
+  msg "above: logs for '$firstFailedJob'"
 fi
 
 printf "\n"
-msg run variables
+msg full logs
 msg eventJson:\\t\\t"$eventJson"
-msg gitLocalBranch:\\t"$gitLocalBranch"
-msg log:\\t\\t\\t"$log"
+msg ciLog:\\t\\t"$ciLog"
 
 printf "\n"
 msg took $(($(date +%s) - start))s
