@@ -40,7 +40,8 @@ printf %s "
     \"base\": {
       \"ref\": \"main\"
     }
-  }
+  },
+  \"local\": true
 }
 " >"$eventJson"
 
