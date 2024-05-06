@@ -58,10 +58,10 @@ jobs:
     runs-on: ubuntu-latest
     if: false # change to debug
     env:
-      TEST: ${{ needs.changed-files.outputs.goPkgHttpflushChanged }}
+      TEST: ${{ !github.event.act }}
     steps:
       - name: Debug
-        run: true
+        run: echo $TEST
 
   go-mod:
     name: Go.mod up to date
@@ -150,12 +150,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Cspell
-        uses: streetsidesoftware/cspell-action@v6.2.0
+      - name: Pre-setup Node
+        run: touch package-lock.json
+
+      - name: Setup Node
+        uses: actions/setup-node@v4.0.2
         with:
-          files: "**/*.md"
-          incremental_files_only: true
-          config: ./cspell.config.yaml
+          node-version: lts/*
+          cache: npm
+
+      - name: Spellcheck
+        env:
+          FILES: notes.md README.md
+          VERSION: "latest"
+        run: ./src/sh/workflows/main/spellcheck.sh
 
   httpflush-pr:
     name: httpflush PR
