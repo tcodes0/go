@@ -25,8 +25,9 @@ commandsWithArgs=(
   build   # 4
 )
 commands=(
-  ci            # 0
-  formatConfigs # 1
+  ci             # 0
+  formatConfigs  # 1
+  spellcheckDocs # 2
 )
 
 usageExit() {
@@ -108,6 +109,10 @@ runCi() {
   ./src/sh/ci/pull-request.sh
 }
 
+spellcheckDocs() {
+  cspell "**/*.md" --gitignore
+}
+
 case $commandArg in
 "${commandsWithArgs[0]}")
   runLint "$prefixedPkgArg"
@@ -129,5 +134,8 @@ case $commandArg in
   ;;
 "${commands[1]}")
   runFormatConfigs
+  ;;
+"${commands[2]}")
+  spellcheckDocs
   ;;
 esac

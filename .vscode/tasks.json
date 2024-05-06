@@ -19,6 +19,7 @@
       "label": "Repo tasks",
       "command": "./src/sh/run.sh ${input:commandRepo}",
       "options": {
+        
         "cwd": "${workspaceFolder}"
       },
       "presentation": {
@@ -58,7 +59,7 @@
       "type": "pickString",
       "id": "commandRepo",
       "description": "Repo Commands",
-      "options": ["ci", "formatConfigs"],
+      "options": ["ci", "formatConfigs", "spellcheckDocs"],
       "default": ""
     }
   ]
