@@ -28,6 +28,7 @@ commands=(
   ci             # 0
   formatConfigs  # 1
   spellcheckDocs # 2
+  setup          # 3
 )
 
 usageExit() {
@@ -113,6 +114,10 @@ spellcheckDocs() {
   cspell "**/*.md" --gitignore
 }
 
+setup() {
+  ./src/sh/setup.sh
+}
+
 case $commandArg in
 "${commandsWithArgs[0]}")
   runLint "$prefixedPkgArg"
@@ -137,5 +142,8 @@ case $commandArg in
   ;;
 "${commands[2]}")
   spellcheckDocs
+  ;;
+"${commands[3]}")
+  setup
   ;;
 esac

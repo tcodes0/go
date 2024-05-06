@@ -58,7 +58,7 @@
       "type": "pickString",
       "id": "commandRepo",
       "description": "Repo Commands",
-      "options": ["ci", "formatConfigs", "spellcheckDocs"],
+      "options": ["ci", "formatConfigs", "spellcheckDocs", "setup"],
       "default": ""
     }
   ]
