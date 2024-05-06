@@ -19,7 +19,6 @@
       "label": "Repo tasks",
       "command": "./src/sh/run.sh ${input:commandRepo}",
       "options": {
-        
         "cwd": "${workspaceFolder}"
       },
       "presentation": {
