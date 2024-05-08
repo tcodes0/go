@@ -15,10 +15,15 @@
   "go.lintTool": "golangci-lint",
   "go.lintFlags": ["--print-issued-lines=false"],
   // - - - - - - - - BASH - - - - - - - - -
-  "shellformat.path": "/usr/local/bin/shfmt",
   "shellformat.flag": "-i 2 -ln bash",
-  "shellcheck.customArgs": ["-x"],
   "[shellscript]": {
     "editor.defaultFormatter": "foxundermoon.shell-format"
-  }
+  },
+  // - - - - - - - - OSX - - - - - - - - -
+  "terminal.integrated.defaultProfile.osx": "bash",
+  // - - - - - - - - CSPELL - - - - - - - - -
+  "cSpell.maxDuplicateProblems": 2,
+  "cSpell.showAutocompleteSuggestions": false,
+  "cSpell.enableFiletypes": ["shellscript"]
+  // "cSpell.spellCheckDelayMs": 2000, // set in usersettings.json
 }
