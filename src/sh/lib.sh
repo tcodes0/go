@@ -26,10 +26,5 @@ requireGitClean() {
 currentTerminalLine() {
   # https://github.com/dylanaraps/pure-bash-bible#get-the-current-cursor-position
   IFS='[;' read -p $'\e[6n' -d R -rs _ currentLine _ _
-  printf "$currentLine"
+  printf "%s" "$currentLine"
 }
-
-# mac os notes
-# mktemp needs placeholder X's at the end of the string
-# avoid omitting -e to sed to pass expression
-# sleep takes only a number, seconds, as argument, contrary to linux sleep that can take "1s"

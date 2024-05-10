@@ -111,7 +111,8 @@ jobs:
           SHELLCHECK_OPTS: -x
         with:
           sh_checker_only_diff: true
-          sh_checker_comment: true
+          # needs write access https://github.com/luizm/action-sh-checker/pull/57
+          # sh_checker_comment: true
 
   config:
     name: Format config
