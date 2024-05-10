@@ -2,19 +2,10 @@
 
 set -euo pipefail
 shopt -s globstar
+# shellcheck disable=SC1091
+source "$PWD/src/sh/lib.sh"
 
 start=$(date +%s)
-
-import() {
-  relativePath="go\/src\/sh\/lib.sh"
-  regExpBasePath="(.*)\/go\/?.*"
-  functions=$(sed -E "s/$regExpBasePath/\1\/$relativePath/g" <<<"$PWD")
-
-  # shellcheck disable=SC1090
-  source "$functions"
-}
-
-import
 
 usageExit() {
   msg "Usage: $0 "
@@ -28,7 +19,7 @@ fi
 
 requireGitClean
 
-eventJson=$(mktemp /tmp/ci-event-XXXXXX.json)
+eventJson=$(mktemp /tmp/ci-event-json-XXXXXX)
 gitLocalBranch=$(git branch --show-current)
 
 printf %s "
@@ -48,7 +39,7 @@ printf %s "
 ciCommand="act"
 ciCommandArgs=(-e "$eventJson")
 ciCommandArgs+=(-s GITHUB_TOKEN="$(gh auth token)")
-ciLog=$(mktemp /tmp/ci-XXXXXX.log)
+ciLog=$(mktemp /tmp/ci-log-json-XXXXXX)
 
 $ciCommand "${ciCommandArgs[@]}" 2>&1 | tee "$ciLog" >/dev/null || true &
 ciPid=$!
@@ -64,9 +55,9 @@ fi
 
 tput sc
 
-linesPrinted=0
 firstFailedJob=""
 hasSuccessfulJob=""
+iterations=0
 while ps -p $ciPid >/dev/null; do
   successToken="succeeded"
   failedToken="failed"
@@ -74,7 +65,7 @@ while ps -p $ciPid >/dev/null; do
   tput rc
   grepOut=$(grep -Eie "Job ($successToken|$failedToken)" "$ciLog" || true)
   regExpAfterSpace=" .*"
-  linesPrinted=$(wc -l <<<"$grepOut" | sed "s/$regExpAfterSpace//")
+  linesPrinted=$(wc -l <<<"$grepOut" | sed -e "s/$regExpAfterSpace//")
 
   if [ "$linesPrinted" != 0 ]; then
     while read -r line; do
@@ -99,19 +90,30 @@ while ps -p $ciPid >/dev/null; do
     done <<<"$grepOut"
   fi
 
-  sleep 1s
+  iterations=$((iterations + 1))
+  sleep 1
 done
 
-if [ -n "$firstFailedJob" ]; then
+exitStatus=0
+somethingWrong=5
+if [ "$iterations" -lt "$somethingWrong" ]; then
   printf "\n"
-  grep --color=always -Eie "$firstFailedJob" "$ciLog"
-  msg "above: logs for '$firstFailedJob'"
+  head "$ciLog"
+  exitStatus=1
 fi
 
-if [ -z "$hasSuccessfulJob" ]; then
+if [ "$exitStatus" == 0 ] && [ -n "$firstFailedJob" ]; then
   printf "\n"
-  grep --color=always -Eie "error" "$ciLog"
-  msg "error: no jobs suceeded"
+  grep --color=always -Eie "$firstFailedJob" "$ciLog" || true
+  msg "above: logs for '$firstFailedJob'"
+  exitStatus=1
+fi
+
+if [ "$exitStatus" == 0 ] && [ -z "$hasSuccessfulJob" ]; then
+  printf "\n"
+  grep --color=always -Eie "error" "$ciLog" || true
+  msg "error: no jobs succeeded"
+  exitStatus=1
 fi
 
 printf "\n"
@@ -122,6 +124,8 @@ msg ciLog:\\t\\t"$ciLog"
 printf "\n"
 msg took $(($(date +%s) - start))s
 
-if [ -z "$hasSuccessfulJob" ]; then
-  exit 1
+if [ "$exitStatus" != 0 ]; then
+  printf "%b" "$FAIL_RED"
 fi
+
+exit "$exitStatus"

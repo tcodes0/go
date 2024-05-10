@@ -2,21 +2,12 @@
 
 set -euo pipefail
 shopt -s globstar
-
-import() {
-  relativePath="go\/src\/sh\/lib.sh"
-  regExpBasePath="(.*)\/go\/?.*"
-  functions=$(sed -E "s/$regExpBasePath/\1\/$relativePath/g" <<<"$PWD")
-
-  # shellcheck disable=SC1090
-  source "$functions"
-}
-
-import
+# shellcheck disable=SC1091
+source "$PWD/src/sh/lib.sh"
 
 # we use find to find folders directly under ./src that have at least 1 *.go file
 regExpSrcPrefix="^src\/"
-packages="$(find src -mindepth 2 -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort | uniq | sed "s/$regExpSrcPrefix//" | tr '\n' '|')"
+packages="$(find src -mindepth 2 -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort | uniq | sed -e "s/$regExpSrcPrefix//" | tr '\n' '|')"
 commandsWithArgs=(
   lint    # 0
   lintfix # 1
@@ -86,12 +77,12 @@ runLintFix() {
 runFormat() {
   requireGitClean
   gofumpt -l -w "$prefixedPkgArg"
-  npx prettier --write "$prefixedPkgArg/$prettierFileGlob" 2>/dev/null || true
+  prettier --write "$prefixedPkgArg/$prettierFileGlob" 2>/dev/null || true
 }
 
 runFormatConfigs() {
   requireGitClean
-  npx prettier --write "./$prettierFileGlob" 2>/dev/null || true
+  prettier --write "./$prettierFileGlob" 2>/dev/null || true
 }
 
 runTest() {

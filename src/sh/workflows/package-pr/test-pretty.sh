@@ -2,17 +2,8 @@
 
 set -euo pipefail
 shopt -s globstar
-
-import() {
-  relativePath="go\/src\/sh\/lib.sh"
-  regExpBasePath="(.*)\/go\/?.*"
-  functions=$(sed -E "s/$regExpBasePath/\1\/$relativePath/g" <<<"$PWD")
-
-  # shellcheck disable=SC1090
-  source "$functions"
-}
-
-import
+# shellcheck disable=SC1091
+source "$PWD/src/sh/lib.sh"
 
 # fail if any dependencies are missing
 flags+=(-mod=readonly)
@@ -28,7 +19,7 @@ if [ "$CACHE" == "false" ]; then
   flags+=(-count=1)
 fi
 
-testOutputJson=$(mktemp /tmp/go-test-XXXXXX.json)
+testOutputJson=$(mktemp /tmp/go-test-json-XXXXXX)
 
 if ! [ -d "./$PKG/test" ]; then
   msg "not found: ./$PKG/test"
@@ -40,7 +31,7 @@ go test "${flags[@]}" "./$PKG/test" 2>&1 | tee "$testOutputJson" | gotestfmt
 # a copy of test output is saved to a file for further processing in next workflow steps
 # delete lines not parseable as json output from 'go test'
 regExpPrefixGo="^go:"
-sed -i "/$regExpPrefixGo/d" "$testOutputJson"
+sed -Eie "/$regExpPrefixGo/d" "$testOutputJson"
 
 echo "testOutputJson=$testOutputJson"
 echo "testOutputJson=$testOutputJson" >>"$GITHUB_OUTPUT"

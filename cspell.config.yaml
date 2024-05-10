@@ -1,6 +1,6 @@
 $schema: https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json
 version: "0.2"
-language: "en"
+language: en
 allowCompoundWords: true
 maxNumberOfProblems: 5
 dictionaries:
@@ -16,6 +16,7 @@ dictionaries:
   - computing-acronyms
 words:
   - golangci
+  - gotestfmt
   - govet
   - httpflush
   - scandir
