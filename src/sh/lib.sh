@@ -26,7 +26,7 @@ requireGitClean() {
 currentTerminalLine() {
   # https://github.com/dylanaraps/pure-bash-bible#get-the-current-cursor-position
   IFS='[;' read -p $'\e[6n' -d R -rs _ currentLine _ _
-  printf "%s" "$currentLine"
+  printf "$currentLine"
 }
 
 # mac os notes
