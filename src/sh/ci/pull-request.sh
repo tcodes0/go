@@ -39,6 +39,7 @@ printf %s "
 ciCommand="act"
 ciCommandArgs=(-e "$eventJson")
 ciCommandArgs+=(-s GITHUB_TOKEN="$(gh auth token)")
+ciCommandArgs+=(--container-architecture linux/amd64)
 ciLog=$(mktemp /tmp/ci-log-json-XXXXXX)
 
 $ciCommand "${ciCommandArgs[@]}" 2>&1 | tee "$ciLog" >/dev/null || true &
@@ -113,6 +114,12 @@ if [ "$exitStatus" == 0 ] && [ -z "$hasSuccessfulJob" ]; then
   printf "\n"
   grep --color=always -Eie "error" "$ciLog" || true
   msg "error: no jobs succeeded"
+  exitStatus=1
+fi
+
+if [ "$exitStatus" == 0 ]; then
+  # look for errors at end of log
+  tac "$ciLog" | head | grep --color=always -Eie error || true
   exitStatus=1
 fi
 

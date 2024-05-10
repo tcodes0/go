@@ -15,6 +15,7 @@ dictionaries:
   - softwareTerms
   - computing-acronyms
 words:
+  - gofumpt
   - golangci
   - gotestfmt
   - govet
