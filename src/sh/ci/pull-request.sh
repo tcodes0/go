@@ -97,29 +97,23 @@ done
 
 exitStatus=0
 somethingWrong=5
-if [ "$iterations" -lt "$somethingWrong" ]; then
+if [ "$iterations" -le "$somethingWrong" ]; then
   printf "\n"
   head "$ciLog"
   exitStatus=1
-fi
-
-if [ "$exitStatus" == 0 ] && [ -n "$firstFailedJob" ]; then
+elif [ -n "$firstFailedJob" ]; then
   printf "\n"
   grep --color=always -Eie "$firstFailedJob" "$ciLog" || true
   msg "above: logs for '$firstFailedJob'"
   exitStatus=1
-fi
-
-if [ "$exitStatus" == 0 ] && [ -z "$hasSuccessfulJob" ]; then
+elif [ -z "$hasSuccessfulJob" ]; then
   printf "\n"
   grep --color=always -Eie "error" "$ciLog" || true
   msg "error: no jobs succeeded"
   exitStatus=1
-fi
-
-if [ "$exitStatus" == 0 ]; then
   # look for errors at end of log
-  tac "$ciLog" | head | grep --color=always -Eie error || true
+elif tac "$ciLog" | head | grep --color=always -Eie error; then
+  printf "\n"
   exitStatus=1
 fi
 
