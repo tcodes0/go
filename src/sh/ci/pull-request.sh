@@ -18,6 +18,7 @@ if [ $# != 0 ]; then
 fi
 
 requireGitClean
+requireInternet
 
 eventJson=$(mktemp /tmp/ci-event-json-XXXXXX)
 gitLocalBranch=$(git branch --show-current)

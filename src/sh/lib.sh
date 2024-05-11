@@ -28,3 +28,11 @@ currentTerminalLine() {
   IFS='[;' read -p $'\e[6n' -d R -rs _ currentLine _ _
   printf "%s" "$currentLine"
 }
+
+requireInternet() {
+  pingPal="1.1.1.1" # cloudflare
+
+  if ! ping -c 1 "$pingPal" &>/dev/null; then
+    msgExit "Internet required to pull latest images"
+  fi
+}
