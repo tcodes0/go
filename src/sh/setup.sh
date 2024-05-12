@@ -140,6 +140,7 @@ verifyManualTool 'see https://vektra.github.io/mockery/latest/installation' mock
 verifyManualTool 'see https://nektosact.com/installation/index.html' act run github actions locally using containers
 verifyManualTool 'see https://github.com/cli/cli#installation' gh new github CLI
 verifyManualTool 'see https://github.com/koalaman/shellcheck?tab=readme-ov-file#installing' shellcheck shell script linter
+verifyManualTool 'see https://docs.docker.com/get-docker/' docker container runtime
 
 exitWithIssues "install the missing tools with"
 
@@ -149,6 +150,13 @@ if ! gh auth token >/dev/null 2>&1; then
   installCommands+=("please sign in to gh using 'gh auth login'")
 else
   pass 'gh auth token'
+fi
+
+if ! docker stats --no-stream >/dev/null 2>&1; then
+  fail 'docker running' 'docker daemon not running'
+  installCommands+=("please start docker")
+else
+  pass 'docker running'
 fi
 
 msg after installing act, run \'act\' to setup
