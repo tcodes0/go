@@ -12,13 +12,49 @@ usageExit() {
   exit 1
 }
 
+firstFailedJob=""
+hasSuccessfulJob=""
+printJobProgress() {
+  successToken="succeeded"
+  failedToken="failed"
+  ciLog="$1"
+
+  tput rc
+  grepOut=$(grep -Eie "Job ($successToken|$failedToken)" "$ciLog" || true)
+  regExpAfterSpace=" .*"
+  linesPrinted=$(wc -l <<<"$grepOut" | sed -e "s/$regExpAfterSpace//")
+
+  if [ "$linesPrinted" != 0 ]; then
+    while read -r line; do
+      if [ -z "$line" ]; then
+        continue
+      fi
+
+      if [[ "$line" =~ \[([^]]+)\].*(succeeded|failed) ]]; then
+        job="${BASH_REMATCH[1]}"
+        status="${BASH_REMATCH[2]}"
+
+        if [ "$status" == "$successToken" ]; then
+          printf "%b %b%s%b\n" "$PASS_GREEN" "$COLOR_DIM" "$job" "$COLOR_END"
+          hasSuccessfulJob=true
+        else
+          printf "%b %b\n" "$FAIL_RED" "$job"
+          if [ -z "$firstFailedJob" ]; then
+            firstFailedJob="$job"
+          fi
+        fi
+      fi
+    done <<<"$grepOut"
+  fi
+}
+
 if [ $# != 0 ]; then
   msg "Invalid argument: $1"
   usageExit
 fi
 
 requireGitClean
-requireInternet
+requireInternet Internet required to pull docker images
 
 eventJson=$(mktemp /tmp/ci-event-json-XXXXXX)
 gitLocalBranch=$(git branch --show-current)
@@ -57,44 +93,15 @@ fi
 
 tput sc
 
-firstFailedJob=""
-hasSuccessfulJob=""
 iterations=0
 while ps -p $ciPid >/dev/null; do
-  successToken="succeeded"
-  failedToken="failed"
-
-  tput rc
-  grepOut=$(grep -Eie "Job ($successToken|$failedToken)" "$ciLog" || true)
-  regExpAfterSpace=" .*"
-  linesPrinted=$(wc -l <<<"$grepOut" | sed -e "s/$regExpAfterSpace//")
-
-  if [ "$linesPrinted" != 0 ]; then
-    while read -r line; do
-      if [ -z "$line" ]; then
-        continue
-      fi
-
-      if [[ "$line" =~ \[([^]]+)\].*(succeeded|failed) ]]; then
-        job="${BASH_REMATCH[1]}"
-        status="${BASH_REMATCH[2]}"
-
-        if [ "$status" == "$successToken" ]; then
-          printf "%b %b%s%b\n" "$PASS_GREEN" "$COLOR_DIM" "$job" "$COLOR_END"
-          hasSuccessfulJob=true
-        else
-          printf "%b %b\n" "$FAIL_RED" "$job"
-          if [ -z "$firstFailedJob" ]; then
-            firstFailedJob="$job"
-          fi
-        fi
-      fi
-    done <<<"$grepOut"
-  fi
-
+  printJobProgress "$ciLog"
   iterations=$((iterations + 1))
   sleep 1
 done
+
+# catch status of last job that could have been missed by loop
+printJobProgress "$ciLog"
 
 exitStatus=0
 somethingWrong=5

@@ -19,6 +19,7 @@
   "[shellscript]": {
     "editor.defaultFormatter": "foxundermoon.shell-format"
   },
+  "shellcheck.customArgs": ["-x"],
   // - - - - - - - - OSX - - - - - - - - -
   "terminal.integrated.defaultProfile.osx": "bash",
   // - - - - - - - - CSPELL - - - - - - - - -

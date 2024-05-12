@@ -93,7 +93,7 @@ verifyManualTool 'missing grep' grep search files for matches
 verifyManualTool 'missing sleep' sleep block a script for some time
 verifyManualTool 'missing head' head read a number of lines from a file
 
-exitWithIssues "missing basic gnu/linux binaries; please install for your platform, good luck!"
+exitWithIssues "missing basic gnu/linux binaries; please install for your platform; seek help and good luck!"
 
 # programming languages, package managers
 verifyManualTool 'see https://nodejs.org/en/download/package-manager/' node javascript runtime built on top of v8
@@ -139,6 +139,7 @@ verifyManualTool 'see https://golangci-lint.run/welcome/install' golangci-lint a
 verifyManualTool 'see https://vektra.github.io/mockery/latest/installation' mockery a go code generator for tests
 verifyManualTool 'see https://nektosact.com/installation/index.html' act run github actions locally using containers
 verifyManualTool 'see https://github.com/cli/cli#installation' gh new github CLI
+verifyManualTool 'see https://github.com/koalaman/shellcheck?tab=readme-ov-file#installing' shellcheck shell script linter
 
 exitWithIssues "install the missing tools with"
 

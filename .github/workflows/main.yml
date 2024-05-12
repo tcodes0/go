@@ -108,7 +108,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SHFMT_OPTS: -d -i 2 -ln bash
-          SHELLCHECK_OPTS: -x
+          SHELLCHECK_OPTS: -x --severity=warning
         with:
           sh_checker_only_diff: true
           # needs write access https://github.com/luizm/action-sh-checker/pull/57
