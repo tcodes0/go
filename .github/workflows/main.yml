@@ -45,14 +45,13 @@ jobs:
   debug:
     name: Debug
     runs-on: ubuntu-latest
-    if: false # change to debug
+    if: true # change to debug
     env:
-      ACTOR: ${{ github.actor }}
-      SHA: ${{ github.sha }}
-      REFNAME: ${{ github.ref_name }}
+      HEADREF: ${{ github.head_ref }}
+      BASEREF: ${{ github.base_ref }}
     steps:
       - name: Debug
-        run: echo actor $ACTOR sha $SHA refname $REFNAME
+        run: true
 
   go-mod:
     name: Go.mod up to date
