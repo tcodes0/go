@@ -44,12 +44,14 @@ jobs:
   debug:
     name: Debug
     runs-on: ubuntu-latest
-    if: false # change to debug
+    if: true # change to debug
     env:
-      TEST: ${{ github.event.local != true }}
+      ACTOR: ${{ github.actor }}
+      SHA: ${{ github.sha }}
+      REFNAME: ${{ github.ref_name }}
     steps:
       - name: Debug
-        run: echo $TEST
+        run: echo actor $ACTOR sha $SHA refname $REFNAME
 
   go-mod:
     name: Go.mod up to date
@@ -134,7 +136,7 @@ jobs:
     name: Spellcheck docs
     runs-on: ubuntu-latest
     needs: changed-files
-    # does not work with local CI, see CI script
+    # does not work locally, see CI scripts
     if: needs.changed-files.outputs.doc && github.event.local != true
     steps:
       - name: Checkout
