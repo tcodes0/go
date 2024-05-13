@@ -1,5 +1,5 @@
 name: Main
-run-name: ${{ github.actor }} on ${{ github.ref_name }}@${{ github.sha }}
+run-name: ${{ github.head_ref }}@${{ github.sha }}
 
 on:
   push:
@@ -45,7 +45,7 @@ jobs:
   debug:
     name: Debug
     runs-on: ubuntu-latest
-    if: true # change to debug
+    if: false # change to debug
     env:
       HEADREF: ${{ github.head_ref }}
       BASEREF: ${{ github.base_ref }}
