@@ -1,4 +1,5 @@
 name: Package PR
+run-name: ${{ inputs.packagePath }}@${{ github.sha }}
 
 on:
   workflow_call:
