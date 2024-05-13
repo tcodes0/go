@@ -159,6 +159,6 @@ else
   pass 'docker running'
 fi
 
-msg after installing act, run \'act\' to setup
+msg note: \'act\' requires first time setup
 
 exitWithIssues "fix configuration issues"

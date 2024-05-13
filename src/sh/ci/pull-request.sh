@@ -53,9 +53,6 @@ if [ $# != 0 ]; then
   usageExit
 fi
 
-requireGitClean
-requireInternet Internet required to pull docker images
-
 eventJson=$(mktemp /tmp/ci-event-json-XXXXXX)
 gitLocalBranch=$(git branch --show-current)
 
@@ -79,7 +76,7 @@ ciCommandArgs+=(-s GITHUB_TOKEN="$(gh auth token)")
 ciCommandArgs+=(--container-architecture linux/amd64)
 ciLog=$(mktemp /tmp/ci-log-json-XXXXXX)
 
-$ciCommand "${ciCommandArgs[@]}" 2>&1 | tee "$ciLog" >/dev/null || true &
+$ciCommand "${ciCommandArgs[@]}" >"$ciLog" 2>&1 || true &
 ciPid=$!
 
 lastLine=$(tput lines)
@@ -136,5 +133,3 @@ msg took $(($(date +%s) - start))s
 if [ "$exitStatus" != 0 ]; then
   printf "%b" "$FAIL_RED"
 fi
-
-exit "$exitStatus"

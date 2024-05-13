@@ -98,6 +98,8 @@ runBuild() {
 }
 
 runCi() {
+  requireGitClean
+  requireInternet Internet required to pull docker images
   ./src/sh/ci/pull-request.sh
 }
 
