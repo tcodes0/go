@@ -94,6 +94,7 @@ jobs:
 
       - name: Diff mocks
         working-directory: .
+        shell: bash
         run: ./src/sh/workflows/main/diff.sh
 
   shell:

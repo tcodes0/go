@@ -26,5 +26,5 @@
   "cSpell.maxDuplicateProblems": 2,
   "cSpell.showAutocompleteSuggestions": false,
   "cSpell.enableFiletypes": ["shellscript"]
-  // "cSpell.spellCheckDelayMs": 2000, // set in usersettings.json
+  // "cSpell.spellCheckDelayMs": 2000, // needs to be set in user settings json
 }

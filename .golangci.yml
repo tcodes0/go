@@ -73,6 +73,7 @@ linters-settings:
 
   importas:
     no-unaliased: true
+    no-extra-aliases: true
     alias:
       - pkg: example.dev/serving/pkg/apis/v1
         alias: examplev1
@@ -109,8 +110,6 @@ linters-settings:
     check:
       - switch
       - map
-    ignore-enum-members: ""
-    ignore-enum-types: ""
 
   depguard:
     rules:
@@ -118,4 +117,4 @@ linters-settings:
         list-mode: lax
         deny:
           - pkg: "github.com/example/example"
-            desc: a bad example
+            desc: cannot be imported
