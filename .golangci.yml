@@ -73,7 +73,6 @@ linters-settings:
 
   importas:
     no-unaliased: true
-    no-extra-aliases: true
     alias:
       - pkg: example.dev/serving/pkg/apis/v1
         alias: examplev1
