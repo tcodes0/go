@@ -29,7 +29,7 @@ run() {
     exit 1
   fi
 
-  printf "%b" "$PASS_GREEN $description"
+  printf "%b\n" "$PASS_GREEN $description"
 }
 
 export GIT_TAG="v1.2.3"
@@ -40,5 +40,57 @@ run ./src/sh/tag.sh "increments major version" "major" "$(
   cat <<EOF
 current	v1.2.3
 next	v2.0.0
+EOF
+)"
+
+run ./src/sh/tag.sh "increments minor version" "minor" "$(
+  cat <<EOF
+current	v1.2.3
+next	v1.3.0
+EOF
+)"
+
+run ./src/sh/tag.sh "increments patch version" "bump" "$(
+  cat <<EOF
+current	v1.2.3
+next	v1.2.4
+EOF
+)"
+
+GIT_TAG="v1.2.3-pre22"
+run ./src/sh/tag.sh "increments patch pre release version" "bump" "$(
+  cat <<EOF
+current	v1.2.3-pre22
+next	v1.2.3-pre23
+EOF
+)"
+
+GIT_TAG="v1.2.3"
+run ./src/sh/tag.sh "major pre release" "major -p" "$(
+  cat <<EOF
+current	v1.2.3
+next	v2.0.0-pre1
+EOF
+)"
+
+run ./src/sh/tag.sh "minor pre release" "minor -p" "$(
+  cat <<EOF
+current	v1.2.3
+next	v1.3.0-pre1
+EOF
+)"
+
+run ./src/sh/tag.sh "patch pre release" "bump -p" "$(
+  cat <<EOF
+current	v1.2.3
+next	v1.2.4-pre1
+EOF
+)"
+
+GIT_TAG="v1.2.3-pre1"
+run ./src/sh/tag.sh "patch already pre release" "bump -p" "$(
+  cat <<EOF
+current	v1.2.3-pre1
+next	v1.2.3-pre2
 EOF
 )"
