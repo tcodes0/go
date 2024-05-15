@@ -14,15 +14,15 @@
   +#+       +#+     +#+ +#+        +#+  +#+   +#+     +#+ +#+   +#+# +#+              +#+
  #+#       #+#     #+# #+#    #+# #+#   #+#  #+#     #+# #+#    #+# #+#       #+#    #+#
 ###       ###     ###  ########  ###    ### ###     ###  ########  ########## ########
-
-
 </pre>
+<details>
+  <summary>art info </summary>
+  http://www.patorjk.com/software/taag/#p=display&f=Alligator&t=packages
+</details>
 
-<i>http://www.patorjk.com/software/taag/#p=display&f=Alligator&t=packages</i>
+<br/>
+<br/>
 
-> tcodes go packages
+# tcodes0 go packages
 
-```bash
-# To install any package
-go get github.com/tcodes/go
-```
+Documentation [is on the wiki](https://github.com/tcodes0/go/wiki)
