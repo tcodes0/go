@@ -1,0 +1,65 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "shell",
+      "label": "Package tasks",
+      "command": "./src/sh/run.sh",
+      "args": ["${input:commandPackage}", "${input:package}"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "type": "shell",
+      "label": "Repo tasks",
+      "command": "./src/sh/run.sh ${input:commandRepo}",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "type": "shell",
+      "label": "Package: format, lintfix, test",
+      "command": "./src/sh/run.sh format ${input:package} && ./src/sh/run.sh lintfix ${input:package} && ./src/sh/run.sh test ${input:package}",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "type": "pickString",
+      "id": "package",
+      "description": "Package",
+      "options": ["dummy", "httpflush"],
+      "default": ""
+    },
+    {
+      "type": "pickString",
+      "id": "commandPackage",
+      "description": "Package Commands",
+      "options": ["lint", "lintfix", "format", "test", "build"],
+      "default": ""
+    },
+    {
+      "type": "pickString",
+      "id": "commandRepo",
+      "description": "Repo Commands",
+      "options": ["ci", "formatConfigs", "spellcheckDocs", "setup"],
+      "default": ""
+    }
+  ]
+}

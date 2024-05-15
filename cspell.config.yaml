@@ -1,0 +1,27 @@
+$schema: https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json
+version: "0.2"
+language: en
+allowCompoundWords: true
+maxNumberOfProblems: 5
+dictionaries:
+  - en-US
+  - bash
+  - docker
+  - filetypes
+  - fullstack
+  - golang
+  - k8s
+  - lorem-ipsum
+  - softwareTerms
+  - computing-acronyms
+words:
+  - gofumpt
+  - golangci
+  - gotestfmt
+  - govet
+  - httpflush
+  - scandir
+  - SHELLCHECK
+  - SHFMT
+  - tcodes
+  - tcodes0

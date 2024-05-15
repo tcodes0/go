@@ -8,7 +8,8 @@ import (
 	"github.com/tcodes0/go/src/httpflush"
 )
 
-func TestMaxSize_Write(t *testing.T) {
+func TestMaxSizeWrite(t *testing.T) {
+	t.Parallel()
 	writer1 := httpflush.NewMockresponseWriter(t)
 	writer2 := httpflush.NewMockresponseWriter(t)
 	writer3 := httpflush.NewMockresponseWriter(t)
@@ -18,6 +19,7 @@ func TestMaxSize_Write(t *testing.T) {
 	writer3.On("Write", mock.AnythingOfType("[]uint8")).Return(20, nil).Once()
 	writer3.On("Flush").Return(nil).Once()
 
+	//nolint:govet // test
 	tests := []struct {
 		name    string
 		maxSize *httpflush.MaxSize
@@ -44,21 +46,26 @@ func TestMaxSize_Write(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gotN, err := tt.maxSize.Write([]byte(""))
-			if (err != nil) != tt.wantErr {
-				t.Errorf("MaxSize.Write() error = %v, wantErr %v", err, tt.wantErr)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			gotN, err := test.maxSize.Write([]byte(""))
+			if (err != nil) != test.wantErr {
+				t.Errorf("MaxSize.Write() error = %v, wantErr %v", err, test.wantErr)
+
 				return
 			}
-			if gotN != tt.wantN {
-				t.Errorf("MaxSize.Write() = %v, want %v", gotN, tt.wantN)
+
+			if gotN != test.wantN {
+				t.Errorf("MaxSize.Write() = %v, want %v", gotN, test.wantN)
 			}
 		})
 	}
 }
 
-func TestMaxSize_FlushesMany(t *testing.T) {
+func TestMaxSizeFlushesMany(t *testing.T) {
+	t.Parallel()
 	assert := require.New(t)
 	writer := httpflush.NewMockresponseWriter(t)
 	maxSize := httpflush.MaxSize{
@@ -69,14 +76,14 @@ func TestMaxSize_FlushesMany(t *testing.T) {
 	writer.On("Write", mock.AnythingOfType("[]uint8")).Return(20, nil).Once()
 	writer.On("Flush").Return(nil).Once()
 
-	n, err := maxSize.Write([]byte(""))
-	assert.Equal(20, n)
+	writtenBytes, err := maxSize.Write([]byte(""))
+	assert.Equal(20, writtenBytes)
 	assert.NoError(err)
 
 	writer.On("Write", mock.AnythingOfType("[]uint8")).Return(11, nil).Once()
 	writer.On("Flush").Return(nil).Once()
 
-	n, err = maxSize.Write([]byte(""))
-	assert.Equal(11, n)
+	writtenBytes, err = maxSize.Write([]byte(""))
+	assert.Equal(11, writtenBytes)
 	assert.NoError(err)
 }
