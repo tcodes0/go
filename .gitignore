@@ -24,11 +24,13 @@
 # Go workspace file
 go.work
 
+# vscode
+
+.vscode/launch.json
+
 # Project files
-run/*
 .env
 notes.md
-mock_*.go
 banner*.txt
 *__debug_bin*
 *pgdump

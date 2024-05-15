@@ -1,3 +1,30 @@
 {
-  "cSpell.words": []
+  // - - - - - - - - GO - - - - - - - - -
+  "go.useLanguageServer": true,
+  "[go]": {
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+  "go.testOnSave": false,
+  "go.delveConfig": {
+    "debugAdapter": "dlv-dap"
+  },
+  "go.testFlags": ["-race"],
+  "go.lintTool": "golangci-lint",
+  "go.lintFlags": ["--print-issued-lines=false"],
+  // - - - - - - - - BASH - - - - - - - - -
+  "shellformat.flag": "-i 2 -ln bash",
+  "[shellscript]": {
+    "editor.defaultFormatter": "foxundermoon.shell-format"
+  },
+  "shellcheck.customArgs": ["-x"],
+  // - - - - - - - - OSX - - - - - - - - -
+  "terminal.integrated.defaultProfile.osx": "bash",
+  // - - - - - - - - CSPELL - - - - - - - - -
+  "cSpell.maxDuplicateProblems": 2,
+  "cSpell.showAutocompleteSuggestions": false,
+  "cSpell.enableFiletypes": ["shellscript"]
+  // "cSpell.spellCheckDelayMs": 2000, // needs to be set in user settings json
 }
