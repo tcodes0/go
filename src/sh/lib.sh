@@ -7,6 +7,8 @@ export PASS_GREEN="\e[7;38;05;029m PASS \e[0m"
 export FAIL_RED="\e[2;7;38;05;197;47m FAIL \e[0m"
 export COLOR_DIM="\e[2m"
 export COLOR_END="\e[0m"
+export CHAR_CARRIG_RET
+CHAR_CARRIG_RET=$(printf "%b" "\r")
 
 # example: msg hello world
 msg() {
