@@ -21,9 +21,4 @@
   http://www.patorjk.com/software/taag/#p=display&f=ANSI%20Shadow&t=tcodes0%20go
 </details>
 
-<br/>
-<br/>
-
-# tcodes0 go packages
-
-Documentation [is on the wiki](https://github.com/tcodes0/go/wiki)
+## Documentation [is on the wiki](https://github.com/tcodes0/go/wiki)
