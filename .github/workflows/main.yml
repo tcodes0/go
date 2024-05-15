@@ -1,0 +1,160 @@
+name: Main
+run-name: ${{ github.head_ref }}@${{ github.sha }}
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  changed-files:
+    name: Analyze changed files
+    runs-on: ubuntu-latest
+    outputs:
+      goMod: ${{ steps.list-changed-files.outputs.go_mod_all_changed_files }}
+      config: ${{ steps.list-changed-files.outputs.config_all_changed_files }}
+      shell: ${{ steps.list-changed-files.outputs.shell_all_changed_files }}
+      doc: ${{ steps.list-changed-files.outputs.doc_all_changed_files }}
+      anyGoPkg: ${{ steps.list-changed-files.outputs.go_pkg_httpflush_all_changed_files }}
+      goPkgHttpflush: ${{ steps.list-changed-files.outputs.go_pkg_httpflush_all_changed_files }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Changed files
+        id: list-changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          # since_last_remote_commit: true # use only for testing, it's easy to produce no changed files
+          files_yaml: |
+            go_mod:
+              - '**/go.mod'
+              - '**/go.sum'
+            config:
+              - '**/*.yaml'
+              - '**/*.yml'
+              - '**/*.json'
+            doc:
+              - '**/*.md'
+            shell:
+              - src/sh/**.sh
+            go_pkg_httpflush:
+              - src/httpflush/**.go
+
+  debug:
+    name: Debug
+    runs-on: ubuntu-latest
+    if: false # change to debug
+    env:
+      HEADREF: ${{ github.head_ref }}
+      BASEREF: ${{ github.base_ref }}
+    steps:
+      - name: Debug
+        run: true
+
+  go-mod:
+    name: Go.mod up to date
+    runs-on: ubuntu-latest
+    needs: changed-files
+    if: needs.changed-files.outputs.anyGoPkg || needs.changed-files.outputs.goMod
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.22
+
+      - name: Go mod
+        uses: j0hnsmith/go-mod-check@v1
+        with:
+          working-directory: .
+
+  mocks:
+    name: Go mocks up to date
+    runs-on: ubuntu-latest
+    needs: changed-files
+    if: needs.changed-files.outputs.anyGoPkg
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.22
+
+      - name: Mockery
+        uses: brokeyourbike/go-mockery-action@v0
+        with:
+          mockery-version: "2.42.3"
+      - run: mockery
+
+      - name: Diff mocks
+        working-directory: .
+        shell: bash
+        run: ./src/sh/workflows/main/diff.sh
+
+  shell:
+    name: Lint and format shell
+    runs-on: ubuntu-latest
+    needs: changed-files
+    if: needs.changed-files.outputs.shell
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Lint and format
+        uses: luizm/action-sh-checker@v0.8.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHFMT_OPTS: -d -i 2 -ln bash
+          SHELLCHECK_OPTS: -x --severity=warning
+        with:
+          sh_checker_only_diff: true
+          # needs write access https://github.com/luizm/action-sh-checker/pull/57
+          # sh_checker_comment: true
+
+  config:
+    name: Format config
+    runs-on: ubuntu-latest
+    needs: changed-files
+    if: needs.changed-files.outputs.config
+    env:
+      FILES: ${{ needs.changed-files.outputs.config }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prettier
+        uses: actionsx/prettier@v3
+        with:
+          args: --check ${{ env.FILES }}
+
+  docs:
+    name: Spellcheck docs
+    runs-on: ubuntu-latest
+    needs: changed-files
+    # does not work locally, see CI scripts
+    if: needs.changed-files.outputs.doc && github.event.local != true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cspell
+        uses: streetsidesoftware/cspell-action@v6.2.0
+        with:
+          files: "**/*.md"
+          incremental_files_only: true
+          config: ./cspell.config.yaml
+
+  httpflush-pr:
+    name: httpflush PR
+    needs: changed-files
+    if: needs.changed-files.outputs.goPkgHttpflush
+    uses: ./.github/workflows/package-pr.yml
+    with:
+      goVersion: 1.22
+      packagePath: src/httpflush

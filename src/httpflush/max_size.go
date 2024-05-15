@@ -2,6 +2,7 @@ package httpflush
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 )
 
@@ -10,19 +11,20 @@ var ErrWriterNotFlusher = errors.New("http.ResponseWriter does not implement htt
 // MaxSize wraps an http.ResponseWriter and flushes every time more than max bytes are written.
 // If max is smaller than the first write, it will never flush.
 type MaxSize struct {
+	Writer                http.ResponseWriter
+	Max                   int
 	writtenSinceLastFlush int
-
-	Max    int
-	Writer http.ResponseWriter
 }
 
-var _ http.ResponseWriter = (*MaxSize)(nil)
-var _ http.Flusher = (*MaxSize)(nil)
+var (
+	_ http.ResponseWriter = (*MaxSize)(nil)
+	_ http.Flusher        = (*MaxSize)(nil)
+)
 
 func (maxSize *MaxSize) Write(b []byte) (n int, err error) {
 	n, err = maxSize.Writer.Write(b)
 	if err != nil {
-		return n, err
+		return n, fmt.Errorf("%s: %w", "maxSize.Writer.Write", err)
 	}
 
 	maxSize.writtenSinceLastFlush += n
@@ -36,7 +38,7 @@ func (maxSize *MaxSize) Write(b []byte) (n int, err error) {
 		maxSize.Flush()
 	}
 
-	return n, err
+	return n, nil
 }
 
 func (maxSize MaxSize) Header() http.Header {
@@ -48,6 +50,8 @@ func (maxSize MaxSize) WriteHeader(statusCode int) {
 }
 
 func (maxSize *MaxSize) Flush() {
-	maxSize.Writer.(http.Flusher).Flush()
+	f, _ := maxSize.Writer.(http.Flusher)
+	f.Flush()
+
 	maxSize.writtenSinceLastFlush = 0
 }

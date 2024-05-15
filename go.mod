@@ -12,8 +12,8 @@ require (
 )
 
 retract (
-	v0.1.3
-	v0.1.2
-	v0.1.1
-	v0.1.0
+	v0.1.3 // test version
+	v0.1.2 // test version
+	v0.1.1 // test version
+	v0.1.0 // test version
 )
