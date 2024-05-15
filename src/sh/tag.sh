@@ -9,6 +9,10 @@ source "$PWD/src/sh/lib.sh"
 
 ### vars and functions ###
 
+if [ -z "${EXEC_GIT:-}" ]; then
+  EXEC_GIT=git
+fi
+
 declare -rA commands=(
   ["major"]="major"
   ["minor"]="minor"
@@ -83,7 +87,7 @@ fi
 
 OPTIND=1
 while getopts "${!optsHelp[*]}" opt; do
-#   echo "opt: $opt", "OPTARG: ${OPTARG:-}"
+  #   echo "opt: $opt", "OPTARG: ${OPTARG:-}"
   case $opt in
   "${opts["pre"]}")
     optValue["pre"]=true
@@ -98,19 +102,22 @@ done
 
 IFS=$'\n' read -rd "$CHAR_CARRIG_RET" -a tags < <(
   set +e # flaky for some reason
-  git tag --list --sort=-refname | head
+  $EXEC_GIT tag --list --sort=-refname | head
   printf %b "$CHAR_CARRIG_RET"
 )
 IFS=$'\n' read -rd "$CHAR_CARRIG_RET" -a logs < <(
   set +e # flaky for some reason
-  git log --oneline --decorate | head
+  $EXEC_GIT log --oneline --decorate | head
   printf %b "$CHAR_CARRIG_RET"
 )
 
 latestTag="${tags[0]}"
 regExpSemVerPre="v?([[:digit:]]+)\.([[:digit:]]+)\.([[:digit:]]+)-?(pre)?([[:digit:]]*)?"
 
-[[ "$latestTag" =~ $regExpSemVerPre ]]
+if ! [[ "$latestTag" =~ $regExpSemVerPre ]]; then
+  msgExit "parse fail, tag: $latestTag, regExp: $regExpSemVerPre"
+fi
+
 tagMajor="${BASH_REMATCH[1]}"
 tagMinor="${BASH_REMATCH[2]}"
 tagPatch="${BASH_REMATCH[3]}"
