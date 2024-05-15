@@ -8,18 +8,18 @@ export FAIL_RED="\e[2;7;38;05;197;47m FAIL \e[0m"
 export COLOR_DIM="\e[2m"
 export COLOR_END="\e[0m"
 
-# msg hello world
+# example: msg hello world
 msg() {
   echo -e "> $*"
 }
 
-# msgExit could not find the file
+# example: msgExit could not find the file
 msgExit() {
   msg "$*"
   return 1
 }
 
-# requireGitClean please commit changes to avoid losing work
+# example: requireGitClean please commit changes to avoid losing work
 requireGitClean() {
   message="${*:-There are uncommitted changes, please commit or stash}"
 
@@ -35,12 +35,12 @@ currentTerminalLine() {
   printf "%s" "$currentLine"
 }
 
-# requireInternet Internet required to fetch dependencies
+# example: requireInternet Internet required to fetch dependencies
 requireInternet() {
-  pingPal="1.1.1.1" # cloudflare
+  declare -A pingPals=(["cloudflare"]="1.1.1.1")
   message="${*:-Internet required}"
 
-  if ! ping -c 1 "$pingPal" &>/dev/null; then
+  if ! ping -c 1 "${pingPals[cloudflare]}" &>/dev/null; then
     msgExit "$message"
   fi
 }

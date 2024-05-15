@@ -5,8 +5,8 @@ shopt -s globstar
 # shellcheck disable=SC1091
 source "$PWD/src/sh/lib.sh"
 
-# we use find to find folders directly under ./src that have at least 1 *.go file
 regExpSrcPrefix="^src\/"
+# find folders directly under ./src that have at least 1 *.go file; massage the output a bit
 packages="$(find src -mindepth 2 -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort | uniq | sed -e "s/$regExpSrcPrefix//" | tr '\n' '|')"
 commandsWithArgs=(
   lint    # 0
@@ -23,18 +23,18 @@ commands=(
 )
 
 usageExit() {
-  commandArgsInfo=$(
+  commandsWithArgsInfo=$(
     IFS=\|
     printf "%s" "${commandsWithArgs[*]}"
   )
-  commandInfo=$(
+  commandsInfo=$(
     IFS=\|
     printf "%s" "${commands[*]}"
   )
 
   msg "$*\n"
-  msg "Usage: $0 [$commandArgsInfo] [$packages]"
-  msg "Usage: $0 [$commandInfo]"
+  msg "Usage: $0 [$commandsWithArgsInfo] [$packages]"
+  msg "Usage: $0 [$commandsInfo]"
 
   exit 1
 }
@@ -61,8 +61,7 @@ if [[ " ${commandsWithArgs[*]} " =~ $commandArg ]]; then
 fi
 
 lintFlags=(--timeout 10s --print-issued-lines=false)
-prefix=src/
-prefixedPkgArg=$prefix$packageArg
+prefixedPkgArg=src/$packageArg
 prettierFileGlob="**/*{.yml,.yaml,.json}"
 
 runLint() {

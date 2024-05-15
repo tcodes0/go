@@ -7,7 +7,7 @@ source "$PWD/src/sh/lib.sh"
 
 # fail if any dependencies are missing
 flags+=(-mod=readonly)
-# output test results in json format for gotestfmt
+# output test results in json format for processing
 flags+=(-json)
 # detect race conditions
 flags+=(-race)
@@ -26,9 +26,9 @@ if ! [ -d "./$PKG/test" ]; then
   exit 0
 fi
 
+# tee a copy of output for further processing
 go test "${flags[@]}" "./$PKG/test" 2>&1 | tee "$testOutputJson" | gotestfmt
 
-# a copy of test output is saved to a file for further processing in next workflow steps
 # delete lines not parseable as json output from 'go test'
 regExpPrefixGo="^go:"
 sed -Eie "/$regExpPrefixGo/d" "$testOutputJson"
