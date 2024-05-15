@@ -10,9 +10,23 @@ source "$PWD/src/sh/lib.sh"
 ### vars and functions ###
 
 declare -A commands=(
-  ["major"]="major" # increment the major version
-  ["minor"]="minor" # increment the minor version
-  ["bump"]="bump"   # increment the patch version or pre-release version
+  ["major"]="major"
+  ["minor"]="minor"
+  ["bump"]="bump"
+)
+
+declare -A commandDescriptions=(
+  ["major"]="increment the major version"
+  ["minor"]="increment the minor version"
+  ["bump"]="increment the patch version or pre-release version"
+)
+
+declare -A opts=(
+  ["pre"]="p"
+)
+
+declare -A optDescriptions=(
+  ["pre"]="-p bool: create a pre-release version"
 )
 
 usageExit() {
@@ -20,9 +34,23 @@ usageExit() {
     IFS=\|
     printf "%s" "${commands[*]}"
   )
+  optsInfo=$(
+    IFS=-
+    printf "%s" -"${opts[*]}"
+  )
 
   msg "$*\n"
-  msg "Usage: $0 [$commandsInfo]"
+  msg "Usage: $0 [$commandsInfo] [$optsInfo]"
+
+  printf "\n"
+  for command in "${!commands[@]}"; do
+    msg "$command:  ${commandDescriptions[$command]}"
+  done
+
+  printf "\n"
+  for opt in "${!opts[@]}"; do
+    msg "$opt:  ${optDescriptions[$opt]}"
+  done
 
   exit 1
 }
