@@ -81,13 +81,14 @@ if ! [[ " ${commands[*]} " =~ $commandArg ]]; then
   usageExit "Invalid command: $commandArg"
 fi
 
+OPTIND=1
 while getopts "${!optsHelp[*]}" opt; do
+#   echo "opt: $opt", "OPTARG: ${OPTARG:-}"
   case $opt in
   "${opts["pre"]}")
     optValue["pre"]=true
     ;;
   \?)
-    echo 22
     usageExit "Invalid option: $OPTARG"
     ;;
   esac
@@ -96,15 +97,17 @@ done
 ### script ###
 
 IFS=$'\n' read -rd "$CHAR_CARRIG_RET" -a tags < <(
+  set +e # flaky for some reason
   git tag --list --sort=-refname | head
   printf %b "$CHAR_CARRIG_RET"
 )
 IFS=$'\n' read -rd "$CHAR_CARRIG_RET" -a logs < <(
+  set +e # flaky for some reason
   git log --oneline --decorate | head
   printf %b "$CHAR_CARRIG_RET"
 )
 
-latestTag="v1.2.3"
+latestTag="${tags[0]}"
 regExpSemVerPre="v?([[:digit:]]+)\.([[:digit:]]+)\.([[:digit:]]+)-?(pre)?([[:digit:]]*)?"
 
 [[ "$latestTag" =~ $regExpSemVerPre ]]
@@ -112,14 +115,14 @@ tagMajor="${BASH_REMATCH[1]}"
 tagMinor="${BASH_REMATCH[2]}"
 tagPatch="${BASH_REMATCH[3]}"
 tagPre="${BASH_REMATCH[4]:-}"
-tagPreVer="${BASH_REMATCH[5]:0}"
+tagPreVersion="${BASH_REMATCH[5]:0}"
 
 # echo "latestTag: $latestTag"
 # echo "tagMajor: $tagMajor"
 # echo "tagMinor: $tagMinor"
 # echo "tagPatch: $tagPatch"
 # echo "tagPre: $tagPre"
-# echo "tagPreVer: $tagPreVer"
+# echo "tagPreVersion: $tagPreVersion"
 
 next=""
 
@@ -141,7 +144,7 @@ minor() {
 
 bump() {
   if [ -n "$tagPre" ]; then
-    next=$(tag "$tagMajor" "$tagMinor" "$tagPatch" pre "$((tagPreVer + 1))")
+    next=$(tag "$tagMajor" "$tagMinor" "$tagPatch" pre "$((tagPreVersion + 1))")
     return
   fi
 
