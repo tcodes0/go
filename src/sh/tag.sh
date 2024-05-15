@@ -15,41 +15,41 @@ declare -A commands=(
   ["bump"]="bump"
 )
 
-declare -A commandDescriptions=(
-  ["major"]="increment the major version"
-  ["minor"]="increment the minor version"
-  ["bump"]="increment the patch version or pre-release version"
+declare -A commandsHelp=(
+  [${commands["major"]}]="increment the major version"
+  [${commands["minor"]}]="increment the minor version"
+  [${commands["bump"]}]="increment the patch version or pre-release version"
 )
 
 declare -A opts=(
   ["pre"]="p"
 )
 
-declare -A optDescriptions=(
-  ["pre"]="-p bool: create a pre-release version"
+declare -A optsHelp=(
+  [${opts["pre"]}]="bool; create a pre-release version"
 )
 
 usageExit() {
-  commandsInfo=$(
+  commandsHelpInfo=$(
     IFS=\|
-    printf "%s" "${commands[*]}"
+    printf "%s" "${!commandsHelp[*]}"
   )
-  optsInfo=$(
+  optsHelpInfo=$(
     IFS=-
-    printf "%s" -"${opts[*]}"
+    printf "%s" -"${!optsHelp[*]}"
   )
 
   msg "$*\n"
-  msg "Usage: $0 [$commandsInfo] [$optsInfo]"
+  msg "Usage: $0 [$commandsHelpInfo] [$optsHelpInfo]"
 
   printf "\n"
-  for command in "${!commands[@]}"; do
-    msg "$command:  ${commandDescriptions[$command]}"
+  for command in "${!commandsHelp[@]}"; do
+    msg "$command:  ${commandsHelp[$command]}"
   done
 
   printf "\n"
-  for opt in "${!opts[@]}"; do
-    msg "$opt:  ${optDescriptions[$opt]}"
+  for opt in "${!optsHelp[@]}"; do
+    msg "-$opt:  ${optsHelp[$opt]}"
   done
 
   exit 1
@@ -64,7 +64,7 @@ tag() {
   fi
 }
 
-### validation ###
+### validation, input handling ###
 
 if [ $# -lt 1 ]; then
   usageExit "Invalid number of arguments $# ($*)"
