@@ -9,24 +9,28 @@ source "$PWD/src/sh/lib.sh"
 
 ### vars and functions ###
 
-declare -A commands=(
+declare -rA commands=(
   ["major"]="major"
   ["minor"]="minor"
   ["bump"]="bump"
 )
 
-declare -A commandsHelp=(
+declare -rA commandsHelp=(
   [${commands["major"]}]="increment the major version"
   [${commands["minor"]}]="increment the minor version"
   [${commands["bump"]}]="increment the patch version or pre-release version"
 )
 
-declare -A opts=(
+declare -rA opts=(
   ["pre"]="p"
 )
 
-declare -A optsHelp=(
-  [${opts["pre"]}]="bool; create a pre-release version"
+declare -rA optsHelp=(
+  [${opts["pre"]}]="bool; start a new pre-release from 1"
+)
+
+declare -A optValue=(
+  ["pre"]=""
 )
 
 usageExit() {
@@ -71,6 +75,23 @@ if [ $# -lt 1 ]; then
 fi
 
 commandArg=$1
+shift
+
+if ! [[ " ${commands[*]} " =~ $commandArg ]]; then
+  usageExit "Invalid command: $commandArg"
+fi
+
+while getopts "${!optsHelp[*]}" opt; do
+  case $opt in
+  "${opts["pre"]}")
+    optValue["pre"]=true
+    ;;
+  \?)
+    echo 22
+    usageExit "Invalid option: $OPTARG"
+    ;;
+  esac
+done
 
 ### script ###
 
@@ -83,38 +104,51 @@ IFS=$'\n' read -rd "$CHAR_CARRIG_RET" -a logs < <(
   printf %b "$CHAR_CARRIG_RET"
 )
 
-latestTag="${tags[0]}"
+latestTag="v1.2.3"
 regExpSemVerPre="v?([[:digit:]]+)\.([[:digit:]]+)\.([[:digit:]]+)-?(pre)?([[:digit:]]*)?"
 
 [[ "$latestTag" =~ $regExpSemVerPre ]]
-major="${BASH_REMATCH[1]}"
-minor="${BASH_REMATCH[2]}"
-patch="${BASH_REMATCH[3]}"
-preRelease="${BASH_REMATCH[4]:-}"
-PreReleaseVer="${BASH_REMATCH[5]:-}"
+tagMajor="${BASH_REMATCH[1]}"
+tagMinor="${BASH_REMATCH[2]}"
+tagPatch="${BASH_REMATCH[3]}"
+tagPre="${BASH_REMATCH[4]:-}"
+tagPreVer="${BASH_REMATCH[5]:0}"
 
 # echo "latestTag: $latestTag"
-# echo "major: $major"
-# echo "minor: $minor"
-# echo "patch: $patch"
-# echo "preRelease: $preRelease"
-# echo "PreReleaseVer: $PreReleaseVer"
+# echo "tagMajor: $tagMajor"
+# echo "tagMinor: $tagMinor"
+# echo "tagPatch: $tagPatch"
+# echo "tagPre: $tagPre"
+# echo "tagPreVer: $tagPreVer"
 
 next=""
 
 major() {
-  next=$(tag "$((major + 1))" 0 0)
+  if [ -n "${optValue["pre"]}" ]; then
+    next=$(tag "$((tagMajor + 1))" 0 0 pre 1)
+  else
+    next=$(tag "$((tagMajor + 1))" 0 0)
+  fi
 }
 
 minor() {
-  next=$(tag "$major" "$((minor + 1))" 0)
+  if [ -n "${optValue["pre"]}" ]; then
+    next=$(tag "$tagMajor" "$((tagMinor + 1))" 0 pre 1)
+  else
+    next=$(tag "$tagMajor" "$((tagMinor + 1))" 0)
+  fi
 }
 
 bump() {
-  if [ -z "$preRelease" ]; then
-    next=$(tag "$major" "$minor" "$((patch + 1))")
+  if [ -n "$tagPre" ]; then
+    next=$(tag "$tagMajor" "$tagMinor" "$tagPatch" pre "$((tagPreVer + 1))")
+    return
+  fi
+
+  if [ -n "${optValue["pre"]}" ]; then
+    next=$(tag "$tagMajor" "$tagMinor" "$((tagPatch + 1))" pre 1)
   else
-    next=$(tag "$major" "$minor" "$patch" pre "$((PreReleaseVer + 1))")
+    next=$(tag "$tagMajor" "$tagMinor" "$((tagPatch + 1))")
   fi
 }
 
