@@ -1,0 +1,12 @@
+{
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "foxundermoon.shell-format",
+    "github.vscode-github-actions",
+    "github.vscode-pull-request-github",
+    "golang.go",
+    "sleistner.vscode-fileutils",
+    "streetsidesoftware.code-spell-checker",
+    "timonwong.shellcheck"
+  ]
+}
