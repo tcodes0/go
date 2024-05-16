@@ -20,6 +20,7 @@ words:
   - gotestfmt
   - govet
   - httpflush
+  - Pids
   - scandir
   - SHELLCHECK
   - SHFMT
