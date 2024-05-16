@@ -30,15 +30,18 @@ declare -rA commandsHelp=(
 
 declare -rA opts=(
   ["pre"]="p"
+  ["dry"]="n"
 )
 
 declare -rA optsHelp=(
   [${opts["pre"]}]="bool; start a new pre-release from 1"
+  [${opts["dry"]}]="bool; dry-run, print commands that would be executed"
 )
 
 declare -A optValue=(
   # defaults
   ["pre"]=""
+  ["dry"]=""
 )
 
 usageExit() {
@@ -90,17 +93,24 @@ if ! [[ " ${commands[*]} " =~ $commandArg ]]; then
 fi
 
 OPTIND=1
-while getopts "${opts["pre"]}" opt; do
+while getopts "${opts["pre"]}${opts["dry"]}" opt; do
   #   echo "opt: $opt", "OPTARG: ${OPTARG:-}"
   case $opt in
   "${opts["pre"]}")
     optValue["pre"]=true
+    ;;
+  "${opts["dry"]}")
+    optValue["dry"]=true
     ;;
   \?)
     usageExit "Invalid option: $OPTARG"
     ;;
   esac
 done
+
+if [ "${optValue["dry"]}" ]; then
+  EXEC_GIT_WRITE="echo git"
+fi
 
 ### script ###
 

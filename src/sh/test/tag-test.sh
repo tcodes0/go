@@ -107,5 +107,17 @@ EOF
 )" &
 testsRunning+=($!)
 
+MOCK_TAG=v1.2.3 \
+  MOCK_LOG="bada55c0ffe (HEAD -> main) hello world" \
+  MOCK_SHOW="deada55000 cactus (HEAD)\n" \
+  testCase "dry run: increments patch version" "bump -n" "$(
+  cat <<EOF
+git tag v1.2.4
+deada55000 cactus (HEAD)
+tagged with v1.2.4
+EOF
+)" &
+testsRunning+=($!)
+
 wait "${testsRunning[@]}"
 msg took $(($(date +%s) - start))s
