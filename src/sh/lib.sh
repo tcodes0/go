@@ -54,6 +54,7 @@ testCase() {
   local expected=$3
   local result
 
+  # let the command expand
   # shellcheck disable=SC2086
   if ! result=$($TESTEE $input); then
     printf "%b\n" "$FAIL_RED $description"
@@ -72,19 +73,19 @@ testCase() {
   printf "%b\n" "$PASS_GREEN $description"
 }
 
-# wait for all process to finish
+# wait for all processes to finish
 # example: wait 123 345 5665 3234
 wait() {
   while true; do
-    doneCount=$#
+    done=$#
 
     for pid in "${@}"; do
       if ! ps -p "$pid" >/dev/null; then
-        doneCount=$((doneCount - 1))
+        done=$((done - 1))
       fi
     done
 
-    if [ "$doneCount" = 0 ]; then
+    if [ "$done" = 0 ]; then
       break
     fi
   done
