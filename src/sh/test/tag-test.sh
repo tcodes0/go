@@ -112,7 +112,18 @@ MOCK_TAG=v1.2.3 \
   MOCK_SHOW="deada55000 cactus (HEAD)\n" \
   testCase "dry run: increments patch version" "bump -n" "$(
   cat <<EOF
-git tag v1.2.4
+git tag v1.2.4 HEAD
+deada55000 cactus (HEAD)
+tagged with v1.2.4
+EOF
+)" &
+testsRunning+=($!)
+
+MOCK_TAG=v1.2.3 \
+  MOCK_LOG="bada55c0ffe (HEAD -> main) hello world" \
+  MOCK_SHOW="deada55000 cactus (HEAD)\n" \
+  testCase "increments patch version of commit" "bump -c bada55c0ffe" "$(
+  cat <<EOF
 deada55000 cactus (HEAD)
 tagged with v1.2.4
 EOF

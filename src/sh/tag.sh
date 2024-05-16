@@ -31,17 +31,20 @@ declare -rA commandsHelp=(
 declare -rA opts=(
   ["pre"]="p"
   ["dry"]="n"
+  ["commit"]="c"
 )
 
 declare -rA optsHelp=(
   [${opts["pre"]}]="bool; start a new pre-release from 1"
   [${opts["dry"]}]="bool; dry-run, print commands that would be executed"
+  [${opts["commit"]}]="string; commit hash to tag"
 )
 
 declare -A optValue=(
   # defaults
   ["pre"]=""
   ["dry"]=""
+  ["commit"]="HEAD"
 )
 
 usageExit() {
@@ -93,15 +96,21 @@ if ! [[ " ${commands[*]} " =~ $commandArg ]]; then
 fi
 
 OPTIND=1
-while getopts "${opts["pre"]}${opts["dry"]}" opt; do
+while getopts "${opts["pre"]}${opts["dry"]}${opts["commit"]}:" opt; do
   #   echo "opt: $opt", "OPTARG: ${OPTARG:-}"
   case $opt in
   "${opts["pre"]}")
     optValue["pre"]=true
     ;;
+
   "${opts["dry"]}")
     optValue["dry"]=true
     ;;
+
+  "${opts["commit"]}")
+    optValue["commit"]="$OPTARG"
+    ;;
+
   \?)
     usageExit "Invalid option: $OPTARG"
     ;;
@@ -188,6 +197,7 @@ case $commandArg in
   ;;
 esac
 
-$EXEC_GIT_WRITE tag "$next" || msgExit "git tag failed"
-$EXEC_GIT_READ show --decorate HEAD | head -1
+$EXEC_GIT_WRITE tag "$next" "${optValue["commit"]}" || msgExit "git tag failed"
+$EXEC_GIT_READ show --decorate "${optValue["commit"]}" | head -1
+
 printf "tagged with %s\n" "$next"
