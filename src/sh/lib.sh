@@ -89,3 +89,13 @@ wait() {
     fi
   done
 }
+
+# example: requireGitBranch main
+requireGitBranch() {
+  branch="${1}"
+  current=$(git branch --show-current)
+
+  if [ "$branch" != "$current" ]; then
+    msgExit "Please checkout $branch; on $current"
+  fi
+}

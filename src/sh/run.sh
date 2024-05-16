@@ -21,6 +21,7 @@ declare -rA repoCommands=(
   ["spellcheck"]="spellcheckDocs"
   ["setup"]="setup"
   ["test"]="testScripts"
+  ["tag"]="tag"
 )
 
 usageExit() {
@@ -115,6 +116,12 @@ testScripts() {
   find src/sh/test -iname "*-test.sh" -exec ./{} \;
 }
 
+tag() {
+  requireGitClean
+  # requireGitBranch main
+  ./src/sh/tag.sh "$@"
+}
+
 case $commandArg in
 "${packageCommands["lint"]}")
   runLint "$prefixedPkgArg"
@@ -145,5 +152,8 @@ case $commandArg in
   ;;
 "${repoCommands["test"]}")
   testScripts
+  ;;
+"${repoCommands["tag"]}")
+  tag "${@:2}"
   ;;
 esac
