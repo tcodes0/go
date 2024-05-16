@@ -123,8 +123,8 @@ bump() {
 addTag() {
   $EXEC_GIT_WRITE tag "$1" "${optValue["commit"]}" || msgExit "git tag failed"
 
-  $EXEC_GIT_READ show --decorate "${optValue["commit"]}" | head -1
-  printf "tagged with %s\n" "$1"
+  local formatShortHashMessageTags="%h %s (%D)"
+  $EXEC_GIT_READ show --format="$formatShortHashMessageTags" "${optValue["commit"]}" | head -1 | grep --color=auto -Ee 'tag:[^,]+'
 }
 
 ### validation, input handling ###
