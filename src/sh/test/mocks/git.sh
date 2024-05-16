@@ -3,8 +3,15 @@
 set -euo pipefail
 shopt -s globstar
 
-if [ "$1" == "tag" ]; then
-  printf %b "$GIT_TAG"
-elif [ "$1" == "log" ]; then
-  printf %b "$GIT_LOG"
-fi
+case "$1" in
+tag)
+  printf %b "$MOCK_TAG"
+  ;;
+log)
+  printf %b "$MOCK_LOG"
+  ;;
+*)
+  printf %b "Command not mocked: $1"
+  exit 1
+  ;;
+esac

@@ -9,10 +9,8 @@ source "$PWD/src/sh/lib.sh"
 
 ### vars and functions ###
 
-export GIT_TAG="v1.2.3"
-export GIT_LOG="bada55c0ffe some commit message"
-export EXEC_GIT=./src/sh/test/mocks/git.sh
 export TESTEE=./src/sh/tag.sh
+export EXEC_GIT=./src/sh/test/mocks/git.sh
 testsRunning=()
 start=$(date +%s)
 
@@ -20,7 +18,9 @@ start=$(date +%s)
 
 msg "$(basename $TESTEE)" test
 
-testCase "increments major version" "major" "$(
+MOCK_TAG=v1.2.3 \
+  MOCK_LOG="bada55c0ffe some commit message" \
+  testCase "increments major version" "major" "$(
   cat <<EOF
 current	v1.2.3
 next	v2.0.0
@@ -28,7 +28,9 @@ EOF
 )" &
 testsRunning+=($!)
 
-testCase "increments minor version" "minor" "$(
+MOCK_TAG=v1.2.3 \
+  MOCK_LOG="bada55c0ffe some commit message" \
+  testCase "increments minor version" "minor" "$(
   cat <<EOF
 current	v1.2.3
 next	v1.3.0
@@ -36,7 +38,9 @@ EOF
 )" &
 testsRunning+=($!)
 
-testCase "increments patch version" "bump" "$(
+MOCK_TAG=v1.2.3 \
+  MOCK_LOG="bada55c0ffe some commit message" \
+  testCase "increments patch version" "bump" "$(
   cat <<EOF
 current	v1.2.3
 next	v1.2.4
@@ -44,17 +48,9 @@ EOF
 )" &
 testsRunning+=($!)
 
-GIT_TAG="v1.2.3-pre22"
-testCase "increments pre release version" "bump" "$(
-  cat <<EOF
-current	v1.2.3-pre22
-next	v1.2.3-pre23
-EOF
-)" &
-testsRunning+=($!)
-
-GIT_TAG="v1.2.3"
-testCase "major pre release" "major -p" "$(
+MOCK_TAG=v1.2.3 \
+  MOCK_LOG="bada55c0ffe some commit message" \
+  testCase "major pre release" "major -p" "$(
   cat <<EOF
 current	v1.2.3
 next	v2.0.0-pre1
@@ -62,7 +58,9 @@ EOF
 )" &
 testsRunning+=($!)
 
-testCase "minor pre release" "minor -p" "$(
+MOCK_TAG=v1.2.3 \
+  MOCK_LOG="bada55c0ffe some commit message" \
+  testCase "minor pre release" "minor -p" "$(
   cat <<EOF
 current	v1.2.3
 next	v1.3.0-pre1
@@ -70,7 +68,9 @@ EOF
 )" &
 testsRunning+=($!)
 
-testCase "patch pre release" "bump -p" "$(
+MOCK_TAG=v1.2.3 \
+  MOCK_LOG="bada55c0ffe some commit message" \
+  testCase "patch pre release" "bump -p" "$(
   cat <<EOF
 current	v1.2.3
 next	v1.2.4-pre1
@@ -78,8 +78,19 @@ EOF
 )" &
 testsRunning+=($!)
 
-GIT_TAG="v1.2.3-pre1"
-testCase "patch already a pre release" "bump -p" "$(
+MOCK_TAG=v1.2.3-pre22 \
+  MOCK_LOG="bada55c0ffe some commit message" \
+  testCase "increments pre release version" "bump" "$(
+  cat <<EOF
+current	v1.2.3-pre22
+next	v1.2.3-pre23
+EOF
+)" &
+testsRunning+=($!)
+
+MOCK_TAG=v1.2.3-pre1 \
+  MOCK_LOG="bada55c0ffe some commit message" \
+  testCase "patch already a pre release" "bump -p" "$(
   cat <<EOF
 current	v1.2.3-pre1
 next	v1.2.3-pre2

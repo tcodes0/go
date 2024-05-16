@@ -57,7 +57,7 @@ testCase() {
   # shellcheck disable=SC2086
   if ! result=$($TESTEE $input); then
     printf "%b\n" "$FAIL_RED $description"
-    printf "%b" "non zero exit"
+    printf "%b\n" "non zero exit"
     exit 1
   fi
 
