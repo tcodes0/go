@@ -118,7 +118,7 @@ testScripts() {
 
 tag() {
   requireGitClean
-  # requireGitBranch main
+  requireGitBranch main
   ./src/sh/tag.sh "$@"
 }
 

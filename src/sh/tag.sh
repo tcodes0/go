@@ -73,6 +73,7 @@ usageExit() {
   exit 1
 }
 
+# composes a tag
 # example: tag 1 2 3 pre 4 outputs v1.2.3-pre4
 tag() {
   if [ -n "${4:-}" ]; then
@@ -80,6 +81,50 @@ tag() {
   else
     printf 'v%s.%s.%s' "$1" "$2" "$3"
   fi
+}
+
+# increments the major version
+# example: major 1 2 3 pre 4 outputs v2.0.0
+major() {
+  if [ "${optValue["pre"]}" ]; then
+    printf %s "$(tag "$((1 + 1))" 0 0 pre 1)"
+  else
+    printf %s "$(tag "$((1 + 1))" 0 0)"
+  fi
+}
+
+# increments the minor version
+# example: minor 1 2 3 outputs v1.3.0
+minor() {
+  if [ "${optValue["pre"]}" ]; then
+    printf %s "$(tag "$1" "$(($2 + 1))" 0 pre 1)"
+  else
+    printf %s "$(tag "$1" "$(($2 + 1))" 0)"
+  fi
+}
+
+# increments the patch version
+# example: bump 1 2 3 outputs v1.2.4
+bump() {
+  if [ -n "$4" ]; then
+    printf %s "$(tag "$1" "$2" "$3" pre "$(($5 + 1))")"
+    return
+  fi
+
+  if [ "${optValue["pre"]}" ]; then
+    printf %s "$(tag "$1" "$2" "$(($3 + 1))" pre 1)"
+  else
+    printf %s "$(tag "$1" "$2" "$(($3 + 1))")"
+  fi
+}
+
+# adds a tag to the commit specified
+# example: addTag v1.2.3
+addTag() {
+  $EXEC_GIT_WRITE tag "$1" "${optValue["commit"]}" || msgExit "git tag failed"
+
+  $EXEC_GIT_READ show --decorate "${optValue["commit"]}" | head -1
+  printf "tagged with %s\n" "$1"
 }
 
 ### validation, input handling ###
@@ -118,7 +163,7 @@ while getopts "${opts["pre"]}${opts["dry"]}${opts["commit"]}:" opt; do
 done
 
 if [ "${optValue["dry"]}" ]; then
-  EXEC_GIT_WRITE="echo git"
+  EXEC_GIT_WRITE="echo dry run: git"
 fi
 
 ### script ###
@@ -126,11 +171,6 @@ fi
 IFS=$'\n' read -rd "$CHAR_CARRIG_RET" -a tags < <(
   set +e # flaky for some reason
   $EXEC_GIT_READ tag --list --sort=-refname | head
-  printf %b "$CHAR_CARRIG_RET"
-)
-IFS=$'\n' read -rd "$CHAR_CARRIG_RET" -a logs < <(
-  set +e # flaky for some reason
-  $EXEC_GIT_READ log --oneline --decorate | head
   printf %b "$CHAR_CARRIG_RET"
 )
 
@@ -147,57 +187,14 @@ tagPatch="${BASH_REMATCH[3]}"
 tagPre="${BASH_REMATCH[4]:-}"
 tagPreVersion="${BASH_REMATCH[5]:0}"
 
-# echo "latestTag: $latestTag"
-# echo "tagMajor: $tagMajor"
-# echo "tagMinor: $tagMinor"
-# echo "tagPatch: $tagPatch"
-# echo "tagPre: $tagPre"
-# echo "tagPreVersion: $tagPreVersion"
-
-next=""
-
-major() {
-  if [ "${optValue["pre"]}" ]; then
-    next=$(tag "$((tagMajor + 1))" 0 0 pre 1)
-  else
-    next=$(tag "$((tagMajor + 1))" 0 0)
-  fi
-}
-
-minor() {
-  if [ "${optValue["pre"]}" ]; then
-    next=$(tag "$tagMajor" "$((tagMinor + 1))" 0 pre 1)
-  else
-    next=$(tag "$tagMajor" "$((tagMinor + 1))" 0)
-  fi
-}
-
-bump() {
-  if [ -n "$tagPre" ]; then
-    next=$(tag "$tagMajor" "$tagMinor" "$tagPatch" pre "$((tagPreVersion + 1))")
-    return
-  fi
-
-  if [ "${optValue["pre"]}" ]; then
-    next=$(tag "$tagMajor" "$tagMinor" "$((tagPatch + 1))" pre 1)
-  else
-    next=$(tag "$tagMajor" "$tagMinor" "$((tagPatch + 1))")
-  fi
-}
-
 case $commandArg in
 "${commands["major"]}")
-  major
+  addTag "$(major "$tagMajor" "$tagMinor" "$tagPatch" "$tagPre" "$tagPreVersion")"
   ;;
 "${commands["minor"]}")
-  minor
+  addTag "$(minor "$tagMajor" "$tagMinor" "$tagPatch" "$tagPre" "$tagPreVersion")"
   ;;
 "${commands["bump"]}")
-  bump
+  addTag "$(bump "$tagMajor" "$tagMinor" "$tagPatch" "$tagPre" "$tagPreVersion")"
   ;;
 esac
-
-$EXEC_GIT_WRITE tag "$next" "${optValue["commit"]}" || msgExit "git tag failed"
-$EXEC_GIT_READ show --decorate "${optValue["commit"]}" | head -1
-
-printf "tagged with %s\n" "$next"
