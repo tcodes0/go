@@ -10,7 +10,8 @@ source "$PWD/src/sh/lib.sh"
 ### vars and functions ###
 
 export TESTEE=./src/sh/tag.sh
-export EXEC_GIT=./src/sh/test/mocks/git.sh
+export EXEC_GIT_READ=./src/sh/test/mocks/git.sh
+export EXEC_GIT_WRITE=./src/sh/test/mocks/git.sh
 testsRunning=()
 start=$(date +%s)
 
@@ -19,81 +20,89 @@ start=$(date +%s)
 msg "$(basename $TESTEE)" test
 
 MOCK_TAG=v1.2.3 \
-  MOCK_LOG="bada55c0ffe some commit message" \
+  MOCK_LOG="bada55c0ffe (HEAD -> main) hello world" \
+  MOCK_SHOW="deada55000 cactus (HEAD)\n" \
   testCase "increments major version" "major" "$(
   cat <<EOF
-current	v1.2.3
-next	v2.0.0
+deada55000 cactus (HEAD)
+tagged with v2.0.0
 EOF
 )" &
 testsRunning+=($!)
 
 MOCK_TAG=v1.2.3 \
-  MOCK_LOG="bada55c0ffe some commit message" \
+  MOCK_LOG="bada55c0ffe (HEAD -> main) hello world" \
+  MOCK_SHOW="deada55000 cactus (HEAD)\n" \
   testCase "increments minor version" "minor" "$(
   cat <<EOF
-current	v1.2.3
-next	v1.3.0
+deada55000 cactus (HEAD)
+tagged with v1.3.0
 EOF
 )" &
 testsRunning+=($!)
 
 MOCK_TAG=v1.2.3 \
-  MOCK_LOG="bada55c0ffe some commit message" \
+  MOCK_LOG="bada55c0ffe (HEAD -> main) hello world" \
+  MOCK_SHOW="deada55000 cactus (HEAD)\n" \
   testCase "increments patch version" "bump" "$(
   cat <<EOF
-current	v1.2.3
-next	v1.2.4
+deada55000 cactus (HEAD)
+tagged with v1.2.4
 EOF
 )" &
 testsRunning+=($!)
 
 MOCK_TAG=v1.2.3 \
-  MOCK_LOG="bada55c0ffe some commit message" \
+  MOCK_LOG="bada55c0ffe (HEAD -> main) hello world" \
+  MOCK_SHOW="deada55000 cactus (HEAD)\n" \
   testCase "major pre release" "major -p" "$(
   cat <<EOF
-current	v1.2.3
-next	v2.0.0-pre1
+deada55000 cactus (HEAD)
+tagged with v2.0.0-pre1
 EOF
 )" &
 testsRunning+=($!)
 
 MOCK_TAG=v1.2.3 \
-  MOCK_LOG="bada55c0ffe some commit message" \
+  MOCK_LOG="bada55c0ffe (HEAD -> main) hello world" \
+  MOCK_SHOW="deada55000 cactus (HEAD)\n" \
   testCase "minor pre release" "minor -p" "$(
   cat <<EOF
-current	v1.2.3
-next	v1.3.0-pre1
+deada55000 cactus (HEAD)
+tagged with v1.3.0-pre1
 EOF
 )" &
 testsRunning+=($!)
 
 MOCK_TAG=v1.2.3 \
-  MOCK_LOG="bada55c0ffe some commit message" \
+  MOCK_LOG="bada55c0ffe (HEAD -> main) hello world" \
+  MOCK_SHOW="deada55000 cactus (HEAD)\n" \
   testCase "patch pre release" "bump -p" "$(
   cat <<EOF
-current	v1.2.3
-next	v1.2.4-pre1
+deada55000 cactus (HEAD)
+tagged with v1.2.4-pre1
 EOF
 )" &
 testsRunning+=($!)
 
 MOCK_TAG=v1.2.3-pre22 \
-  MOCK_LOG="bada55c0ffe some commit message" \
+  MOCK_LOG="bada55c0ffe (HEAD -> main) hello world" \
+  MOCK_SHOW="deada55000 cactus (HEAD)\n" \
   testCase "increments pre release version" "bump" "$(
   cat <<EOF
-current	v1.2.3-pre22
-next	v1.2.3-pre23
+deada55000 cactus (HEAD)
+tagged with v1.2.3-pre23
 EOF
 )" &
 testsRunning+=($!)
 
 MOCK_TAG=v1.2.3-pre1 \
-  MOCK_LOG="bada55c0ffe some commit message" \
+  MOCK_LOG="bada55c0ffe (HEAD -> main) hello world" \
+  MOCK_SHOW="deada55000 cactus (HEAD)\n" \
   testCase "patch already a pre release" "bump -p" "$(
   cat <<EOF
-current	v1.2.3-pre1
-next	v1.2.3-pre2
+deada55000 cactus (HEAD)
+tagged with v1.2.3-pre2
 EOF
 )" &
 testsRunning+=($!)

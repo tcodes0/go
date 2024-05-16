@@ -9,8 +9,11 @@ source "$PWD/src/sh/lib.sh"
 
 ### vars and functions ###
 
-if [ -z "${EXEC_GIT:-}" ]; then
-  EXEC_GIT=git
+if [ -z "${EXEC_GIT_READ:-}" ]; then
+  EXEC_GIT_READ=git
+fi
+if [ -z "${EXEC_GIT_WRITE:-}" ]; then
+  EXEC_GIT_WRITE="git"
 fi
 
 declare -rA commands=(
@@ -103,12 +106,12 @@ done
 
 IFS=$'\n' read -rd "$CHAR_CARRIG_RET" -a tags < <(
   set +e # flaky for some reason
-  $EXEC_GIT tag --list --sort=-refname | head
+  $EXEC_GIT_READ tag --list --sort=-refname | head
   printf %b "$CHAR_CARRIG_RET"
 )
 IFS=$'\n' read -rd "$CHAR_CARRIG_RET" -a logs < <(
   set +e # flaky for some reason
-  $EXEC_GIT log --oneline --decorate | head
+  $EXEC_GIT_READ log --oneline --decorate | head
   printf %b "$CHAR_CARRIG_RET"
 )
 
@@ -175,5 +178,6 @@ case $commandArg in
   ;;
 esac
 
-printf "current\t%s\n" "$latestTag"
-printf "next\t%s\n" "$next"
+$EXEC_GIT_WRITE tag "$next" || msgExit "git tag failed"
+$EXEC_GIT_READ show --decorate HEAD | head -1
+printf "tagged with %s\n" "$next"
