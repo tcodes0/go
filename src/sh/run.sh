@@ -8,33 +8,34 @@ source "$PWD/src/sh/lib.sh"
 regExpSrcPrefix="^src\/"
 # find folders directly under ./src that have at least 1 *.go file; massage the output a bit
 packages="$(find src -mindepth 2 -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort | uniq | sed -e "s/$regExpSrcPrefix//" | tr '\n' '|')"
-commandsWithArgs=(
-  lint    # 0
-  lintfix # 1
-  format  # 2
-  test    # 3
-  build   # 4
+declare -rA packageCommands=(
+  ["lint"]="lint"
+  ["lintfix"]="lintfix"
+  ["format"]="format"
+  ["test"]="test"
+  ["build"]="build"
 )
-commands=(
-  ci             # 0
-  formatConfigs  # 1
-  spellcheckDocs # 2
-  setup          # 3
+declare -rA repoCommands=(
+  ["ci"]="ci"
+  ["format"]="formatConfigs"
+  ["spellcheck"]="spellcheckDocs"
+  ["setup"]="setup"
+  ["test"]="testScripts"
 )
 
 usageExit() {
-  commandsWithArgsInfo=$(
+  packageCommandsInfo=$(
     IFS=\|
-    printf "%s" "${commandsWithArgs[*]}"
+    printf "%s" "${packageCommands[*]}"
   )
-  commandsInfo=$(
+  repoCommandsInfo=$(
     IFS=\|
-    printf "%s" "${commands[*]}"
+    printf "%s" "${repoCommands[*]}"
   )
 
   msg "$*\n"
-  msg "Usage: $0 [$commandsWithArgsInfo] [$packages]"
-  msg "Usage: $0 [$commandsInfo]"
+  msg "Usage: $0 [$packageCommandsInfo] [$packages]"
+  msg "Usage: $0 [$repoCommandsInfo]"
 
   exit 1
 }
@@ -46,11 +47,11 @@ fi
 commandArg=$1
 packageArg=${2:-}
 
-if ! [[ " ${commandsWithArgs[*]}${commands[*]} " =~ $commandArg ]]; then
+if ! [[ " ${packageCommands[*]}${repoCommands[*]} " =~ $commandArg ]]; then
   usageExit "Invalid command: $commandArg"
 fi
 
-if [[ " ${commandsWithArgs[*]} " =~ $commandArg ]]; then
+if [[ " ${packageCommands[*]} " =~ $commandArg ]]; then
   if [ -z "$packageArg" ]; then
     usageExit "Command $commandArg requires a package"
   fi
@@ -110,32 +111,39 @@ setup() {
   ./src/sh/setup.sh
 }
 
+testScripts() {
+  find src/sh/test -iname "*-test.sh" -exec ./{} \;
+}
+
 case $commandArg in
-"${commandsWithArgs[0]}")
+"${packageCommands["lint"]}")
   runLint "$prefixedPkgArg"
   ;;
-"${commandsWithArgs[1]}")
+"${packageCommands["lintfix"]}")
   runLintFix "$prefixedPkgArg"
   ;;
-"${commandsWithArgs[2]}")
+"${packageCommands["format"]}")
   runFormat "$prefixedPkgArg"
   ;;
-"${commandsWithArgs[3]}")
+"${packageCommands["test"]}")
   runTest "$prefixedPkgArg"
   ;;
-"${commandsWithArgs[4]}")
+"${packageCommands["build"]}")
   runBuild "$prefixedPkgArg"
   ;;
-"${commands[0]}")
+"${repoCommands["ci"]}")
   runCi
   ;;
-"${commands[1]}")
+"${repoCommands["format"]}")
   runFormatConfigs
   ;;
-"${commands[2]}")
+"${repoCommands["spellcheck"]}")
   spellcheckDocs
   ;;
-"${commands[3]}")
+"${repoCommands["setup"]}")
   setup
+  ;;
+"${repoCommands["test"]}")
+  testScripts
   ;;
 esac

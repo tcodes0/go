@@ -34,6 +34,7 @@ declare -rA optsHelp=(
 )
 
 declare -A optValue=(
+  # defaults
   ["pre"]=""
 )
 
@@ -86,7 +87,7 @@ if ! [[ " ${commands[*]} " =~ $commandArg ]]; then
 fi
 
 OPTIND=1
-while getopts "${!optsHelp[*]}" opt; do
+while getopts "${opts["pre"]}" opt; do
   #   echo "opt: $opt", "OPTARG: ${OPTARG:-}"
   case $opt in
   "${opts["pre"]}")
@@ -134,7 +135,7 @@ tagPreVersion="${BASH_REMATCH[5]:0}"
 next=""
 
 major() {
-  if [ -n "${optValue["pre"]}" ]; then
+  if [ "${optValue["pre"]}" ]; then
     next=$(tag "$((tagMajor + 1))" 0 0 pre 1)
   else
     next=$(tag "$((tagMajor + 1))" 0 0)
@@ -142,7 +143,7 @@ major() {
 }
 
 minor() {
-  if [ -n "${optValue["pre"]}" ]; then
+  if [ "${optValue["pre"]}" ]; then
     next=$(tag "$tagMajor" "$((tagMinor + 1))" 0 pre 1)
   else
     next=$(tag "$tagMajor" "$((tagMinor + 1))" 0)
@@ -155,7 +156,7 @@ bump() {
     return
   fi
 
-  if [ -n "${optValue["pre"]}" ]; then
+  if [ "${optValue["pre"]}" ]; then
     next=$(tag "$tagMajor" "$tagMinor" "$((tagPatch + 1))" pre 1)
   else
     next=$(tag "$tagMajor" "$tagMinor" "$((tagPatch + 1))")
