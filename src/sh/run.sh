@@ -1,13 +1,25 @@
 #! /usr/bin/env bash
 
+### options, imports, mocks ###
+
 set -euo pipefail
 shopt -s globstar
 # shellcheck disable=SC1091
 source "$PWD/src/sh/lib.sh"
 
-regExpSrcPrefix="^src\/"
-# find folders directly under ./src that have at least 1 *.go file; massage the output a bit
-packages="$(find src -mindepth 2 -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort | uniq | sed -e "s/$regExpSrcPrefix//" | tr '\n' ' ')"
+### vars and functions ###
+
+allPackages="all"
+read -rd "$CHAR_CARRIG_RET" -a packages < <(
+  printf %b "$allPackages "
+
+  regExpSrcPrefix="^src\/"
+  # find folders directly under ./src that have at least 1 *.go file; prettify output
+  find src -mindepth 2 -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort | uniq | sed -e "s/$regExpSrcPrefix//" | tr '\n' ' '
+
+  printf %b "$CHAR_CARRIG_RET"
+)
+
 declare -rA packageCommands=(
   ["lint"]="lint"
   ["lintfix"]="lint-fix"
@@ -15,6 +27,7 @@ declare -rA packageCommands=(
   ["test"]="test"
   ["build"]="build"
 )
+
 declare -rA repoCommands=(
   ["ci"]="ci"
   ["format"]="format-configs"
@@ -25,72 +38,61 @@ declare -rA repoCommands=(
   ["mocks"]="generate-mocks"
 )
 
+declare -A optValue=(
+  # defaults
+  ["all"]=""
+)
+
 usageExit() {
   msg "$*\n"
-  msg "Usage: $0 [${packageCommands[*]}] [$packages]"
+  msg "Usage: $0 [${packageCommands[*]}] [${packages[*]}]"
   msg "Usage: $0 [${repoCommands[*]}]"
 
   exit 1
 }
 
-if [ $# -lt 1 ]; then
-  usageExit "Invalid number of arguments $# ($*)"
-fi
+lint() {
+  local lintFlags=(--timeout 10s --print-issued-lines=false)
+  golangci-lint run "${lintFlags[@]}" "$1"
+}
 
-commandArg=$1
-packageArg=${2:-}
-
-if ! [[ " ${packageCommands[*]}${repoCommands[*]} " =~ $commandArg ]]; then
-  usageExit "Invalid command: $commandArg"
-fi
-
-if [[ " ${packageCommands[*]} " =~ $commandArg ]]; then
-  if [ -z "$packageArg" ]; then
-    usageExit "Command $commandArg requires a package"
+lintFix() {
+  if ! [ "${optValue[all]}" ]; then
+    requireGitClean
   fi
 
-  if ! [[ " $packages " =~ $packageArg ]]; then
-    usageExit "Invalid package: $packageArg"
-  fi
-fi
+  ./src/sh/lint-fix.sh "$1"
+}
 
-lintFlags=(--timeout 10s --print-issued-lines=false)
-prefixedPkgArg=src/$packageArg
 prettierFileGlob="**/*{.yml,.yaml,.json}"
 
-runLint() {
-  golangci-lint run "${lintFlags[@]}" "$prefixedPkgArg"
+format() {
+  if ! [ "${optValue[all]}" ]; then
+    requireGitClean
+  fi
+
+  gofumpt -l -w "$1"
+  prettier --write "$1/$prettierFileGlob" 2>/dev/null || true
 }
 
-runLintFix() {
-  requireGitClean
-  ./src/sh/lint-fix.sh "$prefixedPkgArg"
-}
-
-runFormat() {
-  requireGitClean
-  gofumpt -l -w "$prefixedPkgArg"
-  prettier --write "$prefixedPkgArg/$prettierFileGlob" 2>/dev/null || true
-}
-
-runFormatConfigs() {
+formatConfigs() {
   requireGitClean
   prettier --write "./$prettierFileGlob" 2>/dev/null || true
 }
 
-runTest() {
-  PKG="$prefixedPkgArg" \
+unitTests() {
+  PKG="$1" \
     CACHE="true" \
     GITHUB_OUTPUT="/dev/null" \
     ./src/sh/workflows/package-pr/test-pretty.sh
 }
 
-runBuild() {
-  PKG="$prefixedPkgArg" \
+build() {
+  PKG="$1" \
     ./src/sh/workflows/package-pr/build-go.sh && echo ok
 }
 
-runCi() {
+ci() {
   requireGitClean
   requireInternet Internet required to pull docker images
   ./src/sh/ci/pull-request.sh
@@ -113,27 +115,77 @@ tag() {
   ./src/sh/tag.sh "$@"
 }
 
+run() {
+  local prefix="src/"
+  if [ "${optValue[all]}" ]; then
+    for pkg in "${packages[@]}"; do
+      printf %b "\n"
+      msg "$1 $pkg..."
+      "$1" "$prefix$pkg" || true
+    done
+  else
+    "$1" "$prefix$pkg"
+  fi
+}
+
+### validation, input handling ###
+
+if [ $# -lt 1 ]; then
+  usageExit "Invalid number of arguments $# ($*)"
+fi
+
+commandArg=$1
+packageArg=${2:-}
+
+if ! [[ " ${packageCommands[*]}${repoCommands[*]} " =~ $commandArg ]]; then
+  usageExit "Invalid command: $commandArg"
+fi
+
+if [[ " ${packageCommands[*]} " =~ $commandArg ]]; then
+  if [ -z "$packageArg" ]; then
+    usageExit "Command $commandArg requires a package"
+  fi
+
+  if ! [[ " ${packages[*]} " =~ $packageArg ]]; then
+    usageExit "Invalid package: $packageArg"
+  fi
+
+  if [ "$packageArg" == "$allPackages" ]; then
+    optValue["all"]=true
+    packageArg=""
+    packages=("${packages[@]:1}")
+  fi
+fi
+
+if [[ " ${repoCommands[*]} " =~ $commandArg ]]; then
+  if [ "$packageArg" ]; then
+    usageExit "Command $commandArg takes no arguments"
+  fi
+fi
+
+### script ###
+
 case $commandArg in
 "${packageCommands["lint"]}")
-  runLint "$prefixedPkgArg"
+  run lint
   ;;
 "${packageCommands["lintfix"]}")
-  runLintFix "$prefixedPkgArg"
+  run lintFix
   ;;
 "${packageCommands["format"]}")
-  runFormat "$prefixedPkgArg"
+  run format
   ;;
 "${packageCommands["test"]}")
-  runTest "$prefixedPkgArg"
+  run unitTests
   ;;
 "${packageCommands["build"]}")
-  runBuild "$prefixedPkgArg"
+  run build
   ;;
 "${repoCommands["ci"]}")
-  runCi
+  ci
   ;;
 "${repoCommands["format"]}")
-  runFormatConfigs
+  formatConfigs
   ;;
 "${repoCommands["spellcheck"]}")
   spellcheckDocs
