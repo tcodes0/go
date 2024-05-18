@@ -9,9 +9,12 @@ source "$PWD/src/sh/lib.sh"
 
 ### vars and functions ###
 
-allPackages="all"
+declare -rA opts=(
+  ["all"]="all"
+)
+
 read -rd "$CHAR_CARRIG_RET" -a packages < <(
-  printf %b "$allPackages "
+  printf %b "${opts[all]} "
 
   regExpSrcPrefix="^src\/"
   # find folders directly under ./src that have at least 1 *.go file; prettify output
@@ -41,6 +44,8 @@ declare -rA repoCommands=(
 declare -A optValue=(
   # defaults
   ["all"]=""
+  ["command"]=""
+  ["package"]=""
 )
 
 usageExit() {
@@ -134,72 +139,72 @@ if [ $# -lt 1 ]; then
   usageExit "Invalid number of arguments $# ($*)"
 fi
 
-commandArg=$1
-packageArg=${2:-}
+optValue["command"]=$1
+optValue["package"]=${2:-}
 
-if ! [[ " ${packageCommands[*]}${repoCommands[*]} " =~ $commandArg ]]; then
-  usageExit "Invalid command: $commandArg"
+if ! [[ " ${packageCommands[*]}${repoCommands[*]} " =~ ${optValue[command]} ]]; then
+  usageExit "Invalid command: ${optValue[command]}"
 fi
 
-if [[ " ${packageCommands[*]} " =~ $commandArg ]]; then
-  if [ -z "$packageArg" ]; then
-    usageExit "Command $commandArg requires a package"
+if [[ " ${packageCommands[*]} " =~ ${optValue[command]} ]]; then
+  if [ -z "${optValue[package]}" ]; then
+    usageExit "Command ${optValue[command]} requires a package"
   fi
 
-  if ! [[ " ${packages[*]} " =~ $packageArg ]]; then
-    usageExit "Invalid package: $packageArg"
+  if ! [[ " ${packages[*]} " =~ ${optValue[package]} ]]; then
+    usageExit "Invalid package: ${optValue[package]}"
   fi
 
-  if [ "$packageArg" == "$allPackages" ]; then
+  if [ "${optValue[package]}" == "${opts[all]}" ]; then
     optValue["all"]=true
-    packageArg=""
+    optValue[package]=""
     packages=("${packages[@]:1}")
   fi
 fi
 
-if [[ " ${repoCommands[*]} " =~ $commandArg ]]; then
-  if [ "$packageArg" ]; then
-    usageExit "Command $commandArg takes no arguments"
+if [[ " ${repoCommands[*]} " =~ ${optValue[command]} ]]; then
+  if [ "${optValue[package]}" ]; then
+    usageExit "Command ${optValue[command]} takes no arguments"
   fi
 fi
 
 ### script ###
 
-case $commandArg in
-"${packageCommands["lint"]}")
+case ${optValue[command]} in
+"${packageCommands[lint]}")
   run lint
   ;;
-"${packageCommands["lintfix"]}")
+"${packageCommands[lintfix]}")
   run lintFix
   ;;
-"${packageCommands["format"]}")
+"${packageCommands[format]}")
   run format
   ;;
-"${packageCommands["test"]}")
+"${packageCommands[test]}")
   run unitTests
   ;;
-"${packageCommands["build"]}")
+"${packageCommands[build]}")
   run build
   ;;
-"${repoCommands["ci"]}")
+"${repoCommands[ci]}")
   ci
   ;;
-"${repoCommands["format"]}")
+"${repoCommands[format]}")
   formatConfigs
   ;;
-"${repoCommands["spellcheck"]}")
+"${repoCommands[spellcheck]}")
   spellcheckDocs
   ;;
-"${repoCommands["setup"]}")
+"${repoCommands[setup]}")
   setup
   ;;
-"${repoCommands["testSh"]}")
+"${repoCommands[testSh]}")
   testScripts
   ;;
-"${repoCommands["tag"]}")
+"${repoCommands[tag]}")
   tag "${@:2}"
   ;;
-"${repoCommands["mocks"]}")
+"${repoCommands[mocks]}")
   mockery
   ;;
 esac
