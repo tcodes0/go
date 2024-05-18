@@ -103,10 +103,10 @@ func TestEnvTag_ErrNonString(t *testing.T) {
 	assert := require.New(t)
 
 	type config struct {
-		Ok   bool
 		Ptr  *string
-		Test bool `key:"TEST"`
 		Sl   []byte
+		Ok   bool
+		Test bool `key:"TEST"`
 	}
 
 	cfg := &config{
@@ -128,9 +128,9 @@ func TestEnvTag_Noop(t *testing.T) {
 	assert := require.New(t)
 
 	type config struct {
-		Ok  bool
 		Ptr *string
 		Sl  []byte
+		Ok  bool
 	}
 
 	cfg := &config{

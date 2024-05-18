@@ -21,8 +21,8 @@ func TestMaxSizeWrite(t *testing.T) {
 
 	//nolint:govet // test
 	tests := []struct {
-		name    string
 		maxSize *httpflush.MaxSize
+		name    string
 		wantN   int
 		wantErr bool
 	}{

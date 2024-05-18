@@ -18,5 +18,9 @@ linters=(
 )
 
 for linter in "${linters[@]}"; do
-  $linter --fix "$PWD/$1"
+  $linter -fix "$PWD/$1"
+
+  if [ -d "$PWD/$1/test" ]; then
+    $linter -fix "$PWD/$1/test"
+  fi
 done

@@ -11,10 +11,10 @@ func TestMerge(t *testing.T) {
 	assert := require.New(t)
 
 	type Test struct {
-		A string `json:"a"`
-		B int    `json:"b"`
-		C []int  `json:"c"`
 		D *int   `json:"d"`
+		A string `json:"a"`
+		C []int  `json:"c"`
+		B int    `json:"b"`
 	}
 
 	type TestCase struct {
