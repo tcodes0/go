@@ -7,36 +7,28 @@ source "$PWD/src/sh/lib.sh"
 
 regExpSrcPrefix="^src\/"
 # find folders directly under ./src that have at least 1 *.go file; massage the output a bit
-packages="$(find src -mindepth 2 -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort | uniq | sed -e "s/$regExpSrcPrefix//" | tr '\n' '|')"
+packages="$(find src -mindepth 2 -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort | uniq | sed -e "s/$regExpSrcPrefix//" | tr '\n' ' ')"
 declare -rA packageCommands=(
   ["lint"]="lint"
-  ["lintfix"]="lintfix"
+  ["lintfix"]="lint-fix"
   ["format"]="format"
   ["test"]="test"
   ["build"]="build"
 )
 declare -rA repoCommands=(
   ["ci"]="ci"
-  ["format"]="formatConfigs"
-  ["spellcheck"]="spellcheckDocs"
+  ["format"]="format-configs"
+  ["spellcheck"]="spellcheck-docs"
   ["setup"]="setup"
-  ["test"]="testScripts"
+  ["testSh"]="test-scripts"
   ["tag"]="tag"
+  ["mocks"]="generate-mocks"
 )
 
 usageExit() {
-  packageCommandsInfo=$(
-    IFS=\|
-    printf "%s" "${packageCommands[*]}"
-  )
-  repoCommandsInfo=$(
-    IFS=\|
-    printf "%s" "${repoCommands[*]}"
-  )
-
   msg "$*\n"
-  msg "Usage: $0 [$packageCommandsInfo] [$packages]"
-  msg "Usage: $0 [$repoCommandsInfo]"
+  msg "Usage: $0 [${packageCommands[*]}] [$packages]"
+  msg "Usage: $0 [${repoCommands[*]}]"
 
   exit 1
 }
@@ -149,10 +141,13 @@ case $commandArg in
 "${repoCommands["setup"]}")
   setup
   ;;
-"${repoCommands["test"]}")
+"${repoCommands["testSh"]}")
   testScripts
   ;;
 "${repoCommands["tag"]}")
   tag "${@:2}"
+  ;;
+"${repoCommands["mocks"]}")
+  mockery
   ;;
 esac
