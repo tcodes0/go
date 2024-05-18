@@ -19,7 +19,6 @@ func TestMaxSizeWrite(t *testing.T) {
 	writer3.On("Write", mock.AnythingOfType("[]uint8")).Return(20, nil).Once()
 	writer3.On("Flush").Return(nil).Once()
 
-	//nolint:govet // test
 	tests := []struct {
 		maxSize *httpflush.MaxSize
 		name    string

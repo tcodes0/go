@@ -8,7 +8,8 @@ import (
 	"github.com/tcodes0/go/src/reflectutil"
 )
 
-func TestCopyPtrToVal(t *testing.T) {
+func TestCopyPointed(t *testing.T) {
+	t.Parallel()
 	assert := require.New(t)
 
 	type Test struct {
@@ -16,14 +17,15 @@ func TestCopyPtrToVal(t *testing.T) {
 	}
 
 	test := &Test{A: "a"}
-	val := reflectutil.CopyPointerToValue(test)
+	val := reflectutil.CopyPointed(test)
 	assert.Equal(*test, val)
 	assert.NotEqual(fmt.Sprintf("%p", &val), fmt.Sprintf("%p", test))
 	val.A = "b"
 	assert.NotEqual(*test, val)
 }
 
-func TestCopyVal(t *testing.T) {
+func TestCopyOf(t *testing.T) {
+	t.Parallel()
 	assert := require.New(t)
 
 	type Test struct {
@@ -31,7 +33,7 @@ func TestCopyVal(t *testing.T) {
 	}
 
 	test := Test{A: "a"}
-	val := reflectutil.CopyValue(test)
+	val := reflectutil.CopyOf(test)
 	assert.Equal(test, val)
 	assert.NotEqual(fmt.Sprintf("%p", &val), fmt.Sprintf("%p", &test))
 }

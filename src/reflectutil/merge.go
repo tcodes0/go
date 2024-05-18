@@ -5,55 +5,56 @@ import (
 	"reflect"
 )
 
-// Merge combines the old struct with the new struct, iterating fields
-// and picking the new field's value if non-zero and not ignored.
-// Returns an updated copy of the old struct.
-func Merge[T any](old, new *T, ignore []string) (copy *T, ignored []string, err error) {
+var (
+	ErrArgPointer = errors.New("merge: args must be pointers")
+	ErrArgStruct  = errors.New("merge: args must be structs")
+	ErrSameFields = errors.New("merge: args must have the same number of fields")
+)
+
+// Merge combines the base struct with the actual struct, iterating fields
+// and picking the actual field's value if non-zero and not ignored.
+// Returns an updated copy of the base struct.
+func Merge[T any](base, actual *T, ignore []string) (clone *T, ignored []string, err error) {
 	defer func() {
 		if msg := recover(); msg != nil {
-			copy = nil
-			err = errors.New("merge: " + (msg).(string))
+			clone = nil
+			msgs, ok := msg.(string)
+
+			if ok {
+				err = errors.New("merge: " + msgs)
+			}
 		}
 	}()
 
-	if old == nil {
-		return new, nil, nil
+	if base == nil {
+		return actual, nil, nil
 	}
 
-	c := Clone(*old)
-	copy = &c
+	c := CopyOf(*base)
+	clone = &c
 
-	if new == nil {
-		return
+	if actual == nil {
+		return clone, nil, nil
 	}
 
-	vCopy := reflect.ValueOf(copy)
-	vNew := reflect.ValueOf(new)
+	valClone := reflect.ValueOf(clone)
+	valActual := reflect.ValueOf(actual)
 
-	if vNew.Kind() != reflect.Pointer || vCopy.Kind() != reflect.Pointer {
-		return nil, nil, errors.New("merge: args must be pointers")
-	}
-
-	elemCopy := reflect.ValueOf(copy).Elem()
-	elemNew := reflect.ValueOf(new).Elem()
-
-	if elemNew.Kind() != reflect.Struct || elemCopy.Kind() != reflect.Struct {
-		return nil, nil, errors.New("merge: args must be structs")
-	}
-
-	if elemNew.NumField() != elemCopy.NumField() {
-		return nil, nil, errors.New("merge: args must have the same number of fields")
+	valClone, valActual, err = mergeErrs(valClone, valActual)
+	if err != nil {
+		return nil, nil, err
 	}
 
 fields:
-	for i := 0; i < elemNew.NumField(); i++ {
-		fCopy := elemCopy.Field(i)
-		fNew := elemNew.Field(i)
-		fName := elemNew.Type().Field(i).Name
+	for i := range valActual.NumField() {
+		fieldCopy := valClone.Field(i)
+		fieldNew := valActual.Field(i)
+		fieldName := valActual.Type().Field(i).Name
+		hasValue := !IsNil(fieldNew) || !IsZero(fieldNew)
 
 		for _, g := range ignore {
-			if g == fName {
-				if !IsNilOrZero(fNew) {
+			if g == fieldName {
+				if hasValue {
 					ignored = append(ignored, g)
 				}
 
@@ -61,31 +62,29 @@ fields:
 			}
 		}
 
-		if !IsNilOrZero(fNew) && fCopy.CanSet() {
-			fCopy.Set(fNew)
+		if hasValue && fieldCopy.CanSet() {
+			fieldCopy.Set(fieldNew)
 		}
 	}
 
-	return copy, ignored, nil
+	return clone, ignored, nil
 }
 
-func IsNilOrZero(v reflect.Value) bool {
-	var nilKinds = []reflect.Kind{reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice}
-
-	for _, nilKind := range nilKinds {
-		if v.Kind() == nilKind {
-			return v.IsNil()
-		}
+func mergeErrs(base, actual reflect.Value) (baseElem, actualElem reflect.Value, err error) {
+	if actual.Kind() != reflect.Pointer || base.Kind() != reflect.Pointer {
+		return reflect.Value{}, reflect.Value{}, ErrArgPointer
 	}
 
-	return v.IsZero()
-}
+	base = reflect.ValueOf(base).Elem()
+	actual = reflect.ValueOf(actual).Elem()
 
-// Clones the target, panicking if it is a pointer.
-func Clone[T any](target T) T {
-	if reflect.ValueOf(target).Kind() == reflect.Pointer {
-		panic("value to clone must not be a pointer")
+	if actual.Kind() != reflect.Struct || base.Kind() != reflect.Struct {
+		return reflect.Value{}, reflect.Value{}, ErrArgStruct
 	}
 
-	return target
+	if actual.NumField() != base.NumField() {
+		return reflect.Value{}, reflect.Value{}, ErrSameFields
+	}
+
+	return base, actual, nil
 }

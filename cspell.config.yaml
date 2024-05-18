@@ -20,8 +20,10 @@ words:
   - gotestfmt
   - govet
   - httpflush
+  - ifaceassert
   - scandir
   - SHELLCHECK
   - SHFMT
+  - stretchr
   - tcodes
   - tcodes0

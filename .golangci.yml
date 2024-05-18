@@ -31,7 +31,6 @@ linters:
     - errname
     - exhaustive
     - exportloopref
-    - gochecknoglobals
     - makezero
     - mirror
     - noctx
@@ -47,6 +46,7 @@ linters:
     - gofmt
     - gomoddirectives
     - testpackage
+    - gochecknoglobals
 
   presets:
     - bugs
