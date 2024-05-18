@@ -8,9 +8,7 @@ import (
 
 type ctxKeyNow struct{}
 
-var (
-	contextKeyNow *ctxKeyNow = &ctxKeyNow{}
-)
+var contextKeyNow *ctxKeyNow = &ctxKeyNow{}
 
 type Nower interface {
 	Now() time.Time

@@ -7,9 +7,7 @@ import (
 
 type ctxKeyIDGen struct{}
 
-var (
-	contextKeyIDGenerator *ctxKeyIDGen = &ctxKeyIDGen{}
-)
+var contextKeyIDGenerator *ctxKeyIDGen = &ctxKeyIDGen{}
 
 type Randomer interface {
 	Random() string

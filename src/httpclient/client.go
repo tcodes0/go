@@ -17,9 +17,7 @@ import (
 	"github.com/tcodes0/go/src/errutil"
 )
 
-var (
-	defaultHTTPTimeout = 15 * time.Second
-)
+var defaultHTTPTimeout = 15 * time.Second
 
 type Client struct {
 	apiKey     string
