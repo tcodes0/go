@@ -118,3 +118,7 @@ linters-settings:
         deny:
           - pkg: "github.com/example/example"
             desc: cannot be imported
+
+  mnd:
+    ignored-functions:
+      - '^misc\.*'
