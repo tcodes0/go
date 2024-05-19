@@ -47,6 +47,7 @@ linters:
     - gomoddirectives
     - testpackage
     - gochecknoglobals
+    - godot
 
   presets:
     - bugs

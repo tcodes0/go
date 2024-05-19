@@ -10,6 +10,7 @@ import (
 )
 
 func TestMarshalReader(t *testing.T) {
+	t.Parallel()
 	assert := require.New(t)
 
 	type T struct {
@@ -17,6 +18,7 @@ func TestMarshalReader(t *testing.T) {
 	}
 
 	data := &T{A: "a"}
+
 	r := jsonutil.MarshalReader(data)
 	defer r.Close()
 

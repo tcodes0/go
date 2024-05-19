@@ -121,16 +121,26 @@ tag() {
 }
 
 run() {
-  local prefix="src/"
-  if [ "${optValue[all]}" ]; then
-    for pkg in "${packages[@]}"; do
-      printf %b "\n"
-      msg "$1 $pkg..."
-      "$1" "$prefix$pkg" || true
-    done
-  else
-    "$1" "$prefix$pkg"
+  $1 "$2" || true
+
+  if [ -d "$PWD/$2/test" ]; then
+    $1 "$2/test" || true
   fi
+}
+
+runPkgCommand() {
+  local prefix="src/"
+
+  if ! [ "${optValue[all]}" ]; then
+    run "$1" "$prefix${optValue["package"]}"
+    return
+  fi
+
+  for pkg in "${packages[@]}"; do
+    printf %b "\n"
+    msg "$1 $pkg..."
+    run "$1" "$prefix$pkg"
+  done
 }
 
 ### validation, input handling ###
@@ -172,19 +182,19 @@ fi
 
 case ${optValue[command]} in
 "${packageCommands[lint]}")
-  run lint
+  runPkgCommand lint
   ;;
 "${packageCommands[lintfix]}")
-  run lintFix
+  runPkgCommand lintFix
   ;;
 "${packageCommands[format]}")
-  run format
+  runPkgCommand format
   ;;
 "${packageCommands[test]}")
-  run unitTests
+  runPkgCommand unitTests
   ;;
 "${packageCommands[build]}")
-  run build
+  runPkgCommand build
   ;;
 "${repoCommands[ci]}")
   ci

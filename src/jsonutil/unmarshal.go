@@ -11,13 +11,13 @@ import (
 func UnmarshalReader[T any](r io.ReadCloser) (out *T, err error) {
 	defer r.Close()
 
-	b, err := io.ReadAll(r)
+	data, err := io.ReadAll(r)
 	if err != nil {
 		return nil, errutil.Wrap(err, "unmarshal reader: reading")
 	}
 
-	if len(b) > 0 {
-		return UnmarshalBytes[T](b)
+	if len(data) > 0 {
+		return UnmarshalBytes[T](data)
 	}
 
 	return out, nil

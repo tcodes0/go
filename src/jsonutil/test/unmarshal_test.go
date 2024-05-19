@@ -11,6 +11,7 @@ import (
 )
 
 func TestUnMarshalReader(t *testing.T) {
+	t.Parallel()
 	assert := require.New(t)
 
 	type T struct {
