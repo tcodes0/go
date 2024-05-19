@@ -9,10 +9,10 @@ import (
 )
 
 func Middleware(next http.Handler) http.Handler {
-	fn := func(w http.ResponseWriter, r *http.Request) {
+	middlewareFunc := func(writer http.ResponseWriter, req *http.Request) {
 		defer func() {
 			if msg := recover(); msg != nil && msg != http.ErrAbortHandler {
-				logger := zerolog.Ctx(r.Context())
+				logger := zerolog.Ctx(req.Context())
 				if logger == nil {
 					nop := zerolog.Nop()
 					logger = &nop
@@ -21,12 +21,12 @@ func Middleware(next http.Handler) http.Handler {
 				logger.Error().Str("panic", fmt.Sprintf("%v", msg)).Send()
 				logger.Error().Msgf("stacktrace: %s", string(debug.Stack()))
 
-				http.Error(w, "{\"error\": \"ERROR\"}", http.StatusInternalServerError)
+				http.Error(writer, "{\"error\": \"ERROR\"}", http.StatusInternalServerError)
 			}
 		}()
 
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(writer, req)
 	}
 
-	return http.HandlerFunc(fn)
+	return http.HandlerFunc(middlewareFunc)
 }

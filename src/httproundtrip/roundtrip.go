@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/rs/zerolog"
+	"github.com/tcodes0/go/src/errutil"
 )
 
 type Roundtrip struct {
@@ -36,5 +37,5 @@ func (r Roundtrip) RoundTrip(req *http.Request) (*http.Response, error) {
 		Interface("headers", res.Header).
 		Msg("res")
 
-	return res, err
+	return res, errutil.Wrap(err, "http roundtrip")
 }
