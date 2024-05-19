@@ -91,53 +91,16 @@ func TestEnvTagResolve(t *testing.T) {
 			t.Setenv("DOG_NAME", test.nameEnv)
 			t.Setenv("DOG_BREED", test.breedEnv)
 			t.Setenv("DOG_OWNER", test.ownerEnv)
-			test.returns(t,
-				test.envTag.Resolve(misc.PointerTo(reflect.TypeOf(test.dog).Elem().Field(0)), reflect.ValueOf(test.dog).Elem().Field(0)),
-			)
-			test.returns(t,
-				test.envTag.Resolve(misc.PointerTo(reflect.TypeOf(test.dog).Elem().Field(1)), reflect.ValueOf(test.dog).Elem().Field(1)),
-			)
-			test.returns(t,
-				test.envTag.Resolve(misc.PointerTo(reflect.TypeOf(test.dog).Elem().Field(2)), reflect.ValueOf(test.dog).Elem().Field(2)),
-			)
+
+			for i := range 3 {
+				test.returns(t,
+					test.envTag.Update(misc.PointerTo(reflect.TypeOf(test.dog).Elem().Field(i)), reflect.ValueOf(test.dog).Elem().Field(i)),
+				)
+			}
+
 			assert.Equal(test.nameEq, test.dog.Name)
 			assert.Equal(test.breedEq, test.dog.Breed)
 			assert.Equal(test.ownerEq, test.dog.Owner)
 		})
 	}
 }
-
-// func TestEnvTag(t *testing.T) {
-// func TestEnvTagDefault(t *testing.T) {
-// func TestEnvTagEmpty(t *testing.T) {
-// func TestEnvTagEmptyFallback(t *testing.T) {
-// func TestEnvTagNoOverwrite(t *testing.T) {
-// func TestEnvTagErrNotString(t *testing.T) {
-// func TestEnvTagNoop(t *testing.T) {
-// 	t.Parallel()
-// 	assert := require.New(t)
-
-// 	type config struct {
-// 		Ptr *string
-// 		Sl  []byte
-// 		Ok  bool
-// 	}
-
-// 	cfg := &config{
-// 		Ok:  true,
-// 		Ptr: misc.PointerTo(foo),
-// 		Sl:  []byte(foo),
-// 	}
-// 	getKey := func(string) string {
-// 		return foo
-// 	}
-// 	expected := &config{
-// 		Ok:  true,
-// 		Ptr: misc.PointerTo(foo),
-// 		Sl:  []byte(foo),
-// 	}
-
-// 	err := configkey.Run(cfg, getKey)
-// 	assert.NoError(err)
-// 	assert.Equal(expected, cfg)
-// }

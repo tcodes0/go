@@ -8,14 +8,14 @@ import (
 	"github.com/tcodes0/go/src/errutil"
 )
 
-var ErrNotStructPointer = errors.New("expected a pointer to a struct")
+var ErrNotStructPointer = errors.New("expected a struct pointer")
 
-type FieldResolver interface {
-	Resolve(field *reflect.StructField, base reflect.Value) error
+type FieldUpdater interface {
+	Update(field *reflect.StructField, base reflect.Value) error
 }
 
 // Applies a FieldResolver to all fields in a struct.
-func ApplyFieldResolver[T any](fResolver FieldResolver, base *T) (err error) {
+func ApplyToFields[T any](updater FieldUpdater, base *T) (err error) {
 	defer func() {
 		if msg := recover(); msg != nil {
 			err = fmt.Errorf("panic: %v", msg)
@@ -33,7 +33,7 @@ func ApplyFieldResolver[T any](fResolver FieldResolver, base *T) (err error) {
 	for i := range elemBase.NumField() {
 		f := typeBase.Field(i)
 
-		err := fResolver.Resolve(&f, elemBase.Field(i))
+		err := updater.Update(&f, elemBase.Field(i))
 		if err != nil {
 			return errutil.Wrapf(err, "resolving field %s", typeBase.Field(i).Name)
 		}

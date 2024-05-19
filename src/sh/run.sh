@@ -33,7 +33,7 @@ declare -rA packageCommands=(
 
 declare -rA repoCommands=(
   ["ci"]="ci"
-  ["format"]="format-configs"
+  ["formatConfigs"]="format-configs"
   ["spellcheck"]="spellcheck-docs"
   ["setup"]="setup"
   ["testSh"]="test-scripts"
@@ -166,9 +166,7 @@ if [[ " ${packageCommands[*]} " =~ ${optValue[command]} ]]; then
     optValue[package]=""
     packages=("${packages[@]:1}")
   fi
-fi
-
-if [[ " ${repoCommands[*]} " =~ ${optValue[command]} ]]; then
+elif [[ " ${repoCommands[*]} " =~ ${optValue[command]} ]]; then
   if [ "${optValue[package]}" ]; then
     usageExit "Command ${optValue[command]} takes no arguments"
   fi
@@ -195,7 +193,7 @@ case ${optValue[command]} in
 "${repoCommands[ci]}")
   ci
   ;;
-"${repoCommands[format]}")
+"${repoCommands[formatConfigs]}")
   formatConfigs
   ;;
 "${repoCommands[spellcheck]}")

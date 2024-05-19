@@ -8,8 +8,10 @@ import (
 	"github.com/tcodes0/go/src/errutil"
 )
 
-var ErrNotString = errors.New("only strings are supported")
-var ErrNotAddresable = errors.New("field is not addressable")
+var (
+	ErrNotString     = errors.New("only strings are supported")
+	ErrNotAddresable = errors.New("field is not addressable")
+)
 
 // Resolves a field's value to an env variable using a tag.
 type EnvTag struct {
@@ -17,9 +19,9 @@ type EnvTag struct {
 	Default string
 }
 
-var _ FieldResolver = (*EnvTag)(nil)
+var _ FieldUpdater = (*EnvTag)(nil)
 
-func (envTag EnvTag) Resolve(field *reflect.StructField, valField reflect.Value) error {
+func (envTag EnvTag) Update(field *reflect.StructField, valField reflect.Value) error {
 	tag := field.Tag.Get(envTag.Tag)
 	def := field.Tag.Get(envTag.Default)
 

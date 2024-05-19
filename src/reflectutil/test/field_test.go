@@ -18,11 +18,11 @@ func TestApplyFieldResolver(t *testing.T) {
 	}
 
 	cfg := &config{}
-	resolver := reflectutil.NewMockFieldResolver(t)
-	resolver.On("Resolve", mock.AnythingOfType("*reflect.StructField"), mock.AnythingOfType("reflect.Value")).
+	updater := reflectutil.NewMockFieldUpdater(t)
+	updater.On("Update", mock.AnythingOfType("*reflect.StructField"), mock.AnythingOfType("reflect.Value")).
 		Return(nil).
 		Twice()
 
-	err := reflectutil.ApplyFieldResolver(resolver, cfg)
+	err := reflectutil.ApplyToFields(updater, cfg)
 	assert.NoError(err)
 }
