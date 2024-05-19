@@ -66,7 +66,12 @@ lintFix() {
     requireGitClean
   fi
 
-  ./src/sh/lint-fix.sh "$1"
+  ./src/sh/lint-fix.sh "$1" &
+  backgroundLinter=$!
+
+  local lintFlags=(--timeout 10s --print-issued-lines=false --fix)
+  golangci-lint run "${lintFlags[@]}" "$1"
+  wait $backgroundLinter
 }
 
 prettierFileGlob="**/*{.yml,.yaml,.json}"
