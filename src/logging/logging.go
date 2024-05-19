@@ -19,7 +19,7 @@ func (l Level) String() string {
 	return string(l)
 }
 
-// should call only once. Sets a context logger
+// should call only once. Sets a context logger.
 func Init(ctx context.Context) (context.Context, zerolog.Logger) {
 	zerolog.TimeFieldFormat = time.RFC3339Nano
 
@@ -41,7 +41,7 @@ func SetGlobalLevel(l string) {
 	}
 }
 
-// returns a non-nil logger, it may be disabled if not found on CTX
+// returns a non-nil logger, it may be disabled if not found on CTX.
 func FromContext(ctx context.Context) zerolog.Logger {
 	if ctxLogger := zerolog.Ctx(ctx); ctxLogger != nil {
 		return *ctxLogger

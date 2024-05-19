@@ -47,7 +47,6 @@ linters:
     - gomoddirectives
     - testpackage
     - gochecknoglobals
-    - godot
 
   presets:
     - bugs
@@ -122,3 +121,6 @@ linters-settings:
   mnd:
     ignored-functions:
       - '^misc\.*'
+
+  funlen:
+    ignore-comments: true

@@ -15,6 +15,7 @@ linters=(
   stringintconv
   unmarshal
   unusedresult
+  tagalign
 )
 
 for linter in "${linters[@]}"; do

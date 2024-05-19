@@ -14,7 +14,7 @@ type FieldResolver interface {
 	Resolve(field *reflect.StructField, base reflect.Value) error
 }
 
-// Applies a FieldResolver to all fields in a struct
+// Applies a FieldResolver to all fields in a struct.
 func ApplyFieldResolver[T any](fResolver FieldResolver, base *T) (err error) {
 	defer func() {
 		if msg := recover(); msg != nil {

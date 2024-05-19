@@ -62,10 +62,6 @@ lint() {
 }
 
 lintFix() {
-  if ! [ "${optValue[all]}" ]; then
-    requireGitClean
-  fi
-
   ./src/sh/lint-fix.sh "$1" &
   backgroundLinter=$!
 
@@ -77,16 +73,11 @@ lintFix() {
 prettierFileGlob="**/*{.yml,.yaml,.json}"
 
 format() {
-  if ! [ "${optValue[all]}" ]; then
-    requireGitClean
-  fi
-
   gofumpt -l -w "$1"
   prettier --write "$1/$prettierFileGlob" 2>/dev/null || true
 }
 
 formatConfigs() {
-  requireGitClean
   prettier --write "./$prettierFileGlob" 2>/dev/null || true
 }
 

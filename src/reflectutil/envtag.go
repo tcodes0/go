@@ -9,8 +9,9 @@ import (
 )
 
 var ErrNotString = errors.New("only strings are supported")
+var ErrNotAddresable = errors.New("field is not addressable")
 
-// Resolves a field's value to an env variable using a tag
+// Resolves a field's value to an env variable using a tag.
 type EnvTag struct {
 	Tag     string
 	Default string
@@ -18,9 +19,9 @@ type EnvTag struct {
 
 var _ FieldResolver = (*EnvTag)(nil)
 
-func (resolver EnvTag) Resolve(field *reflect.StructField, valField reflect.Value) error {
-	tag := field.Tag.Get(resolver.Tag)
-	def := field.Tag.Get(resolver.Default)
+func (envTag EnvTag) Resolve(field *reflect.StructField, valField reflect.Value) error {
+	tag := field.Tag.Get(envTag.Tag)
+	def := field.Tag.Get(envTag.Default)
 
 	if tag == "" {
 		return nil
@@ -39,6 +40,10 @@ func (resolver EnvTag) Resolve(field *reflect.StructField, valField reflect.Valu
 
 	if tagValue == "" && def != "" {
 		tagValue = def
+	}
+
+	if !valField.CanSet() {
+		return ErrNotAddresable
 	}
 
 	valKey := reflect.ValueOf(tagValue)

@@ -7,7 +7,7 @@ import (
 	"github.com/tcodes0/go/src/errutil"
 )
 
-// Will close reader
+// Will close reader.
 func UnmarshalReader[T any](r io.ReadCloser) (out *T, err error) {
 	defer r.Close()
 
