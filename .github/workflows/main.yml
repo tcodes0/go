@@ -89,8 +89,8 @@ jobs:
       - name: Mockery
         uses: brokeyourbike/go-mockery-action@v0
         with:
-          mockery-version: "2.42.3"
-      - run: mockery
+          mockery-version: "2.43.0"
+      - run: ./src/sh/mocks.sh
 
       - name: Diff mocks
         working-directory: .
@@ -150,8 +150,8 @@ jobs:
           incremental_files_only: true
           config: ./cspell.config.yaml
 
-  httpflush-pr:
-    name: httpflush PR
+  httpflush:
+    name: httpflush
     needs: changed-files
     if: needs.changed-files.outputs.goPkgHttpflush
     uses: ./.github/workflows/package-pr.yml

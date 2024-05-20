@@ -19,7 +19,7 @@ updateMocksVersionFile() {
     msgExit "failed to parse mockery version from $mockFile using regex $mockeryGeneratedRegex"
   fi
 
-  printf %s "${BASH_REMATCH[1]}" >.mockery-version
+  printf %b "${BASH_REMATCH[1]}\n" >.mockery-version
 }
 
 cleanMocks() {
