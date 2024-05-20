@@ -41,7 +41,6 @@ jobs:
               - src/sh/**.sh
             pkg_httpflush:
               - src/httpflush/**.go
-              - '!src/httpflush/**mock*.go'
 
   debug:
     name: Debug
