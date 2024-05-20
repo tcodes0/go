@@ -83,7 +83,7 @@ lastLine=$(tput lines)
 
 if [ "$(currentTerminalLine)" -gt "$((lastLine - 10))" ]; then
   clear -x
-  msg "running ci... (terminal cleared to make room for output)"
+  msg "running ci... (terminal scrolled up to make room for output)"
 else
   msg "running ci..."
 fi
@@ -104,7 +104,7 @@ exitStatus=0
 somethingWrong=5
 if [ "$iterations" -le "$somethingWrong" ]; then
   printf "\n"
-  head "$ciLog"
+  tac "$ciLog" | head
   exitStatus=1
 elif [ -n "$firstFailedJob" ]; then
   printf "\n"

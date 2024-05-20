@@ -16,8 +16,8 @@ jobs:
       config: ${{ steps.list-changed-files.outputs.config_all_changed_files }}
       shell: ${{ steps.list-changed-files.outputs.shell_all_changed_files }}
       doc: ${{ steps.list-changed-files.outputs.doc_all_changed_files }}
-      anyGoPkg: ${{ steps.list-changed-files.outputs.go_pkg_httpflush_all_changed_files }}
-      goPkgHttpflush: ${{ steps.list-changed-files.outputs.go_pkg_httpflush_all_changed_files }}
+      anyGoPkg: ${{ steps.list-changed-files.outputs.pkg_httpflush_all_changed_files }}
+      goPkgHttpflush: ${{ steps.list-changed-files.outputs.pkg_httpflush_all_changed_files }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,8 +39,9 @@ jobs:
               - '**/*.md'
             shell:
               - src/sh/**.sh
-            go_pkg_httpflush:
+            pkg_httpflush:
               - src/httpflush/**.go
+              - '!src/httpflush/**mock*.go'
 
   debug:
     name: Debug
