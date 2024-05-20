@@ -18,7 +18,7 @@ read -rd "$CHAR_CARRIG_RET" -a packages < <(
 
   regExpSrcPrefix="^src\/"
   # find folders directly under ./src that have at least 1 *.go file; prettify output
-  find src -mindepth 2 -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort | uniq | sed -e "s/$regExpSrcPrefix//" | tr '\n' ' '
+  find src -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort | uniq | sed -e "s/$regExpSrcPrefix//" | tr '\n' ' '
 
   printf %b "$CHAR_CARRIG_RET"
 )
@@ -139,6 +139,10 @@ runPkgCommand() {
   done
 }
 
+generateMocks() {
+  ./src/sh/mocks.sh
+}
+
 ### validation, input handling ###
 
 if [ $# -lt 1 ]; then
@@ -209,6 +213,6 @@ case ${optValue[command]} in
   tag "${@:2}"
   ;;
 "${repoCommands[mocks]}")
-  mockery
+  generateMocks
   ;;
 esac

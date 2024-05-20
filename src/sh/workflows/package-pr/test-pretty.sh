@@ -31,7 +31,7 @@ go test "${flags[@]}" "./$PKG/test" 2>&1 | tee "$testOutputJson" | gotestfmt
 
 # delete lines not parseable as json output from 'go test'
 regExpPrefixGo="^go:"
-sed -Eie "/$regExpPrefixGo/d" "$testOutputJson"
+sed -Ei "/$regExpPrefixGo/d" "$testOutputJson"
 
 echo "testOutputJson=$testOutputJson"
 echo "testOutputJson=$testOutputJson" >>"$GITHUB_OUTPUT"

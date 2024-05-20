@@ -21,6 +21,7 @@ words:
   - govet
   - httpflush
   - ifaceassert
+  - iname
   - scandir
   - SHELLCHECK
   - SHFMT

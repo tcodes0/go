@@ -1,5 +1,11 @@
 #! /usr/bin/env bash
 
+####################################
+## this script is sourced by path ##
+## from other scripts, careful    ##
+## if moving or renaming it       ##
+####################################
+
 set -euo pipefail
 shopt -s globstar
 
