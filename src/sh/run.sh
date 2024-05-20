@@ -18,7 +18,7 @@ read -rd "$CHAR_CARRIG_RET" -a packages < <(
 
   regExpSrcPrefix="^src\/"
   # find folders directly under ./src that have at least 1 *.go file; prettify output
-  find src -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort | uniq | sed -e "s/$regExpSrcPrefix//" | tr '\n' ' '
+  find src -mindepth 2 -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort | uniq | sed -e "s/$regExpSrcPrefix//" | tr '\n' ' '
 
   printf %b "$CHAR_CARRIG_RET"
 )
