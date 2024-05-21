@@ -19,7 +19,7 @@ func TestApplyFieldResolver(t *testing.T) {
 
 	cfg := &config{}
 	updater := reflectutil.NewMockFieldUpdater(t)
-	updater.On("Update", mock.AnythingOfType("*reflect.StructField"), mock.AnythingOfType("reflect.Value")).
+	updater.On("UpdateField", mock.AnythingOfType("*reflect.StructField"), mock.AnythingOfType("reflect.Value")).
 		Return(nil).
 		Twice()
 

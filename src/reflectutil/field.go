@@ -11,10 +11,10 @@ import (
 var ErrNotStructPointer = errors.New("expected a struct pointer")
 
 type FieldUpdater interface {
-	Update(field *reflect.StructField, base reflect.Value) error
+	UpdateField(field *reflect.StructField, base reflect.Value) error
 }
 
-// Applies a FieldResolver to all fields in a struct.
+// Applies the function to all fields in base struct.
 func ApplyToFields[T any](updater FieldUpdater, base *T) (err error) {
 	defer func() {
 		if msg := recover(); msg != nil {
@@ -33,7 +33,7 @@ func ApplyToFields[T any](updater FieldUpdater, base *T) (err error) {
 	for i := range elemBase.NumField() {
 		f := typeBase.Field(i)
 
-		err := updater.Update(&f, elemBase.Field(i))
+		err := updater.UpdateField(&f, elemBase.Field(i))
 		if err != nil {
 			return errutil.Wrapf(err, "resolving field %s", typeBase.Field(i).Name)
 		}

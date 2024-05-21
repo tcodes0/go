@@ -22,7 +22,6 @@ fi
 testOutputJson=$(mktemp /tmp/go-test-json-XXXXXX)
 
 if ! [ -d "./$PKG/test" ]; then
-  msg "not found: ./$PKG/test"
   exit 0
 fi
 

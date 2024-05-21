@@ -94,7 +94,7 @@ func TestEnvTagResolve(t *testing.T) {
 
 			for i := range 3 {
 				test.returns(t,
-					test.envTag.Update(misc.PointerTo(reflect.TypeOf(test.dog).Elem().Field(i)), reflect.ValueOf(test.dog).Elem().Field(i)),
+					test.envTag.UpdateField(misc.PointerTo(reflect.TypeOf(test.dog).Elem().Field(i)), reflect.ValueOf(test.dog).Elem().Field(i)),
 				)
 			}
 

@@ -21,12 +21,12 @@ func (_m *MockFieldUpdater) EXPECT() *MockFieldUpdater_Expecter {
 	return &MockFieldUpdater_Expecter{mock: &_m.Mock}
 }
 
-// Update provides a mock function with given fields: field, base
-func (_m *MockFieldUpdater) Update(field *reflect.StructField, base reflect.Value) error {
+// UpdateField provides a mock function with given fields: field, base
+func (_m *MockFieldUpdater) UpdateField(field *reflect.StructField, base reflect.Value) error {
 	ret := _m.Called(field, base)
 
 	if len(ret) == 0 {
-		panic("no return value specified for Update")
+		panic("no return value specified for UpdateField")
 	}
 
 	var r0 error
@@ -39,31 +39,31 @@ func (_m *MockFieldUpdater) Update(field *reflect.StructField, base reflect.Valu
 	return r0
 }
 
-// MockFieldUpdater_Update_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Update'
-type MockFieldUpdater_Update_Call struct {
+// MockFieldUpdater_UpdateField_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateField'
+type MockFieldUpdater_UpdateField_Call struct {
 	*mock.Call
 }
 
-// Update is a helper method to define mock.On call
+// UpdateField is a helper method to define mock.On call
 //   - field *reflect.StructField
 //   - base reflect.Value
-func (_e *MockFieldUpdater_Expecter) Update(field interface{}, base interface{}) *MockFieldUpdater_Update_Call {
-	return &MockFieldUpdater_Update_Call{Call: _e.mock.On("Update", field, base)}
+func (_e *MockFieldUpdater_Expecter) UpdateField(field interface{}, base interface{}) *MockFieldUpdater_UpdateField_Call {
+	return &MockFieldUpdater_UpdateField_Call{Call: _e.mock.On("UpdateField", field, base)}
 }
 
-func (_c *MockFieldUpdater_Update_Call) Run(run func(field *reflect.StructField, base reflect.Value)) *MockFieldUpdater_Update_Call {
+func (_c *MockFieldUpdater_UpdateField_Call) Run(run func(field *reflect.StructField, base reflect.Value)) *MockFieldUpdater_UpdateField_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(*reflect.StructField), args[1].(reflect.Value))
 	})
 	return _c
 }
 
-func (_c *MockFieldUpdater_Update_Call) Return(_a0 error) *MockFieldUpdater_Update_Call {
+func (_c *MockFieldUpdater_UpdateField_Call) Return(_a0 error) *MockFieldUpdater_UpdateField_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockFieldUpdater_Update_Call) RunAndReturn(run func(*reflect.StructField, reflect.Value) error) *MockFieldUpdater_Update_Call {
+func (_c *MockFieldUpdater_UpdateField_Call) RunAndReturn(run func(*reflect.StructField, reflect.Value) error) *MockFieldUpdater_UpdateField_Call {
 	_c.Call.Return(run)
 	return _c
 }
