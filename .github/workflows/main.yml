@@ -30,7 +30,7 @@ jobs:
       shell: ${{ steps.list-changed-files.outputs.shell_all_changed_files }}
       doc: ${{ steps.list-changed-files.outputs.doc_all_changed_files }}
       anyGoPkg: ${{
-        || steps.list-changed-files.outputs.pkg_clock_all_changed_files
+        steps.list-changed-files.outputs.pkg_clock_all_changed_files
         || steps.list-changed-files.outputs.pkg_errutil_all_changed_files
         || steps.list-changed-files.outputs.pkg_httpclient_all_changed_files
         || steps.list-changed-files.outputs.pkg_httpflush_all_changed_files

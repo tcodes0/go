@@ -80,8 +80,9 @@ $ciCommand "${ciCommandArgs[@]}" >"$ciLog" 2>&1 || true &
 ciPid=$!
 
 lastLine=$(tput lines)
+expectedOutput=35
 
-if [ "$(currentTerminalLine)" -gt "$((lastLine - 10))" ]; then
+if [ "$(currentTerminalLine)" -gt "$((lastLine - expectedOutput))" ]; then
   clear -x
   msg "running ci... (terminal scrolled up to make room for output)"
 else

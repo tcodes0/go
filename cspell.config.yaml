@@ -16,6 +16,7 @@ dictionaries:
   - computing-acronyms
 words:
   - gofumpt
+  - goinstall
   - golangci
   - gotestfmt
   - govet
