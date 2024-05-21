@@ -20,7 +20,7 @@ func TestIsNil(t *testing.T) {
 	}{
 		{
 			name:  "nil chan",
-			value: reflect.ValueOf((chan int)(nil)),
+			value: reflect.ValueOf(chan int(nil)),
 			want:  true,
 		},
 		{

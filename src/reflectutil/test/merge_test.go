@@ -8,6 +8,7 @@ import (
 	"github.com/tcodes0/go/src/reflectutil"
 )
 
+//nolint:funlen // test
 func TestMerge(t *testing.T) {
 	t.Parallel()
 	assert := require.New(t)
@@ -29,24 +30,41 @@ func TestMerge(t *testing.T) {
 	}
 
 	tests := []testCase{
-		{name: "field by field", base: &Wombat{Nickname: "sushi", Address: 1}, partial: &Wombat{Nickname: "bib", Address: 2}, expected: &Wombat{Nickname: "bib", Address: 2}, ignore: nil},
-		{name: "zero fields", base: &Wombat{Nickname: "sushi", Address: 1}, partial: &Wombat{Nickname: "", Address: 0}, expected: &Wombat{Nickname: "sushi", Address: 1}, ignore: nil},
-		{name: "missing field", base: &Wombat{Nickname: "sushi", Address: 1}, partial: &Wombat{Nickname: ""}, expected: &Wombat{Nickname: "sushi", Address: 1}, ignore: nil},
+		{
+			name: "field by field", base: &Wombat{Nickname: "sushi", Address: 1}, partial: &Wombat{Nickname: "bib", Address: 2},
+			expected: &Wombat{Nickname: "bib", Address: 2}, ignore: nil,
+		},
+		{
+			name: "zero fields", base: &Wombat{Nickname: "sushi", Address: 1}, partial: &Wombat{Nickname: "", Address: 0},
+			expected: &Wombat{Nickname: "sushi", Address: 1}, ignore: nil,
+		},
+		{
+			name: "missing field", base: &Wombat{Nickname: "sushi", Address: 1}, partial: &Wombat{Nickname: ""},
+			expected: &Wombat{Nickname: "sushi", Address: 1}, ignore: nil,
+		},
 		{
 			name: "nil field", base: &Wombat{ID: []int{1, 2, 3}, Age: misc.PointerTo(12)}, partial: &Wombat{ID: nil, Age: misc.PointerTo(15)},
 			expected: &Wombat{ID: []int{1, 2, 3}, Age: misc.PointerTo(15)}, ignore: nil,
 		},
 		{
-			name: "ignored fields", base: &Wombat{Nickname: "sushi", Address: 1}, partial: &Wombat{Nickname: "bib", Address: 2}, expected: &Wombat{Nickname: "sushi", Address: 2},
-			ignore: []string{"Nickname"}, expectedIgnore: []string{"Nickname"},
+			name: "ignored fields", base: &Wombat{Nickname: "sushi", Address: 1}, partial: &Wombat{Nickname: "bib", Address: 2},
+			expected: &Wombat{Nickname: "sushi", Address: 2},
+			ignore:   []string{"Nickname"}, expectedIgnore: []string{"Nickname"},
 		},
-		{name: "nil base", base: nil, partial: &Wombat{Nickname: "bib", Address: 2}, expected: &Wombat{Nickname: "bib", Address: 2}, ignore: nil, expectedIgnore: nil},
-		{name: "nil partial", base: &Wombat{Nickname: "sushi", Address: 1}, partial: nil, expected: &Wombat{Nickname: "sushi", Address: 1}, ignore: nil, expectedIgnore: nil},
+		{
+			name: "nil base", base: nil, partial: &Wombat{Nickname: "bib", Address: 2}, expected: &Wombat{Nickname: "bib", Address: 2},
+			ignore: nil, expectedIgnore: nil,
+		},
+		{
+			name: "nil partial", base: &Wombat{Nickname: "sushi", Address: 1}, partial: nil, expected: &Wombat{Nickname: "sushi", Address: 1},
+			ignore: nil, expectedIgnore: nil,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+
 			out, ignored, err := reflectutil.Merge(test.base, test.partial, test.ignore)
 			assert.NoError(err)
 			assert.Equal(test.expected, out)
