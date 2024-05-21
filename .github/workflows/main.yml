@@ -142,7 +142,7 @@ jobs:
         run: ./src/sh/workflows/main/diff.sh
 
   shell:
-    name: Lint and format shell
+    name: Lint format and test shell
     runs-on: ubuntu-latest
     needs: changed-files
     if: needs.changed-files.outputs.shell
@@ -160,6 +160,9 @@ jobs:
           sh_checker_only_diff: true
           # needs write access https://github.com/luizm/action-sh-checker/pull/57
           # sh_checker_comment: true
+
+      - name: Test
+        run: find src/sh/test -name "*-test.sh" -exec ./{} \;
 
   config:
     name: Format config

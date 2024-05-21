@@ -3,7 +3,6 @@ package test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/tcodes0/go/src/httpflush"
 )
@@ -14,9 +13,9 @@ func TestMaxSizeWrite(t *testing.T) {
 	writer2 := httpflush.NewMockresponseWriter(t)
 	writer3 := httpflush.NewMockresponseWriter(t)
 
-	writer1.On("Write", mock.AnythingOfType("[]uint8")).Return(5, nil).Once()
-	writer2.On("Write", mock.AnythingOfType("[]uint8")).Return(10, nil).Once()
-	writer3.On("Write", mock.AnythingOfType("[]uint8")).Return(20, nil).Once()
+	writer1.On("Write", []uint8{}).Return(5, nil).Once()
+	writer2.On("Write", []uint8{}).Return(10, nil).Once()
+	writer3.On("Write", []uint8{}).Return(20, nil).Once()
 	writer3.On("Flush").Return(nil).Once()
 
 	tests := []struct {
@@ -72,14 +71,14 @@ func TestMaxSizeFlushesMany(t *testing.T) {
 		Writer: writer,
 	}
 
-	writer.On("Write", mock.AnythingOfType("[]uint8")).Return(20, nil).Once()
+	writer.On("Write", []uint8{}).Return(20, nil).Once()
 	writer.On("Flush").Return(nil).Once()
 
 	writtenBytes, err := maxSize.Write([]byte(""))
 	assert.Equal(20, writtenBytes)
 	assert.NoError(err)
 
-	writer.On("Write", mock.AnythingOfType("[]uint8")).Return(11, nil).Once()
+	writer.On("Write", []uint8{}).Return(11, nil).Once()
 	writer.On("Flush").Return(nil).Once()
 
 	writtenBytes, err = maxSize.Write([]byte(""))
