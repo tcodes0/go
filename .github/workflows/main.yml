@@ -12,12 +12,36 @@ jobs:
     name: Analyze changed files
     runs-on: ubuntu-latest
     outputs:
+      # packages
+      goPkgClock: ${{ steps.list-changed-files.outputs.pkg_clock_all_changed_files }}
+      goPkgErrutil: ${{ steps.list-changed-files.outputs.pkg_errutil_all_changed_files }}
+      goPkgHttpclient: ${{ steps.list-changed-files.outputs.pkg_httpclient_all_changed_files }}
+      goPkgHttpflush: ${{ steps.list-changed-files.outputs.pkg_httpflush_all_changed_files }}
+      goPkgHttprecoverer: ${{ steps.list-changed-files.outputs.pkg_httprecoverer_all_changed_files }}
+      goPkgHttproundtrip: ${{ steps.list-changed-files.outputs.pkg_httproundtrip_all_changed_files }}
+      goPkgIdentifier: ${{ steps.list-changed-files.outputs.pkg_identifier_all_changed_files }}
+      goPkgJsonutil: ${{ steps.list-changed-files.outputs.pkg_jsonutil_all_changed_files }}
+      goPkgLogging: ${{ steps.list-changed-files.outputs.pkg_logging_all_changed_files }}
+      goPkgMisc: ${{ steps.list-changed-files.outputs.pkg_misc_all_changed_files }}
+      goPkgReflectutil: ${{ steps.list-changed-files.outputs.pkg_reflectutil_all_changed_files }}
+      # others
       goMod: ${{ steps.list-changed-files.outputs.go_mod_all_changed_files }}
       config: ${{ steps.list-changed-files.outputs.config_all_changed_files }}
       shell: ${{ steps.list-changed-files.outputs.shell_all_changed_files }}
       doc: ${{ steps.list-changed-files.outputs.doc_all_changed_files }}
-      anyGoPkg: ${{ steps.list-changed-files.outputs.pkg_httpflush_all_changed_files }}
-      goPkgHttpflush: ${{ steps.list-changed-files.outputs.pkg_httpflush_all_changed_files }}
+      anyGoPkg: ${{
+        || steps.list-changed-files.outputs.pkg_clock_all_changed_files
+        || steps.list-changed-files.outputs.pkg_errutil_all_changed_files
+        || steps.list-changed-files.outputs.pkg_httpclient_all_changed_files
+        || steps.list-changed-files.outputs.pkg_httpflush_all_changed_files
+        || steps.list-changed-files.outputs.pkg_httprecoverer_all_changed_files
+        || steps.list-changed-files.outputs.pkg_httproundtrip_all_changed_files
+        || steps.list-changed-files.outputs.pkg_identifier_all_changed_files
+        || steps.list-changed-files.outputs.pkg_jsonutil_all_changed_files
+        || steps.list-changed-files.outputs.pkg_logging_all_changed_files
+        || steps.list-changed-files.outputs.pkg_misc_all_changed_files
+        || steps.list-changed-files.outputs.pkg_reflectutil_all_changed_files
+        }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,8 +63,28 @@ jobs:
               - '**/*.md'
             shell:
               - src/sh/**.sh
+            pkg_clock:
+              - src/clock/**.go
+            pkg_errutil:
+              - src/errutil/**.go
+            pkg_httpclient:
+              - src/httpclient/**.go
             pkg_httpflush:
               - src/httpflush/**.go
+            pkg_httprecoverer:
+              - src/httprecoverer/**.go
+            pkg_httproundtrip:
+              - src/httproundtrip/**.go
+            pkg_identifier:
+              - src/identifier/**.go
+            pkg_jsonutil:
+              - src/jsonutil/**.go
+            pkg_logging:
+              - src/logging/**.go
+            pkg_misc:
+              - src/misc/**.go
+            pkg_reflectutil:
+              - src/reflectutil/**.go
 
   debug:
     name: Debug
@@ -150,6 +194,33 @@ jobs:
           incremental_files_only: true
           config: ./cspell.config.yaml
 
+  clock:
+    name: clock
+    needs: changed-files
+    if: needs.changed-files.outputs.goPkgClock
+    uses: ./.github/workflows/package-pr.yml
+    with:
+      goVersion: 1.22
+      packagePath: src/clock
+
+  errutil:
+    name: errutil
+    needs: changed-files
+    if: needs.changed-files.outputs.goPkgErrutil
+    uses: ./.github/workflows/package-pr.yml
+    with:
+      goVersion: 1.22
+      packagePath: src/errutil
+
+  httpclient:
+    name: httpclient
+    needs: changed-files
+    if: needs.changed-files.outputs.goPkgHttpclient
+    uses: ./.github/workflows/package-pr.yml
+    with:
+      goVersion: 1.22
+      packagePath: src/httpclient
+
   httpflush:
     name: httpflush
     needs: changed-files
@@ -158,3 +229,66 @@ jobs:
     with:
       goVersion: 1.22
       packagePath: src/httpflush
+
+  httprecoverer:
+    name: httprecoverer
+    needs: changed-files
+    if: needs.changed-files.outputs.goPkgHttprecoverer
+    uses: ./.github/workflows/package-pr.yml
+    with:
+      goVersion: 1.22
+      packagePath: src/httprecoverer
+
+  httproundtrip:
+    name: httproundtrip
+    needs: changed-files
+    if: needs.changed-files.outputs.goPkgHttproundtrip
+    uses: ./.github/workflows/package-pr.yml
+    with:
+      goVersion: 1.22
+      packagePath: src/httproundtrip
+
+  identifier:
+    name: identifier
+    needs: changed-files
+    if: needs.changed-files.outputs.goPkgIdentifier
+    uses: ./.github/workflows/package-pr.yml
+    with:
+      goVersion: 1.22
+      packagePath: src/identifier
+
+  jsonutil:
+    name: jsonutil
+    needs: changed-files
+    if: needs.changed-files.outputs.goPkgJsonutil
+    uses: ./.github/workflows/package-pr.yml
+    with:
+      goVersion: 1.22
+      packagePath: src/jsonutil
+
+  logging:
+    name: logging
+    needs: changed-files
+    if: needs.changed-files.outputs.goPkgLogging
+    uses: ./.github/workflows/package-pr.yml
+    with:
+      goVersion: 1.22
+      packagePath: src/logging
+
+  misc:
+    name: misc
+    needs: changed-files
+    if: needs.changed-files.outputs.goPkgMisc
+    uses: ./.github/workflows/package-pr.yml
+    with:
+      goVersion: 1.22
+      packagePath: src/misc
+
+  reflectutil:
+    name: reflectutil
+    needs: changed-files
+    if: needs.changed-files.outputs.goPkgReflectutil
+    uses: ./.github/workflows/package-pr.yml
+    with:
+      goVersion: 1.22
+      packagePath: src/reflectutil

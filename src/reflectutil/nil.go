@@ -2,16 +2,16 @@ package reflectutil
 
 import "reflect"
 
-var nilKinds = []reflect.Kind{
-	reflect.Chan,
-	reflect.Func,
-	reflect.Interface,
-	reflect.Map,
-	reflect.Pointer,
-	reflect.Slice,
-}
-
 func IsNil(value reflect.Value) bool {
+	nilKinds := []reflect.Kind{
+		reflect.Chan,
+		reflect.Func,
+		reflect.Interface,
+		reflect.Map,
+		reflect.Pointer,
+		reflect.Slice,
+	}
+
 	for _, nk := range nilKinds {
 		if value.Kind() == nk {
 			return value.IsNil()
@@ -22,11 +22,5 @@ func IsNil(value reflect.Value) bool {
 }
 
 func IsZero(value reflect.Value) bool {
-	for _, nk := range nilKinds {
-		if value.Kind() != nk {
-			return value.IsZero()
-		}
-	}
-
-	return false
+	return value.IsValid() && value.IsZero()
 }

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/tcodes0/go/src/misc"
 	"github.com/tcodes0/go/src/reflectutil"
 )
 
@@ -11,46 +12,45 @@ func TestMerge(t *testing.T) {
 	t.Parallel()
 	assert := require.New(t)
 
-	type Test struct {
-		D *int   `json:"d"`
-		A string `json:"a"`
-		C []int  `json:"c"`
-		B int    `json:"b"`
+	type Wombat struct {
+		Age      *int
+		Nickname string
+		ID       []int
+		Address  int
 	}
 
-	type TestCase struct {
-		N              string
-		Original       *Test
-		Target         *Test
-		Partial        *Test
-		Expected       *Test
-		Ignore         []string
-		ExpectedIgnore []string
+	type testCase struct {
+		name           string
+		base           *Wombat
+		partial        *Wombat
+		expected       *Wombat
+		ignore         []string
+		expectedIgnore []string
 	}
 
-	foo := 69
-	bar := 1337
-
-	cases := []TestCase{
-		{N: "1", Target: &Test{A: "a", B: 1}, Partial: &Test{A: "b", B: 2}, Expected: &Test{A: "b", B: 2}, Ignore: nil},
-		{N: "2", Target: &Test{A: "a", B: 1}, Partial: &Test{A: "", B: 0}, Expected: &Test{A: "a", B: 1}, Ignore: nil},
-		{N: "3", Target: &Test{A: "a", B: 1}, Partial: &Test{A: ""}, Expected: &Test{A: "a", B: 1}, Ignore: nil},
+	tests := []testCase{
+		{name: "field by field", base: &Wombat{Nickname: "sushi", Address: 1}, partial: &Wombat{Nickname: "bib", Address: 2}, expected: &Wombat{Nickname: "bib", Address: 2}, ignore: nil},
+		{name: "zero fields", base: &Wombat{Nickname: "sushi", Address: 1}, partial: &Wombat{Nickname: "", Address: 0}, expected: &Wombat{Nickname: "sushi", Address: 1}, ignore: nil},
+		{name: "missing field", base: &Wombat{Nickname: "sushi", Address: 1}, partial: &Wombat{Nickname: ""}, expected: &Wombat{Nickname: "sushi", Address: 1}, ignore: nil},
 		{
-			N: "4", Target: &Test{C: []int{1, 2, 3}, D: &foo}, Partial: &Test{C: nil, D: &bar},
-			Expected: &Test{C: []int{1, 2, 3}, D: &bar}, Ignore: nil,
+			name: "nil field", base: &Wombat{ID: []int{1, 2, 3}, Age: misc.PointerTo(12)}, partial: &Wombat{ID: nil, Age: misc.PointerTo(15)},
+			expected: &Wombat{ID: []int{1, 2, 3}, Age: misc.PointerTo(15)}, ignore: nil,
 		},
 		{
-			N: "5", Target: &Test{A: "a", B: 1}, Partial: &Test{A: "b", B: 2}, Expected: &Test{A: "a", B: 2},
-			Ignore: []string{"A"}, ExpectedIgnore: []string{"A"},
+			name: "ignored fields", base: &Wombat{Nickname: "sushi", Address: 1}, partial: &Wombat{Nickname: "bib", Address: 2}, expected: &Wombat{Nickname: "sushi", Address: 2},
+			ignore: []string{"Nickname"}, expectedIgnore: []string{"Nickname"},
 		},
-		{N: "6", Target: nil, Partial: &Test{A: "b", B: 2}, Expected: &Test{A: "b", B: 2}, Ignore: nil, ExpectedIgnore: nil},
-		{N: "7", Target: &Test{A: "a", B: 1}, Partial: nil, Expected: &Test{A: "a", B: 1}, Ignore: nil, ExpectedIgnore: nil},
+		{name: "nil base", base: nil, partial: &Wombat{Nickname: "bib", Address: 2}, expected: &Wombat{Nickname: "bib", Address: 2}, ignore: nil, expectedIgnore: nil},
+		{name: "nil partial", base: &Wombat{Nickname: "sushi", Address: 1}, partial: nil, expected: &Wombat{Nickname: "sushi", Address: 1}, ignore: nil, expectedIgnore: nil},
 	}
 
-	for _, c := range cases {
-		out, ignored, err := reflectutil.Merge(c.Target, c.Partial, c.Ignore)
-		assert.NoError(err)
-		assert.Equal(c.Expected, out, "case %s", c.N)
-		assert.Equal(c.ExpectedIgnore, ignored, "case %s", c.N)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			out, ignored, err := reflectutil.Merge(test.base, test.partial, test.ignore)
+			assert.NoError(err)
+			assert.Equal(test.expected, out)
+			assert.Equal(test.expectedIgnore, ignored)
+		})
 	}
 }
