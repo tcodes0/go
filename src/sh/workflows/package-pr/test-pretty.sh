@@ -5,6 +5,10 @@ shopt -s globstar
 # shellcheck disable=SC1091
 source "$PWD/src/sh/lib.sh"
 
+if ! [ -d "./$PKG/test" ]; then
+  exit 0
+fi
+
 # fail if any dependencies are missing
 flags+=(-mod=readonly)
 # output test results in json format for processing
@@ -20,10 +24,6 @@ if [ "$CACHE" == "false" ]; then
 fi
 
 testOutputJson=$(mktemp /tmp/go-test-json-XXXXXX)
-
-if ! [ -d "./$PKG/test" ]; then
-  exit 0
-fi
 
 # tee a copy of output for further processing
 go test "${flags[@]}" "./$PKG/test" 2>&1 | tee "$testOutputJson" | gotestfmt
