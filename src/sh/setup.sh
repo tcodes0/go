@@ -96,7 +96,7 @@ setup go golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow@latest shadow
 setup go golang.org/x/tools/go/analysis/passes/stringintconv/cmd/stringintconv@latest stringintconv
 setup go golang.org/x/tools/go/analysis/passes/unmarshal/cmd/unmarshal@latest unmarshal
 setup go golang.org/x/tools/go/analysis/passes/unusedresult/cmd/unusedresult@latest unusedresult
-setup go go install github.com/4meepo/tagalign/cmd/tagalign@latest tagalign
+setup go github.com/4meepo/tagalign/cmd/tagalign@latest tagalign
 
 # JS
 setup js cspell@latest cspell a spellchecker for source code

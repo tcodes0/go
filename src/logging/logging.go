@@ -3,6 +3,7 @@ package logging
 import (
 	"context"
 	"errors"
+	"io"
 	"log"
 	"os"
 
@@ -39,6 +40,7 @@ var (
 	contextKey = ContextKey{}
 )
 
+// retrieves a logger from a context, see Logger.WithContext.
 func FromContext(ctx context.Context) (*Logger, error) {
 	l, ok := ctx.Value(contextKey).(*Logger)
 	if !ok {
@@ -48,23 +50,70 @@ func FromContext(ctx context.Context) (*Logger, error) {
 	return l, nil
 }
 
-func Create(level Level, flags int, color bool) *Logger {
-	if flags == 0 {
-		flags = defaultFlags
+type createOpts = struct {
+	writer io.Writer
+	exit   func(code int)
+	level  Level
+	flags  int
+	color  bool
+}
+
+type CreateOptions func(c *createOpts)
+
+func OptFlags(flags int) CreateOptions {
+	return func(c *createOpts) {
+		c.flags = flags
+	}
+}
+
+func OptColor(color bool) CreateOptions {
+	return func(c *createOpts) {
+		c.color = color
+	}
+}
+
+func OptWriter(w io.Writer) CreateOptions {
+	return func(c *createOpts) {
+		c.writer = w
+	}
+}
+
+func OptExit(exit func(code int)) CreateOptions {
+	return func(c *createOpts) {
+		c.exit = exit
+	}
+}
+
+func OptLevel(level Level) CreateOptions {
+	return func(c *createOpts) {
+		c.level = level
+	}
+}
+
+// creates a new logger with the given options.
+func Create(options ...CreateOptions) *Logger {
+	opts := &createOpts{
+		flags:  defaultFlags,
+		color:  false,
+		writer: log.Writer(),
+		exit:   os.Exit,
+		level:  LInfo,
+	}
+
+	for _, o := range options {
+		o(opts)
 	}
 
 	prefix := info
-	if color {
+	if opts.color {
 		prefix = hue.Cprint(hue.Gray, info)
 	}
 
 	return &Logger{
-		l:         log.New(log.Writer(), prefix, flags),
-		level:     level,
-		color:     color,
+		l:         log.New(opts.writer, prefix, opts.flags),
+		level:     opts.level,
+		color:     opts.color,
 		calldepth: defaultCalldepth,
-		exit: func(code int) {
-			os.Exit(code)
-		},
+		exit:      opts.exit,
 	}
 }

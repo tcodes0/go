@@ -3,7 +3,7 @@ package main
 import "github.com/tcodes0/go/src/logging"
 
 func main() {
-	l := logging.Create(logging.LInfo, 0 /*default*/, true)
+	l := logging.Create(logging.OptColor(false))
 	l.SetExit(func(code int) {})
 	l.SetLevel(logging.LDebug)
 
