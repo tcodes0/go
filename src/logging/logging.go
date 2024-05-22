@@ -2,50 +2,60 @@ package logging
 
 import (
 	"context"
-	"time"
-
-	"github.com/rs/zerolog"
+	"errors"
+	"log"
 )
 
-type Level string
+type Level int
 
 const (
-	Debug Level = "debug"
-	Warn  Level = "warn"
-	Error Level = "error"
+	LDebug Level = iota + 1
+	LInfo  Level = iota + 1
+	LWarn  Level = iota + 1
+	LError Level = iota + 1
+
+	info  string = "INFO: " // default level
+	warn  string = "WARN: "
+	erro  string = "ERRO: "
+	debug string = "DEBG: "
+
+	defaultFlags = log.LstdFlags | log.Lshortfile | log.LUTC
 )
 
-func (l Level) String() string {
-	return string(l)
+type ContextKey struct{}
+
+var (
+	ErrNoCtxLogger = errors.New("no logger found in context")
+
+	contextKey = ContextKey{}
+)
+
+func FromContext(ctx context.Context) (*Logger, error) {
+	l, ok := ctx.Value(contextKey).(*Logger)
+	if !ok {
+		return nil, ErrNoCtxLogger
+	}
+
+	return l, nil
 }
 
-// should call only once. Sets a context logger.
-func Init(ctx context.Context) (context.Context, zerolog.Logger) {
-	zerolog.TimeFieldFormat = time.RFC3339Nano
+func Create(level Level, flags int, color bool) *Logger {
+	if flags == 0 {
+		flags = defaultFlags
+	}
 
-	logger := zerolog.New(zerolog.NewConsoleWriter()).With().Timestamp().Logger()
+	prefix := info
+	if color {
+		prefix = green(info)
+	}
 
-	return logger.WithContext(ctx), logger
-}
-
-func SetGlobalLevel(l string) {
-	switch Level(l) {
-	case Debug:
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	case Warn:
-		zerolog.SetGlobalLevel(zerolog.WarnLevel)
-	case Error:
-		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
-	default:
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	return &Logger{
+		l:     log.New(log.Writer(), prefix, flags),
+		level: level,
+		color: color,
 	}
 }
 
-// returns a non-nil logger, it may be disabled if not found on CTX.
-func FromContext(ctx context.Context) zerolog.Logger {
-	if ctxLogger := zerolog.Ctx(ctx); ctxLogger != nil {
-		return *ctxLogger
-	}
-
-	return zerolog.Nop()
+func Nop() *Logger {
+	return &Logger{}
 }
