@@ -5,6 +5,8 @@ import (
 	"errors"
 	"log"
 	"os"
+
+	"github.com/tcodes0/go/src/hue"
 )
 
 type Level int
@@ -14,15 +16,19 @@ const (
 	LInfo  Level = iota + 1
 	LWarn  Level = iota + 1
 	LError Level = iota + 1
+	LFatal Level = iota + 1
+	LNone  Level = iota + 1
 
-	info  string = "INFO: " // default level
-	warn  string = "WARN: "
-	erro  string = "ERRO: "
-	fatal string = "FATL: "
-	debug string = "DEBG: "
+	info  string = "INFO " // default level
+	warn  string = "WARN "
+	erro  string = "ERRO "
+	fatal string = "FATL "
+	debug string = "DEBG "
 
-	defaultFlags     = log.LstdFlags | log.Lshortfile | log.LUTC
-	defaultCalldepth = 2 // necessary for log.Lshortfile to show correctly
+	defaultFlags = log.LstdFlags | log.Lshortfile | log.LUTC
+	// necessary for log.Lshortfile to show correctly
+	// controls stack frames to pop when showing file:line.
+	defaultCalldepth = 2
 )
 
 type ContextKey struct{}
@@ -49,7 +55,7 @@ func Create(level Level, flags int, color bool) *Logger {
 
 	prefix := info
 	if color {
-		prefix = gray(info)
+		prefix = hue.Cprint(hue.Gray, info)
 	}
 
 	return &Logger{
@@ -57,12 +63,8 @@ func Create(level Level, flags int, color bool) *Logger {
 		level:     level,
 		color:     color,
 		calldepth: defaultCalldepth,
-		Exit: func(code int) {
+		exit: func(code int) {
 			os.Exit(code)
 		},
 	}
-}
-
-func Nop() *Logger {
-	return &Logger{}
 }

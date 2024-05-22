@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"strings"
+
+	"github.com/tcodes0/go/src/hue"
 )
 
 const (
@@ -14,60 +16,72 @@ const (
 
 type Logger struct {
 	l         *log.Logger
-	Exit      func(code int) // proxy to os.Exit(1)
-	appended  string         // add to all messages
-	level     Level
-	color     bool // print terminal color
-	calldepth int  // track stack depth for log.Lshortfile
+	exit      func(code int) // proxy to os.Exit(1)
+	metadata  string         // added to all messages
+	level     Level          // messages will only log if level is >= to this
+	msgLevel  Level          // level of the next message
+	color     bool           // print terminal color characters
+	calldepth int            // stack depth for log.Lshortfile
 }
 
+// set a logger in this context, retrieve it with FromContext.
 func (logger *Logger) WithContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, contextKey, logger)
 }
 
+// set Level of the next message to warning.
 func (logger *Logger) Warn() *Logger {
 	logger.SetPrefix(warn)
+	logger.msgLevel = LWarn
 
 	return logger
 }
 
+// set Level of the next message to error.
 func (logger *Logger) Error() *Logger {
 	logger.SetPrefix(erro)
+	logger.msgLevel = LError
 
 	return logger
 }
 
+// set Level of the next message to debug.
 func (logger *Logger) Debug() *Logger {
 	logger.SetPrefix(debug)
+	logger.msgLevel = LDebug
 
 	return logger
 }
 
+// send a message.
 func (logger *Logger) Log(msg ...interface{}) {
-	if logger.l == nil {
+	defer func() {
+		logger.SetPrefix(info)
+		logger.calldepth = defaultCalldepth
+		logger.msgLevel = LInfo
+	}()
+
+	if logger.l == nil || logger.msgLevel < logger.level {
 		return
 	}
 
-	if logger.appended != "" {
-		appendedMsg := make([]interface{}, len(msg)+1)
+	if logger.metadata != "" {
+		msgMetadata := make([]interface{}, len(msg)+1)
 
 		if logger.color {
-			appendedMsg[0] = strings.TrimSuffix(logger.appended, appendSuffix) + ": " + colorEnd
+			msgMetadata[0] = strings.TrimSuffix(logger.metadata, appendSuffix) + hue.TermEnd + " "
 		} else {
-			appendedMsg[0] = strings.TrimSuffix(logger.appended, appendSuffix) + ": "
+			msgMetadata[0] = "(" + strings.TrimSuffix(logger.metadata, appendSuffix) + ")" + hue.TermEnd + " "
 		}
 
-		for i, m := range msg {
-			appendedMsg[i+1] = m
-		}
-
-		msg = appendedMsg
+		copy(msgMetadata[1:], msg)
+		msg = msgMetadata
 	}
 
 	out := fmt.Sprint(msg...)
 	if logger.color {
 		// end color of the log line information, started on prefix
-		out = colorEnd + out
+		out = hue.TermEnd + out
 	}
 
 	err := logger.l.Output(logger.calldepth, out)
@@ -75,11 +89,9 @@ func (logger *Logger) Log(msg ...interface{}) {
 		logger.l.SetPrefix(erro)
 		logger.l.Print("printing previous log line: " + err.Error())
 	}
-
-	logger.SetPrefix(info)
-	logger.calldepth = defaultCalldepth
 }
 
+// send a formatted message.
 func (logger *Logger) Logf(format string, v ...interface{}) {
 	out := fmt.Sprintf(format, v...)
 
@@ -88,18 +100,21 @@ func (logger *Logger) Logf(format string, v ...interface{}) {
 	logger.Log(out)
 }
 
+// sends a message and then calls Logger.exit().
 func (logger *Logger) Fatal(msg ...interface{}) {
 	logger.SetPrefix(fatal)
 
 	logger.calldepth++
+	logger.msgLevel = LFatal
 
 	logger.Log(msg...)
 
-	if logger.Exit != nil {
-		logger.Exit(1)
+	if logger.exit != nil {
+		logger.exit(1)
 	}
 }
 
+// sends a formatted message and then calls Logger.exit().
 func (logger *Logger) Fatalf(format string, msg ...interface{}) {
 	out := fmt.Sprintf(format, msg...)
 
@@ -108,18 +123,26 @@ func (logger *Logger) Fatalf(format string, msg ...interface{}) {
 	logger.Fatal(out)
 }
 
-func (logger *Logger) Append(key, val string) {
+// append metadata to all future messages,
+// metadata is formated in key value pairs;
+// see WipeMetadata.
+func (logger *Logger) AppendMetadata(key, val string) {
 	if logger.color {
-		logger.appended += lightGray(key) + gray(appendEquals) + lightGray(val) + gray(appendSuffix)
+		logger.metadata += hue.Cprint(hue.Brown, key) + hue.Cprint(hue.Gray, appendEquals) +
+			hue.Cprint(hue.Brown, val) + hue.Cprint(hue.Gray, appendSuffix)
 	} else {
-		logger.appended += key + appendEquals + val + appendSuffix
+		logger.metadata += key + appendEquals + val + appendSuffix
 	}
 }
 
-func (logger *Logger) Unappend() {
-	logger.appended = ""
+// remove all metadata from future messages,
+// see AppendMetadata.
+func (logger *Logger) WipeMetadata() {
+	logger.metadata = ""
 }
 
+// proxy to log.Logger.SetPrefix,
+// beware the custom prefixes will not color.
 func (logger *Logger) SetPrefix(prefix string) {
 	if logger.l == nil {
 		return
@@ -128,17 +151,28 @@ func (logger *Logger) SetPrefix(prefix string) {
 	if logger.color {
 		switch prefix {
 		case info:
-			prefix = gray(info)
+			prefix = hue.Cprint(hue.Gray, info)
 		case warn:
-			prefix = yellow(warn)
+			// hue.Gray is added to color the log line information
+			prefix = hue.Cprint(hue.Yellow, warn, hue.TermEnd, hue.Cprint(hue.Gray))
 		case erro:
-			prefix = red(erro)
+			prefix = hue.Cprint(hue.Red, erro, hue.TermEnd, hue.Cprint(hue.Gray))
 		case fatal:
-			prefix = brightRed(fatal)
+			prefix = hue.Cprint(hue.BrightRed, fatal, hue.TermEnd, hue.Cprint(hue.Gray))
 		case debug:
-			prefix = blue(debug)
+			prefix = hue.Cprint(hue.Blue, debug, hue.TermEnd, hue.Cprint(hue.Gray))
 		}
 	}
 
 	logger.l.SetPrefix(prefix)
+}
+
+// sets the function to call from Logger.Fatal methods.
+func (logger *Logger) SetExit(f func(int)) {
+	logger.exit = f
+}
+
+// set the level of the logger, messages < Logger.level will be ignored.
+func (logger *Logger) SetLevel(level Level) {
+	logger.level = level
 }
