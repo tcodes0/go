@@ -50,7 +50,12 @@ func (logger *Logger) Log(msg ...interface{}) {
 
 	if logger.appended != "" {
 		appendedMsg := make([]interface{}, len(msg)+1)
-		appendedMsg[0] = strings.TrimSuffix(logger.appended, appendSuffix) + ": "
+
+		if logger.color {
+			appendedMsg[0] = strings.TrimSuffix(logger.appended, appendSuffix) + ": " + colorEnd
+		} else {
+			appendedMsg[0] = strings.TrimSuffix(logger.appended, appendSuffix) + ": "
+		}
 
 		for i, m := range msg {
 			appendedMsg[i+1] = m
@@ -60,6 +65,10 @@ func (logger *Logger) Log(msg ...interface{}) {
 	}
 
 	out := fmt.Sprint(msg...)
+	if logger.color {
+		// end color of the log line information, started on prefix
+		out = colorEnd + out
+	}
 
 	err := logger.l.Output(logger.calldepth, out)
 	if err != nil {
@@ -100,7 +109,11 @@ func (logger *Logger) Fatalf(format string, msg ...interface{}) {
 }
 
 func (logger *Logger) Append(key, val string) {
-	logger.appended += key + appendEquals + val + appendSuffix
+	if logger.color {
+		logger.appended += lightGray(key) + gray(appendEquals) + lightGray(val) + gray(appendSuffix)
+	} else {
+		logger.appended += key + appendEquals + val + appendSuffix
+	}
 }
 
 func (logger *Logger) Unappend() {
@@ -121,7 +134,7 @@ func (logger *Logger) SetPrefix(prefix string) {
 		case erro:
 			prefix = red(erro)
 		case fatal:
-			prefix = darkRed(fatal)
+			prefix = brightRed(fatal)
 		case debug:
 			prefix = blue(debug)
 		}
