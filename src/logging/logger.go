@@ -2,7 +2,9 @@ package logging
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"os"
 )
 
 type Logger struct {
@@ -17,34 +19,19 @@ func (logger *Logger) WithContext(ctx context.Context) context.Context {
 }
 
 func (logger *Logger) Warn() *Logger {
-	prefix := warn
-	if logger.color {
-		prefix = yellow(warn)
-	}
-
-	logger.l.SetPrefix(prefix)
+	logger.SetPrefix(warn)
 
 	return logger
 }
 
 func (logger *Logger) Error() *Logger {
-	prefix := erro
-	if logger.color {
-		prefix = red(erro)
-	}
-
-	logger.l.SetPrefix(prefix)
+	logger.SetPrefix(erro)
 
 	return logger
 }
 
 func (logger *Logger) Debug() *Logger {
-	prefix := debug
-	if logger.color {
-		prefix = blue(debug)
-	}
-
-	logger.l.SetPrefix(prefix)
+	logger.SetPrefix(debug)
 
 	return logger
 }
@@ -54,37 +41,59 @@ func (logger *Logger) Log(v ...interface{}) {
 	s[0] = logger.appended + ": "
 	copy(s[1:], v)
 
-	logger.l.Print(v...)
+	out := fmt.Sprint(v...)
 
-	prefix := info
-	if logger.color {
-		prefix = green(info)
+	err := logger.l.Output(calldepth, out)
+	if err != nil {
+		logger.l.SetPrefix(erro)
+		logger.l.Print("printing previous log line: " + err.Error())
 	}
 
-	logger.l.SetPrefix(prefix)
+	logger.SetPrefix(info)
 }
 
 func (logger *Logger) Logf(format string, v ...interface{}) {
-	logger.l.Printf(logger.appended+": "+format, v...)
+	out := fmt.Sprintf(logger.appended+": "+format, v...)
 
-	prefix := info
-	if logger.color {
-		prefix = green(info)
+	err := logger.l.Output(calldepth, out)
+	if err != nil {
+		logger.SetPrefix(erro)
+		logger.l.Print("printing previous log line: " + err.Error())
 	}
 
-	logger.l.SetPrefix(prefix)
+	logger.SetPrefix(info)
 }
 
-func (logger *Logger) Fatal(v ...interface{}) {
-	s := make([]interface{}, len(v)+1)
+func (logger *Logger) Fatal(msg ...interface{}) {
+	s := make([]interface{}, len(msg)+1)
 	s[0] = logger.appended + ": "
-	copy(s[1:], v)
+	copy(s[1:], msg)
 
-	logger.l.Fatal(v...)
+	logger.SetPrefix(fatal)
+
+	out := fmt.Sprint(msg...)
+
+	err := logger.l.Output(calldepth, out)
+	if err != nil {
+		logger.SetPrefix(erro)
+		logger.l.Print("printing previous log line: " + err.Error())
+	}
+
+	os.Exit(1)
 }
 
-func (logger *Logger) Fatalf(format string, v ...interface{}) {
-	logger.l.Fatalf(logger.appended+": "+format, v...)
+func (logger *Logger) Fatalf(format string, msg ...interface{}) {
+	logger.SetPrefix(fatal)
+
+	out := fmt.Sprintf(logger.appended+": "+format, msg...)
+
+	err := logger.l.Output(calldepth, out)
+	if err != nil {
+		logger.SetPrefix(erro)
+		logger.l.Print("printing previous log line: " + err.Error())
+	}
+
+	os.Exit(1)
 }
 
 func (logger *Logger) Append(message string) {
@@ -93,4 +102,23 @@ func (logger *Logger) Append(message string) {
 
 func (logger *Logger) Unappend() {
 	logger.appended = ""
+}
+
+func (logger *Logger) SetPrefix(prefix string) {
+	if logger.color {
+		switch prefix {
+		case info:
+			prefix = gray(info)
+		case warn:
+			prefix = yellow(warn)
+		case erro:
+			prefix = red(erro)
+		case fatal:
+			prefix = darkRed(fatal)
+		case debug:
+			prefix = blue(debug)
+		}
+	}
+
+	logger.l.SetPrefix(prefix)
 }

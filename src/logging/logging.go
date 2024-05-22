@@ -17,9 +17,11 @@ const (
 	info  string = "INFO: " // default level
 	warn  string = "WARN: "
 	erro  string = "ERRO: "
+	fatal string = "FATL: "
 	debug string = "DEBG: "
 
 	defaultFlags = log.LstdFlags | log.Lshortfile | log.LUTC
+	calldepth    = 2 // necessary for log.Lshortfile to show correctly
 )
 
 type ContextKey struct{}
@@ -46,7 +48,7 @@ func Create(level Level, flags int, color bool) *Logger {
 
 	prefix := info
 	if color {
-		prefix = green(info)
+		prefix = gray(info)
 	}
 
 	return &Logger{

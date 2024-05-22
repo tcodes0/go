@@ -17,6 +17,7 @@ dictionaries:
 words:
   - DEBG
   - erro
+  - FATL
   - gofumpt
   - goinstall
   - golangci
@@ -31,3 +32,4 @@ words:
   - stretchr
   - tcodes
   - tcodes0
+  - Unappend
