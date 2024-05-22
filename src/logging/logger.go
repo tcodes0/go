@@ -4,14 +4,21 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
+	"strings"
+)
+
+const (
+	appendEquals = "="
+	appendSuffix = ", "
 )
 
 type Logger struct {
-	l        *log.Logger
-	appended string
-	level    Level
-	color    bool
+	l         *log.Logger
+	Exit      func(code int) // proxy to os.Exit(1)
+	appended  string         // add to all messages
+	level     Level
+	color     bool // print terminal color
+	calldepth int  // track stack depth for log.Lshortfile
 }
 
 func (logger *Logger) WithContext(ctx context.Context) context.Context {
@@ -36,68 +43,64 @@ func (logger *Logger) Debug() *Logger {
 	return logger
 }
 
-func (logger *Logger) Log(v ...interface{}) {
-	s := make([]interface{}, len(v)+1)
-	s[0] = logger.appended + ": "
-	copy(s[1:], v)
+func (logger *Logger) Log(msg ...interface{}) {
+	if logger.l == nil {
+		return
+	}
 
-	out := fmt.Sprint(v...)
+	if logger.appended != "" {
+		appendedMsg := make([]interface{}, len(msg)+1)
+		appendedMsg[0] = strings.TrimSuffix(logger.appended, appendSuffix) + ": "
 
-	err := logger.l.Output(calldepth, out)
+		for i, m := range msg {
+			appendedMsg[i+1] = m
+		}
+
+		msg = appendedMsg
+	}
+
+	out := fmt.Sprint(msg...)
+
+	err := logger.l.Output(logger.calldepth, out)
 	if err != nil {
 		logger.l.SetPrefix(erro)
 		logger.l.Print("printing previous log line: " + err.Error())
 	}
 
 	logger.SetPrefix(info)
+	logger.calldepth = defaultCalldepth
 }
 
 func (logger *Logger) Logf(format string, v ...interface{}) {
-	out := fmt.Sprintf(logger.appended+": "+format, v...)
+	out := fmt.Sprintf(format, v...)
 
-	err := logger.l.Output(calldepth, out)
-	if err != nil {
-		logger.SetPrefix(erro)
-		logger.l.Print("printing previous log line: " + err.Error())
-	}
+	logger.calldepth++
 
-	logger.SetPrefix(info)
+	logger.Log(out)
 }
 
 func (logger *Logger) Fatal(msg ...interface{}) {
-	s := make([]interface{}, len(msg)+1)
-	s[0] = logger.appended + ": "
-	copy(s[1:], msg)
-
 	logger.SetPrefix(fatal)
 
-	out := fmt.Sprint(msg...)
+	logger.calldepth++
 
-	err := logger.l.Output(calldepth, out)
-	if err != nil {
-		logger.SetPrefix(erro)
-		logger.l.Print("printing previous log line: " + err.Error())
+	logger.Log(msg...)
+
+	if logger.Exit != nil {
+		logger.Exit(1)
 	}
-
-	os.Exit(1)
 }
 
 func (logger *Logger) Fatalf(format string, msg ...interface{}) {
-	logger.SetPrefix(fatal)
+	out := fmt.Sprintf(format, msg...)
 
-	out := fmt.Sprintf(logger.appended+": "+format, msg...)
+	logger.calldepth++
 
-	err := logger.l.Output(calldepth, out)
-	if err != nil {
-		logger.SetPrefix(erro)
-		logger.l.Print("printing previous log line: " + err.Error())
-	}
-
-	os.Exit(1)
+	logger.Fatal(out)
 }
 
-func (logger *Logger) Append(message string) {
-	logger.appended += message + " "
+func (logger *Logger) Append(key, val string) {
+	logger.appended += key + appendEquals + val + appendSuffix
 }
 
 func (logger *Logger) Unappend() {
@@ -105,6 +108,10 @@ func (logger *Logger) Unappend() {
 }
 
 func (logger *Logger) SetPrefix(prefix string) {
+	if logger.l == nil {
+		return
+	}
+
 	if logger.color {
 		switch prefix {
 		case info:

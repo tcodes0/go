@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"os"
 )
 
 type Level int
@@ -20,8 +21,8 @@ const (
 	fatal string = "FATL: "
 	debug string = "DEBG: "
 
-	defaultFlags = log.LstdFlags | log.Lshortfile | log.LUTC
-	calldepth    = 2 // necessary for log.Lshortfile to show correctly
+	defaultFlags     = log.LstdFlags | log.Lshortfile | log.LUTC
+	defaultCalldepth = 2 // necessary for log.Lshortfile to show correctly
 )
 
 type ContextKey struct{}
@@ -52,9 +53,13 @@ func Create(level Level, flags int, color bool) *Logger {
 	}
 
 	return &Logger{
-		l:     log.New(log.Writer(), prefix, flags),
-		level: level,
-		color: color,
+		l:         log.New(log.Writer(), prefix, flags),
+		level:     level,
+		color:     color,
+		calldepth: defaultCalldepth,
+		Exit: func(code int) {
+			os.Exit(code)
+		},
 	}
 }
 
