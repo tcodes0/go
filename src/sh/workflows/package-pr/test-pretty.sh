@@ -17,6 +17,10 @@ flags+=(-json)
 flags+=(-race)
 # go vet linter is handled by lint step
 flags+=(-vet=off)
+# output coverage profile to file
+flags+=(-coverprofile="$COVERAGE_FILE")
+# package to scan coverage, necessary for blackbox testing
+flags+=(-coverpkg="./$PKG")
 
 if [ "$CACHE" == "false" ]; then
   # disable passed test caching

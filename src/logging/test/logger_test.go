@@ -314,11 +314,11 @@ func TestLogger(t *testing.T) {
 					args[i] = reflect.ValueOf(arg)
 				}
 
-				ret := method.Call(args)
-				assert.Len(ret, len(test.retType[callN]), fmt.Sprintf("unexpected return values on call [%d]", callN))
+				returns := method.Call(args)
+				assert.Len(returns, len(test.retType[callN]), fmt.Sprintf("unexpected return values on call [%d]", callN))
 
-				for i, r := range ret {
-					assert.Equal(r.Type().String(), test.retType[callN][i], fmt.Sprintf("unexpected return type at [%d] on call [%d]", i, callN))
+				for i, ret := range returns {
+					assert.Equal(ret.Type().String(), test.retType[callN][i], fmt.Sprintf("unexpected return type at [%d] on call [%d]", i, callN))
 				}
 			}
 

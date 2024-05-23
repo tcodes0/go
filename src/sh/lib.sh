@@ -15,6 +15,7 @@ export COLOR_DIM="\e[2m"
 export COLOR_END="\e[0m"
 export CHAR_CARRIG_RET
 CHAR_CARRIG_RET=$(printf "%b" "\r")
+export COVERAGE_FILE="coverage.out"
 
 # example: msg hello world
 msg() {

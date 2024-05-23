@@ -18,27 +18,28 @@ read -rd "$CHAR_CARRIG_RET" -a packages < <(
 
   regExpSrcPrefix="^src\/"
   # find folders directly under ./src that have at least 1 *.go file; prettify output
-  find src -mindepth 2 -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort | uniq | sed -e "s/$regExpSrcPrefix//" | tr '\n' ' '
+  find src -mindepth 2 -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort --stable | uniq | sed -e "s/$regExpSrcPrefix//" | tr '\n' ' '
 
   printf %b "$CHAR_CARRIG_RET"
 )
 
 declare -rA packageCommands=(
+  ["build"]="build"
+  ["format"]="format"
   ["lint"]="lint"
   ["lintfix"]="lint-fix"
-  ["format"]="format"
   ["test"]="test"
-  ["build"]="build"
 )
 
 declare -rA repoCommands=(
   ["ci"]="ci"
+  ["coverage"]="coverage"
   ["formatConfigs"]="format-configs"
+  ["mocks"]="generate-mocks"
   ["spellcheck"]="spellcheck-docs"
   ["setup"]="setup"
-  ["testSh"]="test-scripts"
   ["tag"]="tag"
-  ["mocks"]="generate-mocks"
+  ["testSh"]="test-scripts"
 )
 
 declare -A optValue=(
@@ -96,7 +97,7 @@ build() {
 ci() {
   requireGitClean
   requireInternet Internet required to pull docker images
-  ./src/sh/ci/pull-request.sh
+  ./src/sh/ci.sh
 }
 
 spellcheckDocs() {
@@ -141,6 +142,10 @@ runPkgCommand() {
 
 generateMocks() {
   ./src/sh/mocks.sh
+}
+
+coverage() {
+  ./src/sh/coverage.sh
 }
 
 ### validation, input handling ###
@@ -214,5 +219,8 @@ case ${optValue[command]} in
   ;;
 "${repoCommands[mocks]}")
   generateMocks
+  ;;
+"${repoCommands[coverage]}")
+  coverage
   ;;
 esac
