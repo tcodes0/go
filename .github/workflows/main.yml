@@ -19,6 +19,7 @@ jobs:
       goPkgHttpflush: ${{ steps.list-changed-files.outputs.pkg_httpflush_all_changed_files }}
       goPkgHttprecoverer: ${{ steps.list-changed-files.outputs.pkg_httprecoverer_all_changed_files }}
       goPkgHttproundtrip: ${{ steps.list-changed-files.outputs.pkg_httproundtrip_all_changed_files }}
+      goPkgHue: ${{ steps.list-changed-files.outputs.pkg_hue_all_changed_files }}
       goPkgIdentifier: ${{ steps.list-changed-files.outputs.pkg_identifier_all_changed_files }}
       goPkgJsonutil: ${{ steps.list-changed-files.outputs.pkg_jsonutil_all_changed_files }}
       goPkgLogging: ${{ steps.list-changed-files.outputs.pkg_logging_all_changed_files }}
@@ -36,6 +37,7 @@ jobs:
         || steps.list-changed-files.outputs.pkg_httpflush_all_changed_files
         || steps.list-changed-files.outputs.pkg_httprecoverer_all_changed_files
         || steps.list-changed-files.outputs.pkg_httproundtrip_all_changed_files
+        || steps.list-changed-files.outputs.pkg_hue_all_changed_files
         || steps.list-changed-files.outputs.pkg_identifier_all_changed_files
         || steps.list-changed-files.outputs.pkg_jsonutil_all_changed_files
         || steps.list-changed-files.outputs.pkg_logging_all_changed_files
@@ -75,6 +77,8 @@ jobs:
               - src/httprecoverer/**.go
             pkg_httproundtrip:
               - src/httproundtrip/**.go
+            pkg_hue:
+              - src/hue/**.go
             pkg_identifier:
               - src/identifier/**.go
             pkg_jsonutil:
@@ -250,6 +254,15 @@ jobs:
     with:
       goVersion: 1.22
       packagePath: src/httproundtrip
+
+  hue:
+    name: hue
+    needs: changed-files
+    if: needs.changed-files.outputs.goPkgHue
+    uses: ./.github/workflows/package-pr.yml
+    with:
+      goVersion: 1.22
+      packagePath: src/hue
 
   identifier:
     name: identifier

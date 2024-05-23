@@ -2,7 +2,6 @@ package logging
 
 import (
 	"context"
-	"errors"
 	"io"
 	"log"
 	"os"
@@ -35,19 +34,17 @@ const (
 type ContextKey struct{}
 
 var (
-	ErrNoCtxLogger = errors.New("no logger found in context")
-
 	contextKey = ContextKey{}
 )
 
 // retrieves a logger from a context, see Logger.WithContext.
-func FromContext(ctx context.Context) (*Logger, error) {
+func FromContext(ctx context.Context) *Logger {
 	l, ok := ctx.Value(contextKey).(*Logger)
 	if !ok {
-		return nil, ErrNoCtxLogger
+		panic("no logger found in context")
 	}
 
-	return l, nil
+	return l
 }
 
 type createOpts = struct {

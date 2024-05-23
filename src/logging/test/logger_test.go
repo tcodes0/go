@@ -139,12 +139,12 @@ func TestLogger(t *testing.T) {
 		{
 			name: "one metadata",
 			calls: [][]string{
-				{"AppendMetadata", "hello", "world"},
+				{"Metadata", "hello", "world"},
 				{"Error"},
 				{"Logf", "test%s", "ing"},
 			},
 			retType: [][]string{
-				{},
+				{"*logging.Logger"},
 				{"*logging.Logger"},
 				{},
 			},
@@ -153,14 +153,14 @@ func TestLogger(t *testing.T) {
 		{
 			name: "metadata wipe",
 			calls: [][]string{
-				{"AppendMetadata", "hello", "world"},
-				{"WipeMetadata"},
+				{"Metadata", "hello", "world"},
+				{"Wipe"},
 				{"Error"},
 				{"Logf", "test%s", "ing"},
 			},
 			retType: [][]string{
-				{},
-				{},
+				{"*logging.Logger"},
+				{"*logging.Logger"},
 				{"*logging.Logger"},
 				{},
 			},
@@ -169,14 +169,14 @@ func TestLogger(t *testing.T) {
 		{
 			name: "many metadata",
 			calls: [][]string{
-				{"AppendMetadata", "hello", "world"},
-				{"AppendMetadata", "foo", "bar"},
+				{"Metadata", "hello", "world"},
+				{"Metadata", "foo", "bar"},
 				{"Error"},
 				{"Logf", "test%s", "ing"},
 			},
 			retType: [][]string{
-				{},
-				{},
+				{"*logging.Logger"},
+				{"*logging.Logger"},
 				{"*logging.Logger"},
 				{},
 			},
@@ -185,14 +185,14 @@ func TestLogger(t *testing.T) {
 		{
 			name: "many metadata color",
 			calls: [][]string{
-				{"AppendMetadata", "hello", "world"},
-				{"AppendMetadata", "foo", "bar"},
+				{"Metadata", "hello", "world"},
+				{"Metadata", "foo", "bar"},
 				{"Error"},
 				{"Logf", "test%s", "ing"},
 			},
 			retType: [][]string{
-				{},
-				{},
+				{"*logging.Logger"},
+				{"*logging.Logger"},
 				{"*logging.Logger"},
 				{},
 			},

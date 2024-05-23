@@ -150,20 +150,26 @@ func (logger *Logger) Fatalf(format string, msg ...any) {
 
 // append metadata to all future messages,
 // metadata is formated in key value pairs;
-// see WipeMetadata.
-func (logger *Logger) AppendMetadata(key, val string) {
+// see Wipe.
+func (logger *Logger) Metadata(key string, val any) *Logger {
+	formatVal := fmt.Sprintf("%v", val)
+
 	if logger.color {
 		logger.metadata += hue.Cprint(hue.Brown, key) + hue.Cprint(hue.Gray, appendEquals) +
-			hue.Cprint(hue.Brown, val) + hue.Cprint(hue.Gray, appendSuffix)
+			hue.Cprint(hue.Brown, formatVal) + hue.Cprint(hue.Gray, appendSuffix)
 	} else {
-		logger.metadata += key + appendEquals + val + appendSuffix
+		logger.metadata += key + appendEquals + formatVal + appendSuffix
 	}
+
+	return logger
 }
 
 // remove all metadata from future messages,
-// see AppendMetadata.
-func (logger *Logger) WipeMetadata() {
+// see Metadata.
+func (logger *Logger) Wipe() *Logger {
 	logger.metadata = ""
+
+	return logger
 }
 
 // sets the function to call from Logger.Fatal methods.

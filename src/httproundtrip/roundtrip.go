@@ -3,13 +3,13 @@ package httproundtrip
 import (
 	"net/http"
 
-	"github.com/rs/zerolog"
 	"github.com/tcodes0/go/src/errutil"
+	"github.com/tcodes0/go/src/logging"
 )
 
 type Roundtrip struct {
 	Transport *http.Transport
-	Logger    *zerolog.Logger
+	Logger    *logging.Logger
 	UserAgent string
 }
 
@@ -18,24 +18,23 @@ func (r Roundtrip) RoundTrip(req *http.Request) (*http.Response, error) {
 		req.Header.Set("User-Agent", r.UserAgent)
 	}
 
-	r.Logger.Debug().
-		Str("method", req.Method).
-		Str("url", req.URL.String()).
-		Interface("headers", req.Header).
-		Msg("req")
-
-	res, err := r.Transport.RoundTrip(req)
-
 	if r.Logger == nil {
-		nop := zerolog.Nop()
-		r.Logger = &nop
+		r.Logger = &logging.Logger{}
 	}
 
 	r.Logger.Debug().
-		Int("status", res.StatusCode).
-		Int64("length", res.ContentLength).
-		Interface("headers", res.Header).
-		Msg("res")
+		Metadata("method", req.Method).
+		Metadata("url", req.URL.String()).
+		Metadata("headers", req.Header).
+		Log("req")
+
+	res, err := r.Transport.RoundTrip(req)
+
+	r.Logger.Debug().
+		Metadata("status", res.StatusCode).
+		Metadata("length", res.ContentLength).
+		Metadata("headers", res.Header).
+		Log("res")
 
 	return res, errutil.Wrap(err, "http roundtrip")
 }

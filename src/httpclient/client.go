@@ -12,8 +12,8 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/rs/zerolog"
 	"github.com/tcodes0/go/src/errutil"
+	"github.com/tcodes0/go/src/logging"
 	"github.com/tcodes0/go/src/misc"
 	"github.com/tcodes0/go/src/reflectutil"
 )
@@ -75,8 +75,9 @@ func (c Client) Request(ctx context.Context, method, path string, body any, head
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("User-Agent", c.userAgent)
 
-	logger := getLogger(ctx)
-	logger.Debug().Interface("Headers", req.Header).Msg("request")
+	logger := logging.FromContext(ctx)
+
+	logger.Debug().Logf("headers %v", req.Header)
 
 	res, err := c.httpClient.Do(req)
 	if err != nil {
@@ -84,7 +85,7 @@ func (c Client) Request(ctx context.Context, method, path string, body any, head
 	}
 	defer res.Body.Close()
 
-	logger.Debug().Int("status", res.StatusCode).Msg("request")
+	logger.Debug().Logf("status %d", res.StatusCode)
 
 	if res.StatusCode >= http.StatusMultipleChoices {
 		return res, nil, fmt.Errorf("status code: %d", res.StatusCode)
@@ -95,22 +96,15 @@ func (c Client) Request(ctx context.Context, method, path string, body any, head
 		return res, nil, errutil.Wrap(err, "reading response body")
 	}
 
-	logger.Debug().Bytes("response", data).Msg("request")
+	logger.Debug().Logf("response %s", string(data))
 
 	return res, data, nil
 }
 
-func getLogger(ctx context.Context) zerolog.Logger {
-	if ctxLogger := zerolog.Ctx(ctx); ctxLogger != nil {
-		return *ctxLogger
-	}
-
-	return zerolog.Nop()
-}
-
 func getRequest(ctx context.Context, method, url string, body any) (*http.Request, error) {
-	logger := getLogger(ctx)
-	logger.Debug().Str("URL", url).Msg("request")
+	logger := logging.FromContext(ctx)
+
+	logger.Debug().Logf("url %s", url)
 
 	if body == nil {
 		req, err := http.NewRequestWithContext(ctx, method, url, http.NoBody)
@@ -126,7 +120,7 @@ func getRequest(ctx context.Context, method, url string, body any) (*http.Reques
 		return nil, errutil.Wrap(err, "marshalling body")
 	}
 
-	logger.Debug().Bytes("body", data).Msg("request")
+	logger.Debug().Logf("body %v", body)
 
 	reader, writer := io.Pipe()
 	go func() {
