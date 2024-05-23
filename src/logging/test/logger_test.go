@@ -11,12 +11,13 @@ import (
 	"github.com/tcodes0/go/src/logging"
 )
 
-//nolint:funlen // test
+//nolint:funlen,maintidx // test
 func TestLogger(t *testing.T) {
 	assert := require.New(t)
 	regExpDate := `\d{4}/\d{2}/\d{2}`
 	regExpTime := `\d{2}:\d{2}:\d{2}`
 	regExpFileLine := `[a-z_]+\.go:\d+`
+	regExpTermSeq := `.\[[0-9;]+m`
 	fullRegExp := regExpDate + " " + regExpTime + " " + regExpFileLine
 
 	levelCalls := [][]string{
@@ -38,6 +39,7 @@ func TestLogger(t *testing.T) {
 	}
 
 	tests := []struct {
+		nop         bool
 		name        string
 		calls       [][]string
 		retType     [][]string
@@ -58,18 +60,79 @@ func TestLogger(t *testing.T) {
 			outMatch: []*regexp.Regexp{regexp.MustCompile("WARN " + fullRegExp + ": testing\n")},
 		},
 		{
-			name:     "error log",
-			calls:    [][]string{{"Error"}, {"Log", "testing"}},
+			name:     "warn log on nop logger",
+			nop:      true,
+			calls:    [][]string{{"Warn"}, {"Log", "testing"}},
+			retType:  [][]string{{"*logging.Logger"}, {}},
+			outMatch: []*regexp.Regexp{regexp.MustCompile("^$")},
+		},
+		{
+			name:     "error logf",
+			calls:    [][]string{{"Error"}, {"Logf", "test%s", "ing"}},
 			retType:  [][]string{{"*logging.Logger"}, {}},
 			outMatch: []*regexp.Regexp{regexp.MustCompile("ERRO " + fullRegExp + ": testing\n")},
 		},
 		{
-			name:     "debug log",
-			calls:    [][]string{{"Debug"}, {"Log", "testing"}},
+			name:     "debug logf",
+			calls:    [][]string{{"Debug"}, {"Logf", "test%s", "ing"}},
 			retType:  [][]string{{"*logging.Logger"}, {}},
 			outMatch: []*regexp.Regexp{regexp.MustCompile("DEBG " + fullRegExp + ": testing\n")},
 			opts:     []logging.CreateOptions{logging.OptLevel(logging.LDebug)},
 		},
+		{
+			name:     "fatalf",
+			calls:    [][]string{{"Fatalf", "test%s", "ing"}},
+			retType:  [][]string{{}},
+			outMatch: []*regexp.Regexp{regexp.MustCompile("FATL " + fullRegExp + ": testing\n")},
+			opts:     []logging.CreateOptions{logging.OptLevel(logging.LDebug)},
+		},
+		{
+			name:     "fatalf on nop logger",
+			nop:      true,
+			calls:    [][]string{{"Fatalf", "test%s", "ing"}},
+			retType:  [][]string{{}},
+			outMatch: []*regexp.Regexp{regexp.MustCompile("^$")},
+		},
+		{
+			name:     "color info log",
+			calls:    [][]string{{"Log", "testing"}},
+			retType:  [][]string{{}},
+			outMatch: []*regexp.Regexp{regexp.MustCompile(regExpTermSeq + "INFO " + fullRegExp + ": " + regExpTermSeq + "testing\n")},
+			opts:     []logging.CreateOptions{logging.OptColor(true)},
+		},
+		{
+			name:    "color warn log",
+			calls:   [][]string{{"Warn"}, {"Log", "testing"}},
+			retType: [][]string{{"*logging.Logger"}, {}},
+			//nolint:lll // test
+			outMatch: []*regexp.Regexp{regexp.MustCompile(regExpTermSeq + "WARN " + regExpTermSeq + regExpTermSeq + fullRegExp + ": " + regExpTermSeq + "testing\n")},
+			opts:     []logging.CreateOptions{logging.OptColor(true)},
+		},
+		{
+			name:    "color error logf",
+			calls:   [][]string{{"Error"}, {"Logf", "test%s", "ing"}},
+			retType: [][]string{{"*logging.Logger"}, {}},
+			//nolint:lll // test
+			outMatch: []*regexp.Regexp{regexp.MustCompile(regExpTermSeq + "ERRO " + regExpTermSeq + regExpTermSeq + fullRegExp + ": " + regExpTermSeq + "testing\n")},
+			opts:     []logging.CreateOptions{logging.OptColor(true)},
+		},
+		{
+			name:    "color debug logf",
+			calls:   [][]string{{"Debug"}, {"Logf", "test%s", "ing"}},
+			retType: [][]string{{"*logging.Logger"}, {}},
+			//nolint:lll // test
+			outMatch: []*regexp.Regexp{regexp.MustCompile(regExpTermSeq + "DEBG " + regExpTermSeq + regExpTermSeq + fullRegExp + ": " + regExpTermSeq + "testing\n")},
+			opts:     []logging.CreateOptions{logging.OptLevel(logging.LDebug), logging.OptColor(true)},
+		},
+		{
+			name:    "color fatalf",
+			calls:   [][]string{{"Fatalf", "test%s", "ing"}},
+			retType: [][]string{{}},
+			//nolint:lll // test
+			outMatch: []*regexp.Regexp{regexp.MustCompile(regExpTermSeq + "FATL " + regExpTermSeq + regExpTermSeq + fullRegExp + ": " + regExpTermSeq + "testing\n")},
+			opts:     []logging.CreateOptions{logging.OptLevel(logging.LDebug), logging.OptColor(true)},
+		},
+		// metadata, color on and off
 		{
 			name:    "debug level",
 			calls:   levelCalls,
@@ -167,8 +230,11 @@ func TestLogger(t *testing.T) {
 
 			buf := bytes.Buffer{}
 			test.opts = append(test.opts, logging.OptWriter(&buf), logging.OptExit(func(int) {}))
+			logger := &logging.Logger{}
 
-			logger := logging.Create(test.opts...)
+			if !test.nop {
+				logger = logging.Create(test.opts...)
+			}
 
 			for callN, call := range test.calls {
 				method := reflect.ValueOf(logger).MethodByName(call[0])

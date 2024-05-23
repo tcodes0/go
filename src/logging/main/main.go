@@ -3,12 +3,12 @@ package main
 import "github.com/tcodes0/go/src/logging"
 
 func main() {
-	l := logging.Create(logging.OptColor(false))
+	l := logging.Create(logging.OptColor(true))
 	l.SetExit(func(code int) {})
 	l.SetLevel(logging.LDebug)
 
-	l.Log("starting up...")
-	l.Warn().Logf("this is a warning")
+	l.Log("testing")
+	l.Warn().Log("testing")
 	l.Log("shutting down...")
 	l.Fatal("this is a fatal error")
 
