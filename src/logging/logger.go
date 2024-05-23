@@ -96,7 +96,7 @@ func (logger *Logger) Log(msg ...any) {
 		if logger.color {
 			msgMetadata[0] = strings.TrimSuffix(logger.metadata, appendSuffix) + hue.TermEnd + " "
 		} else {
-			msgMetadata[0] = "(" + strings.TrimSuffix(logger.metadata, appendSuffix) + ")" + hue.TermEnd + " "
+			msgMetadata[0] = "(" + strings.TrimSuffix(logger.metadata, appendSuffix) + ")" + " "
 		}
 
 		copy(msgMetadata[1:], msg)

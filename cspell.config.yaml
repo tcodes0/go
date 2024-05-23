@@ -28,6 +28,7 @@ words:
   - iname
   - maintidx
   - scandir
+  - Seqs
   - SHELLCHECK
   - SHFMT
   - stretchr
