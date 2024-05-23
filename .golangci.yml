@@ -127,3 +127,7 @@ linters-settings:
 
   funlen:
     ignore-comments: true
+
+  varnamelen:
+    ignore-decls:
+      - i int

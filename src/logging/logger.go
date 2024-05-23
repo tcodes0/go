@@ -79,7 +79,7 @@ func (logger *Logger) Debug() *Logger {
 }
 
 // send a message.
-func (logger *Logger) Log(msg ...interface{}) {
+func (logger *Logger) Log(msg ...any) {
 	defer func() {
 		logger.setPrefix(info)
 		logger.calldepth = defaultCalldepth
@@ -91,7 +91,7 @@ func (logger *Logger) Log(msg ...interface{}) {
 	}
 
 	if logger.metadata != "" {
-		msgMetadata := make([]interface{}, len(msg)+1)
+		msgMetadata := make([]any, len(msg)+1)
 
 		if logger.color {
 			msgMetadata[0] = strings.TrimSuffix(logger.metadata, appendSuffix) + hue.TermEnd + " "
@@ -117,7 +117,7 @@ func (logger *Logger) Log(msg ...interface{}) {
 }
 
 // send a formatted message.
-func (logger *Logger) Logf(format string, v ...interface{}) {
+func (logger *Logger) Logf(format string, v ...any) {
 	out := fmt.Sprintf(format, v...)
 
 	logger.calldepth++
@@ -126,7 +126,7 @@ func (logger *Logger) Logf(format string, v ...interface{}) {
 }
 
 // sends a message and then calls Logger.exit().
-func (logger *Logger) Fatal(msg ...interface{}) {
+func (logger *Logger) Fatal(msg ...any) {
 	logger.setPrefix(fatal)
 
 	logger.calldepth++
@@ -140,7 +140,7 @@ func (logger *Logger) Fatal(msg ...interface{}) {
 }
 
 // sends a formatted message and then calls Logger.exit().
-func (logger *Logger) Fatalf(format string, msg ...interface{}) {
+func (logger *Logger) Fatalf(format string, msg ...any) {
 	out := fmt.Sprintf(format, msg...)
 
 	logger.calldepth++

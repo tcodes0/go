@@ -20,11 +20,11 @@ const (
 	LFatal Level = iota + 1
 	LNone  Level = iota + 1
 
+	debug string = "DEBG "
 	info  string = "INFO " // default level
 	warn  string = "WARN "
 	erro  string = "ERRO "
 	fatal string = "FATL "
-	debug string = "DEBG "
 
 	defaultFlags = log.LstdFlags | log.Lshortfile | log.LUTC
 	// necessary for log.Lshortfile to show correctly
@@ -113,6 +113,7 @@ func Create(options ...CreateOptions) *Logger {
 		l:         log.New(opts.writer, prefix, opts.flags),
 		level:     opts.level,
 		color:     opts.color,
+		msgLevel:  LInfo,
 		calldepth: defaultCalldepth,
 		exit:      opts.exit,
 	}
