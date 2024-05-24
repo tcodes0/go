@@ -1,8 +1,10 @@
 package test
 
 import (
+	"context"
 	"encoding/json"
 	"io"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -19,7 +21,8 @@ func TestMarshalReader(t *testing.T) {
 
 	data := &T{A: "a"}
 
-	r := jsonutil.MarshalReader(data)
+	r, err := jsonutil.MarshalReader(data)
+	assert.NoError(err)
 	defer r.Close()
 
 	b, err := io.ReadAll(r)
@@ -30,4 +33,19 @@ func TestMarshalReader(t *testing.T) {
 	assert.NoError(err)
 
 	assert.Equal(data, out)
+}
+
+func TestMarshalRequest(t *testing.T) {
+	t.Parallel()
+	assert := require.New(t)
+
+	type Dog struct {
+		Name string `json:"name"`
+	}
+
+	data := &Dog{Name: "bellynha"}
+	ctx := context.Background()
+
+	_, err := jsonutil.MarshalRequest(ctx, http.MethodGet, "http://example.com", data)
+	assert.NoError(err)
 }
