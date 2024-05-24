@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+
+	"github.com/tcodes0/go/src/misc"
 )
 
 var (
@@ -27,7 +29,7 @@ func Merge[T any](base, partial *T, ignore []string) (clone *T, ignored []string
 		return partial, nil, nil
 	}
 
-	c := CopyOf(*base)
+	c := misc.Copy(*base)
 	clone = &c
 
 	if partial == nil {

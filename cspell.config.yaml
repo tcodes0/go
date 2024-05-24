@@ -21,6 +21,7 @@ words:
   - gofumpt
   - goinstall
   - golangci
+  - gosec
   - gotestfmt
   - govet
   - httpflush

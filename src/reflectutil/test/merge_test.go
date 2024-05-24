@@ -43,8 +43,8 @@ func TestMerge(t *testing.T) {
 			expected: &Wombat{Nickname: "sushi", Address: 1}, ignore: nil,
 		},
 		{
-			name: "nil field", base: &Wombat{ID: []int{1, 2, 3}, Age: misc.PointerTo(12)}, partial: &Wombat{ID: nil, Age: misc.PointerTo(15)},
-			expected: &Wombat{ID: []int{1, 2, 3}, Age: misc.PointerTo(15)}, ignore: nil,
+			name: "nil field", base: &Wombat{ID: []int{1, 2, 3}, Age: misc.ToPtr(12)}, partial: &Wombat{ID: nil, Age: misc.ToPtr(15)},
+			expected: &Wombat{ID: []int{1, 2, 3}, Age: misc.ToPtr(15)}, ignore: nil,
 		},
 		{
 			name: "ignored fields", base: &Wombat{Nickname: "sushi", Address: 1}, partial: &Wombat{Nickname: "bib", Address: 2},

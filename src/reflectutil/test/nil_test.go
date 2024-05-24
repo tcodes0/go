@@ -1,7 +1,6 @@
 package test
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -14,34 +13,44 @@ func TestIsNil(t *testing.T) {
 	assert := require.New(t)
 
 	tests := []struct {
+		value any
 		name  string
-		value reflect.Value
 		want  bool
 	}{
 		{
 			name:  "nil chan",
-			value: reflect.ValueOf(chan int(nil)),
+			value: chan int(nil),
 			want:  true,
 		},
 		{
 			name:  "map",
-			value: reflect.ValueOf(map[int]int{}),
+			value: map[int]int{},
 			want:  false,
 		},
 		{
 			name:  "int pointer",
-			value: reflect.ValueOf(misc.PointerTo(33)),
+			value: misc.ToPtr(33),
 			want:  false,
 		},
 		{
-			name:  "empty string",
-			value: reflect.ValueOf(""),
-			want:  false,
+			name:  "*int",
+			value: (*int)(nil),
+			want:  true,
 		},
 		{
 			name:  "zero",
-			value: reflect.ValueOf(0),
+			value: 0,
 			want:  false,
+		},
+		{
+			name:  "nil",
+			value: nil,
+			want:  true,
+		},
+		{
+			name:  "any nil",
+			value: any(nil),
+			want:  true,
 		},
 	}
 
@@ -49,6 +58,40 @@ func TestIsNil(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			assert.Equal(test.want, reflectutil.IsNil(test.value))
+		})
+	}
+}
+
+func TestIsZero(t *testing.T) {
+	t.Parallel()
+	assert := require.New(t)
+
+	tests := []struct {
+		value any
+		name  string
+		want  bool
+	}{
+		{
+			name:  "empty string",
+			value: "",
+			want:  true,
+		},
+		{
+			name:  "nil",
+			value: nil,
+			want:  false,
+		},
+		{
+			name:  "any nil",
+			value: any(nil),
+			want:  false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(test.want, reflectutil.IsZero(test.value))
 		})
 	}
 }

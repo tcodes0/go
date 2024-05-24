@@ -39,7 +39,7 @@ func TestEnvTagResolve(t *testing.T) {
 		{
 			name:     "Sets field value",
 			envTag:   envTag,
-			dog:      misc.PointerTo(dog{}),
+			dog:      misc.ToPtr(dog{}),
 			returns:  require.NoError,
 			nameEnv:  "fido",
 			breedEnv: "golden",
@@ -51,7 +51,7 @@ func TestEnvTagResolve(t *testing.T) {
 		{
 			name:     "Defaults",
 			envTag:   envTag,
-			dog:      misc.PointerTo(dog{}),
+			dog:      misc.ToPtr(dog{}),
 			returns:  require.NoError,
 			nameEnv:  "",
 			breedEnv: "golden",
@@ -63,7 +63,7 @@ func TestEnvTagResolve(t *testing.T) {
 		{
 			name:     "No change to not-tagged",
 			envTag:   envTag,
-			dog:      misc.PointerTo(dog{}),
+			dog:      misc.ToPtr(dog{}),
 			returns:  require.NoError,
 			nameEnv:  "",
 			breedEnv: "golden",
@@ -75,7 +75,7 @@ func TestEnvTagResolve(t *testing.T) {
 		{
 			name:     "No overwrite",
 			envTag:   envTag,
-			dog:      misc.PointerTo(dog{Name: "julia"}),
+			dog:      misc.ToPtr(dog{Name: "julia"}),
 			returns:  require.NoError,
 			nameEnv:  "fido",
 			breedEnv: "golden",
@@ -94,7 +94,7 @@ func TestEnvTagResolve(t *testing.T) {
 
 			for i := range 3 {
 				test.returns(t,
-					test.envTag.UpdateField(misc.PointerTo(reflect.TypeOf(test.dog).Elem().Field(i)), reflect.ValueOf(test.dog).Elem().Field(i)),
+					test.envTag.UpdateField(misc.ToPtr(reflect.TypeOf(test.dog).Elem().Field(i)), reflect.ValueOf(test.dog).Elem().Field(i)),
 				)
 			}
 

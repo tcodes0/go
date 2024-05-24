@@ -33,9 +33,7 @@ const (
 
 type ContextKey struct{}
 
-var (
-	contextKey = ContextKey{}
-)
+var contextKey = ContextKey{}
 
 // retrieves a logger from a context, see Logger.WithContext.
 func FromContext(ctx context.Context) *Logger {

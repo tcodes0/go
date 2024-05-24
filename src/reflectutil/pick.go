@@ -1,20 +1,19 @@
 package reflectutil
 
-import "reflect"
-
-// Returns the first non-nil or non-zero value from the list of values.
+// from left to right returns the first valid value or the last value
+// if all are nil or zero.
 func PickNonZero[T any](values ...T) T {
-	for _, v := range values {
-		value := reflect.ValueOf(v)
-		if !IsNil(value) || !IsZero(value) {
-			return v
+	if len(values) == 0 {
+		return *new(T)
+	}
+
+	for _, val := range values {
+		if !IsNil(val) && !IsZero(val) {
+			return val
 		}
 	}
 
-	var t T
-	zeroT, _ := reflect.Zero(reflect.TypeOf(t)).Interface().(T)
-
-	return zeroT
+	return values[len(values)-1]
 }
 
 // Returns the default if value is zero.
