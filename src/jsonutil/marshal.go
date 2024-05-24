@@ -10,7 +10,7 @@ import (
 	"github.com/tcodes0/go/src/errutil"
 )
 
-// MarshalReader marshals data to a reader, panics on error.
+// marshalReader marshals data to a reader, panics on error.
 func MarshalReader(data any) io.ReadCloser {
 	b, err := json.Marshal(data)
 	if err != nil {

@@ -13,7 +13,7 @@ var (
 	ErrNotAddresable = errors.New("field is not addressable")
 )
 
-// Resolves a field's value to an env variable using a tag.
+// resolves a field's value to an env variable using a tag.
 type EnvTag struct {
 	Tag     string
 	Default string

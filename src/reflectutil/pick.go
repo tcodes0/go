@@ -16,7 +16,7 @@ func PickNonZero[T any](values ...T) T {
 	return values[len(values)-1]
 }
 
-// Returns the default if value is zero.
+// returns the default if value is zero.
 func Default[T any](value, defaultVal T) T {
 	return PickNonZero(value, defaultVal)
 }

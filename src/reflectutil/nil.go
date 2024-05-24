@@ -17,11 +17,22 @@ func IsNil(value any) bool {
 		return true
 	}
 
-	r := reflect.ValueOf(value)
+	var val reflect.Value
+
+	switch tVal := value.(type) {
+	case reflect.Value:
+		if !tVal.IsValid() {
+			return true
+		}
+
+		val = tVal
+	default:
+		val = reflect.ValueOf(value)
+	}
 
 	for _, nk := range nilKinds {
-		if r.Kind() == nk {
-			return r.IsNil()
+		if val.Kind() == nk {
+			return val.IsNil()
 		}
 	}
 
@@ -30,7 +41,18 @@ func IsNil(value any) bool {
 
 // wraps reflect.Value{}.IsZero() but returns false if would panic.
 func IsZero(value any) bool {
-	r := reflect.ValueOf(value)
+	var val reflect.Value
 
-	return r.IsValid() && r.IsZero()
+	switch tVal := value.(type) {
+	case reflect.Value:
+		if !tVal.IsValid() {
+			return true
+		}
+
+		val = tVal
+	default:
+		val = reflect.ValueOf(value)
+	}
+
+	return val.IsValid() && val.IsZero()
 }

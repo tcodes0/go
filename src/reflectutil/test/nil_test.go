@@ -1,6 +1,7 @@
 package test
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -8,6 +9,7 @@ import (
 	"github.com/tcodes0/go/src/reflectutil"
 )
 
+//nolint:funlen // test
 func TestIsNil(t *testing.T) {
 	t.Parallel()
 	assert := require.New(t)
@@ -52,6 +54,16 @@ func TestIsNil(t *testing.T) {
 			value: any(nil),
 			want:  true,
 		},
+		{
+			name:  "reflect value of nil",
+			value: reflect.ValueOf(nil),
+			want:  true,
+		},
+		{
+			name:  "reflect value of 0",
+			value: reflect.ValueOf(0),
+			want:  false,
+		},
 	}
 
 	for _, test := range tests {
@@ -85,6 +97,16 @@ func TestIsZero(t *testing.T) {
 			name:  "any nil",
 			value: any(nil),
 			want:  false,
+		},
+		{
+			name:  "reflect value of nil",
+			value: reflect.ValueOf(nil),
+			want:  true,
+		},
+		{
+			name:  "reflect value of 0",
+			value: reflect.ValueOf(0),
+			want:  true,
 		},
 	}
 

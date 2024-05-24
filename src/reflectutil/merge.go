@@ -14,8 +14,8 @@ var (
 	ErrSameFields = errors.New("merge: args must have the same number of fields")
 )
 
-// Combines the base struct with the partial struct, iterating fields
-// and picking the partial field's value if not zero and not ignored.
+// combines the base struct with the partial struct, iterating fields
+// and picking the partial field's value if valid and not ignored.
 // Returns an updated copy of the base struct.
 func Merge[T any](base, partial *T, ignore []string) (clone *T, ignored []string, err error) {
 	defer func() {
