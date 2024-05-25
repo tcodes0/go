@@ -9,9 +9,9 @@ import (
 
 func TestMaxSizeWrite(t *testing.T) {
 	t.Parallel()
-	writer1 := httpflush.NewMockresponseWriter(t)
-	writer2 := httpflush.NewMockresponseWriter(t)
-	writer3 := httpflush.NewMockresponseWriter(t)
+	writer1 := httpflush.NewMockwriterFlusher(t)
+	writer2 := httpflush.NewMockwriterFlusher(t)
+	writer3 := httpflush.NewMockwriterFlusher(t)
 
 	writer1.On("Write", []uint8{}).Return(5, nil).Once()
 	writer2.On("Write", []uint8{}).Return(10, nil).Once()
@@ -65,7 +65,7 @@ func TestMaxSizeWrite(t *testing.T) {
 func TestMaxSizeFlushesMany(t *testing.T) {
 	t.Parallel()
 	assert := require.New(t)
-	writer := httpflush.NewMockresponseWriter(t)
+	writer := httpflush.NewMockwriterFlusher(t)
 	maxSize := httpflush.MaxSize{
 		Max:    10,
 		Writer: writer,

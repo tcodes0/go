@@ -2,8 +2,7 @@ package httpflush
 
 import "net/http"
 
-//nolint:unused // used to generate mocks
-type responseWriter interface {
+type writerFlusher interface {
 	http.ResponseWriter
 	http.Flusher
 }

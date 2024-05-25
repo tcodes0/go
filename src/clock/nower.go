@@ -6,22 +6,19 @@ import (
 	time "time"
 )
 
-type ctxKeyNow struct{}
+type ContextKey struct{}
 
-var contextKeyNow *ctxKeyNow = &ctxKeyNow{}
+var contextKey = ContextKey{}
 
 type Nower interface {
 	Now() time.Time
+	WithContext(ctx context.Context) context.Context
 }
 
-func ContextWithNower(ctx context.Context, n Nower) context.Context {
-	return context.WithValue(ctx, contextKeyNow, n)
-}
-
-func ContextGetNower(ctx context.Context) (Nower, error) {
-	nower, ok := ctx.Value(contextKeyNow).(Nower)
+func FromContext(ctx context.Context) (Nower, error) {
+	nower, ok := ctx.Value(contextKey).(Nower)
 	if !ok {
-		return nil, errors.New("key now: no value")
+		return nil, errors.New("no value found in context")
 	}
 
 	return nower, nil

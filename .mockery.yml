@@ -4,7 +4,8 @@ dir: "{{.InterfaceDir}}"
 mockname: "Mock{{.InterfaceName}}"
 outpkg: "{{.PackageName}}"
 filename: "mock_{{.InterfaceName | snakecase}}.go"
-all: True
+include-regex: ".*"
+exclude-regex: "^CreateOptions$"
 packages:
   github.com/tcodes0/go/src:
     config:

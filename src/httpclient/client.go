@@ -35,7 +35,6 @@ func (c *Client) Init(userAgent, baseURL, apiKey string, opts *SetClientOptions)
 	opts = reflectutil.Default(opts, &SetClientOptions{})
 	opts.Client = reflectutil.Default(opts.Client, &http.Client{})
 	opts.Timeout = reflectutil.Default(opts.Timeout, misc.Seconds(15))
-
 	c.httpClient = opts.Client
 
 	dialer := &net.Dialer{Timeout: opts.Timeout}
@@ -60,12 +59,11 @@ func (c Client) Request(ctx context.Context, method, path string, body any, head
 
 	if _, ok := ctx.Deadline(); !ok {
 		var cancel context.CancelFunc
-
 		ctx, cancel = context.WithTimeout(ctx, c.timeout)
 		defer cancel()
 	}
 
-	req, err := getRequest(ctx, method, c.baseURL+path, body)
+	req, err := makeRequest(ctx, method, c.baseURL+path, body)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -101,7 +99,7 @@ func (c Client) Request(ctx context.Context, method, path string, body any, head
 	return res, data, nil
 }
 
-func getRequest(ctx context.Context, method, url string, body any) (*http.Request, error) {
+func makeRequest(ctx context.Context, method, url string, body any) (*http.Request, error) {
 	logger := logging.FromContext(ctx)
 
 	logger.Debug().Logf("url %s", url)

@@ -2,7 +2,7 @@ package reflectutil
 
 // from left to right returns the first valid value or the last value
 // if all are nil or zero.
-func PickNonZero[T any](values ...T) T {
+func PickValid[T any](values ...T) T {
 	if len(values) == 0 {
 		return *new(T)
 	}
@@ -16,7 +16,7 @@ func PickNonZero[T any](values ...T) T {
 	return values[len(values)-1]
 }
 
-// returns the default if value is zero.
+// returns the default if value is nil or zero.
 func Default[T any](value, defaultVal T) T {
-	return PickNonZero(value, defaultVal)
+	return PickValid(value, defaultVal)
 }

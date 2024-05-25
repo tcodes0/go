@@ -1,17 +1,26 @@
 package identifier
 
-import "strconv"
+import (
+	"context"
+	"strconv"
+)
 
 type StaticGenerator struct {
-	Source string
-
-	i int
+	Prefix string
+	Count  int
 }
 
-var _ Randomer = (*StaticGenerator)(nil)
+var _ Generator = (*StaticGenerator)(nil)
 
-func (s *StaticGenerator) Random() string {
-	s.i += 1
+// generates a new static identifier.
+func (static *StaticGenerator) Generate() string {
+	id := static.Prefix + "-" + strconv.Itoa(static.Count)
+	static.Count += 1
 
-	return s.Source + "-" + strconv.Itoa(s.i)
+	return id
+}
+
+// returns a new context with the static generator.
+func (static *StaticGenerator) WithContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, contextKey, static)
 }
