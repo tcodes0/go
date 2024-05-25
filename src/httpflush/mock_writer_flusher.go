@@ -17,7 +17,7 @@ type MockwriterFlusher_Expecter struct {
 	mock *mock.Mock
 }
 
-func (_m *MockwriterFlusher) EXPECT() *MockwriterFlusher_Expecter {
+func (_m *MockwriterFlusher) Expect() *MockwriterFlusher_Expecter {
 	return &MockwriterFlusher_Expecter{mock: &_m.Mock}
 }
 

@@ -17,7 +17,7 @@ type MockFieldUpdater_Expecter struct {
 	mock *mock.Mock
 }
 
-func (_m *MockFieldUpdater) EXPECT() *MockFieldUpdater_Expecter {
+func (_m *MockFieldUpdater) Expect() *MockFieldUpdater_Expecter {
 	return &MockFieldUpdater_Expecter{mock: &_m.Mock}
 }
 
