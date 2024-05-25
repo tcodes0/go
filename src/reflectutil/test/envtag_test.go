@@ -27,8 +27,6 @@ func TestEnvTagResolve(t *testing.T) {
 	tests := []struct {
 		name     string
 		dog      *dog
-		envTag   reflectutil.EnvTag
-		returns  require.ErrorAssertionFunc
 		nameEnv  string
 		breedEnv string
 		ownerEnv string
@@ -38,9 +36,7 @@ func TestEnvTagResolve(t *testing.T) {
 	}{
 		{
 			name:     "Sets field value",
-			envTag:   envTag,
 			dog:      misc.ToPtr(dog{}),
-			returns:  require.NoError,
 			nameEnv:  "fido",
 			breedEnv: "golden",
 			ownerEnv: "",
@@ -50,9 +46,7 @@ func TestEnvTagResolve(t *testing.T) {
 		},
 		{
 			name:     "Defaults",
-			envTag:   envTag,
 			dog:      misc.ToPtr(dog{}),
-			returns:  require.NoError,
 			nameEnv:  "",
 			breedEnv: "golden",
 			ownerEnv: "",
@@ -62,9 +56,7 @@ func TestEnvTagResolve(t *testing.T) {
 		},
 		{
 			name:     "No change to not-tagged",
-			envTag:   envTag,
 			dog:      misc.ToPtr(dog{}),
-			returns:  require.NoError,
 			nameEnv:  "",
 			breedEnv: "golden",
 			ownerEnv: "leopoldo",
@@ -74,9 +66,7 @@ func TestEnvTagResolve(t *testing.T) {
 		},
 		{
 			name:     "No overwrite",
-			envTag:   envTag,
 			dog:      misc.ToPtr(dog{Name: "julia"}),
-			returns:  require.NoError,
 			nameEnv:  "fido",
 			breedEnv: "golden",
 			ownerEnv: "",
@@ -93,8 +83,8 @@ func TestEnvTagResolve(t *testing.T) {
 			t.Setenv("DOG_OWNER", test.ownerEnv)
 
 			for i := range 3 {
-				test.returns(t,
-					test.envTag.UpdateField(misc.ToPtr(reflect.TypeOf(test.dog).Elem().Field(i)), reflect.ValueOf(test.dog).Elem().Field(i)),
+				require.NoError(t,
+					envTag.UpdateField(misc.ToPtr(reflect.TypeOf(test.dog).Elem().Field(i)), reflect.ValueOf(test.dog).Elem().Field(i)),
 				)
 			}
 
