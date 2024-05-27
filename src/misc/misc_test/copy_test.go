@@ -1,4 +1,4 @@
-package test
+package misc_test
 
 import (
 	"fmt"
@@ -41,7 +41,6 @@ func TestCopyPointed(t *testing.T) {
 				assert.Nil(test.value)
 			}
 
-			//nolint:gosec // test
 			assert.NotEqual(fmt.Sprintf("%p", &val), fmt.Sprintf("%p", &test.value))
 		})
 	}

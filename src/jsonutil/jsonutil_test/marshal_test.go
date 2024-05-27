@@ -1,4 +1,4 @@
-package test
+package jsonutil_test
 
 import (
 	"context"

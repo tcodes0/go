@@ -79,7 +79,7 @@ jobs:
         uses: golangci/golangci-lint-action@v6.0.1
         with:
           install-mode: goinstall
-          version: v1.57.2
+          version: v1.58.2
           working-directory: ${{ inputs.packagePath }}
           skip-cache: false
           args: --print-issued-lines=false

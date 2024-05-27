@@ -43,10 +43,7 @@ linters:
     - wrapcheck
 
   disable:
-    - gofmt
-    - gomoddirectives
-    - testpackage
-    - gochecknoglobals
+    - gofmt # using gofumpt
 
   presets:
     - bugs
@@ -118,7 +115,7 @@ linters-settings:
           - pkg: "github.com/example/example"
             desc: cannot be imported
 
-  gomnd:
+  mnd:
     ignored-functions:
       - '^misc\.Seconds'
       - '^misc\.Minutes'

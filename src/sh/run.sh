@@ -109,7 +109,7 @@ setup() {
 }
 
 testScripts() {
-  find src/sh/test -iname "*-test.sh" -exec ./{} \;
+  find src/sh/sh_test -iname "*-test.sh" -exec ./{} \;
 }
 
 tag() {
@@ -118,25 +118,29 @@ tag() {
 }
 
 run() {
-  $1 "$2" || true
+  local prefix="src"
+  local command=$1
+  local package=$2
 
-  if [ -d "$PWD/$2/test" ]; then
-    $1 "$2/test" || true
+  $command "${prefix}/$package" || true
+
+  if [ -d "$PWD/${prefix}/$package/${package}_test" ]; then
+    $command "${prefix}/$package/${package}_test" || true
   fi
 }
 
 runPkgCommand() {
-  local prefix="src/"
+  local command=$1
 
   if ! [ "${optValue[all]}" ]; then
-    run "$1" "$prefix${optValue["package"]}"
+    run "$command" "${optValue["package"]}"
     return
   fi
 
   for pkg in "${packages[@]}"; do
     printf %b "\n"
-    msg "$1 $pkg..."
-    run "$1" "$prefix$pkg"
+    msg "$command $pkg..."
+    run "$command" "$pkg"
   done
 }
 

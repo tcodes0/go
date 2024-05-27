@@ -1,4 +1,4 @@
-package test
+package reflectutil_test
 
 import (
 	"testing"

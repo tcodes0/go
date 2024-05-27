@@ -5,7 +5,13 @@ shopt -s globstar
 # shellcheck disable=SC1091
 source "$PWD/src/sh/lib.sh"
 
-if ! [ -d "./$PKG/test" ]; then
+# basename is needed because $PKG is prefixed
+# and we need it un-prefixed to calculate the test package
+testPkg=$(basename "$PKG")_test
+testDir="./$PKG/$testPkg"
+
+if ! [ -d "$testDir" ]; then
+  # some packages have no tests
   exit 0
 fi
 
@@ -30,7 +36,7 @@ fi
 testOutputJson=$(mktemp /tmp/go-test-json-XXXXXX)
 
 # tee a copy of output for further processing
-go test "${flags[@]}" "./$PKG/test" 2>&1 | tee "$testOutputJson" | gotestfmt
+go test "${flags[@]}" "$testDir" 2>&1 | tee "$testOutputJson" | gotestfmt
 
 # delete lines not parseable as json output from 'go test'
 regExpPrefixGo="^go:"

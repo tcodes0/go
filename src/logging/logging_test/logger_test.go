@@ -1,4 +1,4 @@
-package test
+package logging_test
 
 import (
 	"bytes"
