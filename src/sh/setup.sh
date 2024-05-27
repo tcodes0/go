@@ -75,6 +75,7 @@ setup go github.com/joho/godotenv/cmd/godotenv@latest godotenv runs go programs 
 setup go github.com/fatih/gomodifytags@latest gomodifytags is a tool to modify struct field tags easily
 setup go github.com/uudashr/gopkgs/v2/cmd/gopkgs@latest gopkgs a faster go list all
 setup go golang.org/x/tools/gopls@latest gopls go language server
+setup go golang.org/x/tools/cmd/cover@latest cover go coverage tool
 setup go github.com/cweill/gotests/gotests@latest gotests a test generator
 setup go github.com/vektra/mockery/v2@latest mockery a mock interface generator
 setup go github.com/ramya-rao-a/go-outline@latest go-outline utility to extract a json representation of a go source file
@@ -96,6 +97,7 @@ setup go golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow@latest shadow
 setup go golang.org/x/tools/go/analysis/passes/stringintconv/cmd/stringintconv@latest stringintconv
 setup go golang.org/x/tools/go/analysis/passes/unmarshal/cmd/unmarshal@latest unmarshal
 setup go golang.org/x/tools/go/analysis/passes/unusedresult/cmd/unusedresult@latest unusedresult
+setup go github.com/4meepo/tagalign/cmd/tagalign@latest tagalign
 
 # JS
 setup js cspell@latest cspell a spellchecker for source code

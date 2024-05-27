@@ -15,8 +15,13 @@ linters=(
   stringintconv
   unmarshal
   unusedresult
+  tagalign
 )
 
 for linter in "${linters[@]}"; do
-  $linter --fix "$PWD/$1"
+  $linter -fix "$PWD/$1"
+
+  if [ -d "$PWD/$1/${1}_test" ]; then
+    $linter -fix "$PWD/$1/${1}_test"
+  fi
 done

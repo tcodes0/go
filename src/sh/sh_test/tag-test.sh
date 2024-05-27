@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-### options and imports ###
+### options, imports, mocks ###
 
 set -uo pipefail
 shopt -s globstar
@@ -10,8 +10,8 @@ source "$PWD/src/sh/lib.sh"
 ### vars and functions ###
 
 export TESTEE=./src/sh/tag.sh
-export EXEC_GIT_READ=./src/sh/test/mocks/git.sh
-export EXEC_GIT_WRITE=./src/sh/test/mocks/git.sh
+export EXEC_GIT_READ=./src/sh/sh_test/mocks/git.sh
+export EXEC_GIT_WRITE=./src/sh/sh_test/mocks/git.sh
 testsRunning=()
 start=$(date +%s)
 

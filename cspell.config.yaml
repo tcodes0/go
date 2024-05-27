@@ -15,13 +15,28 @@ dictionaries:
   - softwareTerms
   - computing-acronyms
 words:
+  - bellynha
+  - DEBG
+  - erro
+  - FATL
   - gofumpt
+  - goinstall
   - golangci
+  - gosec
   - gotestfmt
   - govet
   - httpflush
+  - ifaceassert
+  - iname
+  - maintidx
   - scandir
+  - Seqs
   - SHELLCHECK
   - SHFMT
+  - stretchr
   - tcodes
   - tcodes0
+  - tparallel
+  - Unappend
+  - unmarshalling
+  - unmarshals

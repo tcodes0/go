@@ -8,4 +8,4 @@ flags+=(-mod=readonly)
 # verbose
 flags+=(-v)
 
-go build "${flags[@]}" "./$PKG"
+go build "${flags[@]}" "./$PKG_PATH"
