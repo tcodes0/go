@@ -1,13 +1,11 @@
 #! /usr/bin/env bash
 
-### options and imports ###
+### options, imports, mocks ###
 
 set -euo pipefail
 shopt -s globstar
 # shellcheck disable=SC1091
 source "$PWD/src/sh/lib.sh"
-
-### vars and functions ###
 
 if [ -z "${EXEC_GIT_READ:-}" ]; then
   EXEC_GIT_READ=git
@@ -15,6 +13,8 @@ fi
 if [ -z "${EXEC_GIT_WRITE:-}" ]; then
   EXEC_GIT_WRITE="git"
 fi
+
+### vars and functions ###
 
 declare -rA commands=(
   ["major"]="major"

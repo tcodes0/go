@@ -31,7 +31,6 @@ linters:
     - errname
     - exhaustive
     - exportloopref
-    - gochecknoglobals
     - makezero
     - mirror
     - noctx
@@ -44,9 +43,7 @@ linters:
     - wrapcheck
 
   disable:
-    - gofmt
-    - gomoddirectives
-    - testpackage
+    - gofmt # using gofumpt
 
   presets:
     - bugs
@@ -117,3 +114,24 @@ linters-settings:
         deny:
           - pkg: "github.com/example/example"
             desc: cannot be imported
+
+  mnd:
+    ignored-functions:
+      - '^misc\.Seconds'
+      - '^misc\.Minutes'
+      - '^misc\.Hours'
+      - '^misc\.Days'
+
+  funlen:
+    ignore-comments: true
+
+  varnamelen:
+    ignore-decls:
+      - i int
+    ignore-type-assert-ok: true
+    ignore-map-index-ok: true
+    ignore-chan-recv-ok: true
+
+  # can be removed after updates if there are no warnings
+  errcheck:
+    ignore: ""

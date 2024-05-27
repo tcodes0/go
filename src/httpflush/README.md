@@ -38,4 +38,4 @@ m := httpflush.MaxSize{
 ## See also
 
 [max_size.go](https://github.com/tcodes0/go/tree/main/src/httpflush/max_size.go)<br/>
-[max_size_test.go](https://github.com/tcodes0/go/tree/main/src/httpflush/test/max_size_test.go)<br/>
+[max_size_test.go](https://github.com/tcodes0/go/tree/main/src/httpflush/httpflush_test/max_size_test.go)<br/>

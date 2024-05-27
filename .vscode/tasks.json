@@ -44,21 +44,34 @@
       "type": "pickString",
       "id": "package",
       "description": "Package",
-      "options": ["dummy", "httpflush"],
+      "options": [
+        "all",
+        "clock",
+        "errutil",
+        "httpclient",
+        "httpflush",
+        "httprecoverer",
+        "httproundtrip",
+        "identifier",
+        "jsonutil",
+        "logging",
+        "misc",
+        "reflectutil"
+      ],
       "default": ""
     },
     {
       "type": "pickString",
       "id": "commandPackage",
       "description": "Package Commands",
-      "options": ["lint", "lintfix", "format", "test", "build"],
+      "options": ["lint", "lint-fix", "format", "test", "build"],
       "default": ""
     },
     {
       "type": "pickString",
       "id": "commandRepo",
       "description": "Repo Commands",
-      "options": ["ci", "formatConfigs", "spellcheckDocs", "setup", "testScripts"],
+      "options": ["ci", "format-configs", "spellcheck-docs", "setup", "test-scripts", "tag", "generate-mocks", "coverage"],
       "default": ""
     }
   ]

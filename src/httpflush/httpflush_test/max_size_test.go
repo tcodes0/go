@@ -1,28 +1,26 @@
-package test
+package httpflush_test
 
 import (
 	"testing"
 
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/tcodes0/go/src/httpflush"
 )
 
 func TestMaxSizeWrite(t *testing.T) {
 	t.Parallel()
-	writer1 := httpflush.NewMockresponseWriter(t)
-	writer2 := httpflush.NewMockresponseWriter(t)
-	writer3 := httpflush.NewMockresponseWriter(t)
+	writer1 := httpflush.NewMockwriterFlusher(t)
+	writer2 := httpflush.NewMockwriterFlusher(t)
+	writer3 := httpflush.NewMockwriterFlusher(t)
 
-	writer1.On("Write", mock.AnythingOfType("[]uint8")).Return(5, nil).Once()
-	writer2.On("Write", mock.AnythingOfType("[]uint8")).Return(10, nil).Once()
-	writer3.On("Write", mock.AnythingOfType("[]uint8")).Return(20, nil).Once()
-	writer3.On("Flush").Return(nil).Once()
+	writer1.Expect().Write([]uint8{}).Return(5, nil).Once()
+	writer2.Expect().Write([]uint8{}).Return(10, nil).Once()
+	writer3.Expect().Write([]uint8{}).Return(20, nil).Once()
+	writer3.Expect().Flush()
 
-	//nolint:govet // test
 	tests := []struct {
-		name    string
 		maxSize *httpflush.MaxSize
+		name    string
 		wantN   int
 		wantErr bool
 	}{
@@ -64,23 +62,23 @@ func TestMaxSizeWrite(t *testing.T) {
 	}
 }
 
-func TestMaxSizeFlushesMany(t *testing.T) {
+func TestMaxSizeWrite_FlushesMany(t *testing.T) {
 	t.Parallel()
 	assert := require.New(t)
-	writer := httpflush.NewMockresponseWriter(t)
+	writer := httpflush.NewMockwriterFlusher(t)
 	maxSize := httpflush.MaxSize{
 		Max:    10,
 		Writer: writer,
 	}
 
-	writer.On("Write", mock.AnythingOfType("[]uint8")).Return(20, nil).Once()
+	writer.On("Write", []uint8{}).Return(20, nil).Once()
 	writer.On("Flush").Return(nil).Once()
 
 	writtenBytes, err := maxSize.Write([]byte(""))
 	assert.Equal(20, writtenBytes)
 	assert.NoError(err)
 
-	writer.On("Write", mock.AnythingOfType("[]uint8")).Return(11, nil).Once()
+	writer.On("Write", []uint8{}).Return(11, nil).Once()
 	writer.On("Flush").Return(nil).Once()
 
 	writtenBytes, err = maxSize.Write([]byte(""))

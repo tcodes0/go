@@ -4,8 +4,7 @@ dir: "{{.InterfaceDir}}"
 mockname: "Mock{{.InterfaceName}}"
 outpkg: "{{.PackageName}}"
 filename: "mock_{{.InterfaceName | snakecase}}.go"
-all: True
+include-regex: ".*"
 packages:
-  github.com/tcodes0/go/src:
-    config:
-      recursive: True
+  github.com/tcodes0/go/src/httpflush:
+  github.com/tcodes0/go/src/reflectutil:
