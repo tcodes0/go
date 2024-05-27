@@ -58,23 +58,30 @@ usageExit() {
 }
 
 lint() {
+  local path="$1"
   local lintFlags=(--timeout 10s --print-issued-lines=false)
-  golangci-lint run "${lintFlags[@]}" "$1"
+
+  golangci-lint run "${lintFlags[@]}" "$path"
 }
 
 lintFix() {
-  ./src/sh/lint-fix.sh "$1" &
+  local path="$1"
+
+  # lint fix is different from the linter
+  ./src/sh/lint-fix.sh "$path" &
   backgroundLinter=$!
 
   local lintFlags=(--timeout 10s --print-issued-lines=false --fix)
-  golangci-lint run "${lintFlags[@]}" "$1"
+  golangci-lint run "${lintFlags[@]}" "$path"
   wait $backgroundLinter
 }
 
 prettierFileGlob="**/*{.yml,.yaml,.json}"
 
 format() {
-  gofumpt -l -w "$1"
+  local path="$1"
+
+  gofumpt -l -w "$path"
   prettier --write "$1/$prettierFileGlob" 2>/dev/null || true
 }
 
@@ -83,14 +90,14 @@ formatConfigs() {
 }
 
 unitTests() {
-  PKG="$1" \
+  PKG_PATH="$1" \
     CACHE="true" \
     GITHUB_OUTPUT="/dev/null" \
     ./src/sh/workflows/package-pr/test-pretty.sh
 }
 
 build() {
-  PKG="$1" \
+  PKG_PATH="$1" \
     ./src/sh/workflows/package-pr/build-go.sh && echo ok
 }
 

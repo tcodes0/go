@@ -28,7 +28,7 @@ jobs:
 
       - name: Build
         env:
-          PKG: ${{ inputs.packagePath }}
+          PKG_PATH: ${{ inputs.packagePath }}
         run: go build -mod=readonly -v ./${{ inputs.packagePath }}
 
   test:
@@ -50,7 +50,7 @@ jobs:
       - name: Test pretty
         id: test-pretty
         env:
-          PKG: ${{ inputs.packagePath }}
+          PKG_PATH: ${{ inputs.packagePath }}
           CACHE: true
         shell: bash
         run: ./src/sh/workflows/package-pr/test-pretty.sh
