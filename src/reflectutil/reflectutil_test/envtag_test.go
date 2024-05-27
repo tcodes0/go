@@ -10,7 +10,7 @@ import (
 )
 
 //nolint:funlen // test
-func TestEnvTagResolve(t *testing.T) {
+func TestEnvTag_UpdateField(t *testing.T) {
 	assert := require.New(t)
 
 	type dog struct {

@@ -10,7 +10,7 @@ import (
 	"github.com/tcodes0/go/src/jsonutil"
 )
 
-func TestUnMarshalReader(t *testing.T) {
+func TestUnmarshalReader(t *testing.T) {
 	t.Parallel()
 	assert := require.New(t)
 

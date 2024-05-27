@@ -62,7 +62,7 @@ func TestMaxSizeWrite(t *testing.T) {
 	}
 }
 
-func TestMaxSizeFlushesMany(t *testing.T) {
+func TestMaxSizeWrite_FlushesMany(t *testing.T) {
 	t.Parallel()
 	assert := require.New(t)
 	writer := httpflush.NewMockwriterFlusher(t)

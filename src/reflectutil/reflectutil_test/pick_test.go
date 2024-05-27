@@ -9,7 +9,7 @@ import (
 )
 
 //nolint:funlen //test
-func TestPickNonZero(t *testing.T) {
+func TestPickValid(t *testing.T) {
 	t.Parallel()
 	assert := require.New(t)
 

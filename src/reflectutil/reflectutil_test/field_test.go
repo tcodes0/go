@@ -8,7 +8,7 @@ import (
 	"github.com/tcodes0/go/src/reflectutil"
 )
 
-func TestApplyFieldResolver(t *testing.T) {
+func TestFieldUpdater_UpdateField(t *testing.T) {
 	t.Parallel()
 	assert := require.New(t)
 
