@@ -5,8 +5,6 @@ mockname: "Mock{{.InterfaceName}}"
 outpkg: "{{.PackageName}}"
 filename: "mock_{{.InterfaceName | snakecase}}.go"
 include-regex: ".*"
-exclude-regex: "^CreateOptions|Generator|Nower$"
 packages:
-  github.com/tcodes0/go/src:
-    config:
-      recursive: True
+  github.com/tcodes0/go/src/httpflush:
+  github.com/tcodes0/go/src/reflectutil:
