@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-### options and imports ###
+### options, imports, mocks ###
 
 set -uo pipefail
 shopt -s globstar

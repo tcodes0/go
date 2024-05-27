@@ -20,7 +20,8 @@ const (
 	LNone  Level = iota + 1
 
 	debug string = "DEBG "
-	info  string = "INFO " // default level
+	// default level.
+	info  string = "INFO "
 	warn  string = "WARN "
 	erro  string = "ERRO "
 	fatal string = "FATL "

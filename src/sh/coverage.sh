@@ -20,16 +20,9 @@ fi
 
 cover -html="$COVERAGE_FILE" -o coverage.html.out
 
-if command -v xdg-open &>/dev/null; then
-  xdg-open "$PWD/coverage.html.out"
-  msg see your browser
+if ! xdg-open "$PWD/coverage.html.out" >/dev/null 2>&1 && ! open "$PWD/coverage.html.out" >/dev/null 2>&1; then
+  msg "Open $PWD/coverage.html.out in your browser"
   exit 0
 fi
 
-if command -v open &>/dev/null; then
-  open "$PWD/coverage.html.out"
-  msg see your browser
-  exit 0
-fi
-
-msg "Open $PWD/coverage.html.out in your browser"
+msg see your browser

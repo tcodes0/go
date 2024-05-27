@@ -3,7 +3,8 @@ package hue
 import "fmt"
 
 var (
-	TermEnd   = "\033[0m" // end terminal formatting
+	// end terminal formatting.
+	TermEnd   = "\033[0m"
 	Gray      = 240
 	Brown     = 100
 	BrightRed = 197
