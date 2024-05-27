@@ -162,7 +162,7 @@ coverage() {
 ### validation, input handling ###
 
 if [ $# -lt 1 ]; then
-  usageExit "Invalid number of arguments $# ($*)"
+  usageExit "One or more arguments required"
 fi
 
 optValue["command"]=$1
@@ -187,8 +187,8 @@ if [[ " ${packageCommands[*]} " =~ ${optValue[command]} ]]; then
     packages=("${packages[@]:1}")
   fi
 elif [[ " ${repoCommands[*]} " =~ ${optValue[command]} ]]; then
-  if [ "${optValue[package]}" ]; then
-    usageExit "Command ${optValue[command]} takes no arguments"
+  if [ "${optValue[package]}" ] && [ "${optValue[command]}" != "${repoCommands["tag"]}" ]; then
+    usageExit "Command ${optValue[command]} takes no arguments; received ${*:2}"
   fi
 fi
 

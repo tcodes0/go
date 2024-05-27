@@ -17,14 +17,18 @@ installCommands=()
 
 setup() {
   type="$1"
-  link="$2"
+  installLink="$2"
   binary="$3"
   comments="${*:4}"
-  declare -A commandsByType=(["go"]="go install" ["js"]="npm install -g" ["manual"]="-")
+  declare -A installCommandsByLang=(
+    ["go"]="go install"
+    ["js"]="npm install -g"
+    ["manual"]="-"
+  )
 
   if ! command -v "$binary" >/dev/null; then
     fail "$binary $comments"
-    installCommands+=("${commandsByType[$type]} $link")
+    installCommands+=("${installCommandsByLang[$type]} $installLink")
   else
     pass "$binary"
   fi
@@ -34,14 +38,17 @@ exitWithIssues() {
   if [ ${#installCommands[@]} -gt 0 ]; then
     printf "\n"
     msg "$1"
+
     for cmd in "${installCommands[@]}"; do
       printf '%s\n' "$cmd"
     done
+
     exit 1
   fi
 }
 
 # by order of priority
+
 # basic gnu/linux tools included by default, git, etc...
 setup manual 'missing git' git a version control system
 setup manual 'missing bash' bash popular shell
@@ -68,7 +75,7 @@ setup manual 'see https://go.dev/doc/install' go a static, compiled, minimalisti
 
 exitWithIssues "install the programming languages then run this script again"
 
-# Go
+# go tools
 setup go mvdan.cc/gofumpt@latest gofumpt is a stricter gofmt
 setup go github.com/go-delve/delve/cmd/dlv@latest dlv delve go debugger
 setup go github.com/joho/godotenv/cmd/godotenv@latest godotenv runs go programs with a .env local file
@@ -84,8 +91,9 @@ setup go github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt@latest gotestfmt go t
 setup go github.com/josharian/impl@latest impl generates method stubs for implementing an interface
 setup go honnef.co/go/tools/cmd/staticcheck@latest staticcheck a go mega linter
 setup go mvdan.cc/sh/v3/cmd/shfmt@latest shfmt formats shell scripts
+setup go golang.org/x/tools/cmd/goimports@latest goimports updates go import lines
 
-# Official auto fix tools for go vet linter
+# auto fix tools for go vet linter
 setup go golang.org/x/tools/go/analysis/passes/defers/cmd/defers@latest defers
 setup go golang.org/x/tools/go/analysis/passes/fieldalignment/cmd/fieldalignment@latest fieldalignment
 setup go golang.org/x/tools/go/analysis/passes/findcall/cmd/findcall@latest findcall
