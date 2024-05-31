@@ -9,8 +9,8 @@
 set -euo pipefail
 shopt -s globstar
 
-export PASS_GREEN="\e[7;38;05;029m PASS \e[0m"
-export FAIL_RED="\e[2;7;38;05;197;47m FAIL \e[0m"
+export PASS_COLOR="\e[7;38;05;242m PASS \e[0m"
+export FAIL_COLOR="\e[2;7;38;05;197;47m FAIL \e[0m"
 export COLOR_DIM="\e[2m"
 export COLOR_END="\e[0m"
 export CHAR_CARRIG_RET
@@ -64,20 +64,20 @@ testCase() {
   # let the command expand
   # shellcheck disable=SC2086
   if ! result=$($TESTEE $input); then
-    printf "%b\n" "$FAIL_RED $description"
+    printf "%b\n" "$FAIL_COLOR $description"
     printf "%b\n" "non zero exit"
     exit 1
   fi
 
   if [ "$result" != "$expected" ]; then
-    printf "%b\n" "$FAIL_RED $description"
+    printf "%b\n" "$FAIL_COLOR $description"
     printf "%b\n" "expectation not met:"
     printf "%b\n" "< expected"
     diff <(printf %b "$expected") <(printf %b "$result")
     exit 1
   fi
 
-  printf "%b\n" "$PASS_GREEN $description"
+  printf "%b\n" "$PASS_COLOR $description"
 }
 
 # wait for all processes to finish

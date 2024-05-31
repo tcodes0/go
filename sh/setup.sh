@@ -6,11 +6,11 @@ shopt -s globstar
 source "$PWD/sh/lib.sh"
 
 pass() {
-  printf "%b\n" "$PASS_GREEN $1"
+  printf "$PASS_COLOR$COLOR_DIM %b$COLOR_END\n" "$1"
 }
 
 fail() {
-  printf "%b\n" "$FAIL_RED $1"
+  printf "$FAIL_COLOR %b$COLOR_END\n" "$1"
 }
 
 installCommands=()

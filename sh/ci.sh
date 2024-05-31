@@ -35,10 +35,10 @@ printJobProgress() {
         status="${BASH_REMATCH[2]}"
 
         if [ "$status" == "$successToken" ]; then
-          printf "%b %b%s%b\n" "$PASS_GREEN" "$COLOR_DIM" "$job" "$COLOR_END"
+          printf "%b %b%s%b\n" "$PASS_COLOR" "$COLOR_DIM" "$job" "$COLOR_END"
           hasSuccessfulJob=true
         else
-          printf "%b %b\n" "$FAIL_RED" "$job"
+          printf "%b %b\n" "$FAIL_COLOR" "$job"
           if [ -z "$firstFailedJob" ]; then
             firstFailedJob="$job"
           fi
@@ -132,5 +132,5 @@ printf "\n"
 msg took $(($(date +%s) - start))s
 
 if [ "$exitStatus" != 0 ]; then
-  printf "%b" "$FAIL_RED"
+  printf "%b" "$FAIL_COLOR"
 fi
