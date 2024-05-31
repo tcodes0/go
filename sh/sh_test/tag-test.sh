@@ -5,13 +5,13 @@
 set -uo pipefail
 shopt -s globstar
 # shellcheck disable=SC1091
-source "$PWD/src/sh/lib.sh"
+source "$PWD/sh/lib.sh"
 
 ### vars and functions ###
 
-export TESTEE=./src/sh/tag.sh
-export EXEC_GIT_READ=./src/sh/sh_test/mocks/git.sh
-export EXEC_GIT_WRITE=./src/sh/sh_test/mocks/git.sh
+export TESTEE=./sh/tag.sh
+export EXEC_GIT_READ=./sh/sh_test/mocks/git.sh
+export EXEC_GIT_WRITE=./sh/sh_test/mocks/git.sh
 testsRunning=()
 start=$(date +%s)
 

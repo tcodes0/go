@@ -3,7 +3,7 @@
 set -euo pipefail
 shopt -s globstar
 # shellcheck disable=SC1091
-source "$PWD/src/sh/lib.sh"
+source "$PWD/sh/lib.sh"
 
 start=$(date +%s)
 

@@ -4,7 +4,7 @@
     {
       "type": "shell",
       "label": "Package tasks",
-      "command": "./src/sh/run.sh",
+      "command": "./run.sh",
       "args": ["${input:commandPackage}", "${input:package}"],
       "options": {
         "cwd": "${workspaceFolder}"
@@ -17,7 +17,7 @@
     {
       "type": "shell",
       "label": "Repo tasks",
-      "command": "./src/sh/run.sh ${input:commandRepo}",
+      "command": "./run.sh ${input:commandRepo}",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -29,7 +29,7 @@
     {
       "type": "shell",
       "label": "Package: format, lintfix, test",
-      "command": "./src/sh/run.sh format ${input:package} && ./src/sh/run.sh lintfix ${input:package} && ./src/sh/run.sh test ${input:package}",
+      "command": "./run.sh format ${input:package} && ./run.sh lintfix ${input:package} && ./run.sh test ${input:package}",
       "options": {
         "cwd": "${workspaceFolder}"
       },

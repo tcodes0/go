@@ -5,7 +5,7 @@
 set -euo pipefail
 shopt -s globstar
 # shellcheck disable=SC1091
-source "$PWD/src/sh/lib.sh"
+source "$PWD/sh/lib.sh"
 
 ### vars and functions ###
 
@@ -16,9 +16,9 @@ declare -rA opts=(
 read -rd "$CHAR_CARRIG_RET" -a packages < <(
   printf %b "${opts[all]} "
 
-  regExpSrcPrefix="^src\/"
-  # find folders directly under ./src that have at least 1 *.go file; prettify output
-  find src -mindepth 2 -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort --stable | uniq | sed -e "s/$regExpSrcPrefix//" | tr '\n' ' '
+  regExpSlashPrefix="^\/"
+  # find folders directly under . that have at least 1 *.go file; prettify output
+  packages | sed -e "s/$regExpSlashPrefix//" | tr '\n' ' '
 
   printf %b "$CHAR_CARRIG_RET"
 )
@@ -68,7 +68,7 @@ lintFix() {
   local path="$1"
 
   # lint fix is different from the linter
-  ./src/sh/lint-fix.sh "$path" &
+  ./sh/lint-fix.sh "$path" &
   backgroundLinter=$!
 
   local lintFlags=(--timeout 10s --print-issued-lines=false --fix)
@@ -93,18 +93,18 @@ unitTests() {
   PKG_PATH="$1" \
     CACHE="true" \
     GITHUB_OUTPUT="/dev/null" \
-    ./src/sh/workflows/package-pr/test-pretty.sh
+    ./sh/workflows/package-pr/test-pretty.sh
 }
 
 build() {
   PKG_PATH="$1" \
-    ./src/sh/workflows/package-pr/build-go.sh && echo ok
+    ./sh/workflows/package-pr/build-go.sh && echo ok
 }
 
 ci() {
   requireGitClean
   requireInternet Internet required to pull docker images
-  ./src/sh/ci.sh
+  ./sh/ci.sh
 }
 
 spellcheckDocs() {
@@ -112,20 +112,20 @@ spellcheckDocs() {
 }
 
 setup() {
-  ./src/sh/setup.sh
+  ./sh/setup.sh
 }
 
 testScripts() {
-  find src/sh/sh_test -iname "*-test.sh" -exec ./{} \;
+  find sh/sh_test -iname "*-test.sh" -exec ./{} \;
 }
 
 tag() {
   requireGitBranch main
-  ./src/sh/tag.sh "$@"
+  ./sh/tag.sh "$@"
 }
 
 run() {
-  local prefix="src"
+  local prefix=""
   local command=$1
   local package=$2
 
@@ -152,11 +152,11 @@ runPkgCommand() {
 }
 
 generateMocks() {
-  ./src/sh/mocks.sh
+  ./sh/mocks.sh
 }
 
 coverage() {
-  ./src/sh/coverage.sh
+  ./sh/coverage.sh
 }
 
 ### validation, input handling ###

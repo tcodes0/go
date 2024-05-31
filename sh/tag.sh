@@ -5,7 +5,7 @@
 set -euo pipefail
 shopt -s globstar
 # shellcheck disable=SC1091
-source "$PWD/src/sh/lib.sh"
+source "$PWD/sh/lib.sh"
 
 if [ -z "${EXEC_GIT_READ:-}" ]; then
   EXEC_GIT_READ=git

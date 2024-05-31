@@ -53,7 +53,7 @@ jobs:
           PKG_PATH: ${{ inputs.packagePath }}
           CACHE: true
         shell: bash
-        run: ./src/sh/workflows/package-pr/test-pretty.sh
+        run: ./sh/workflows/package-pr/test-pretty.sh
 
       - name: Annotate
         if: always()
