@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/tcodes0/go/src/errutil"
+	"github.com/tcodes0/go/errutil"
 )
 
 // unmarshals a reader to a pointer; closes the reader.

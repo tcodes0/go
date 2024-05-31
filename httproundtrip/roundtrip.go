@@ -3,8 +3,8 @@ package httproundtrip
 import (
 	"net/http"
 
-	"github.com/tcodes0/go/src/errutil"
-	"github.com/tcodes0/go/src/logging"
+	"github.com/tcodes0/go/errutil"
+	"github.com/tcodes0/go/logging"
 )
 
 type Roundtrip struct {

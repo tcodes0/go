@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"github.com/tcodes0/go/src/reflectutil"
+	"github.com/tcodes0/go/reflectutil"
 )
 
 func TestFieldUpdater_UpdateField(t *testing.T) {

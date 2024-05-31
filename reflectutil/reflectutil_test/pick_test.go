@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/tcodes0/go/src/misc"
-	"github.com/tcodes0/go/src/reflectutil"
+	"github.com/tcodes0/go/misc"
+	"github.com/tcodes0/go/reflectutil"
 )
 
 //nolint:funlen //test

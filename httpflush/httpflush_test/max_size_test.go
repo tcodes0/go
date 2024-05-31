@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/tcodes0/go/src/httpflush"
+	"github.com/tcodes0/go/httpflush"
 )
 
 func TestMaxSizeWrite(t *testing.T) {

@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/tcodes0/go/src/hue"
+	"github.com/tcodes0/go/hue"
 )
 
 type Level int

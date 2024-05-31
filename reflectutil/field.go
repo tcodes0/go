@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/tcodes0/go/src/errutil"
+	"github.com/tcodes0/go/errutil"
 )
 
 var ErrNotStructPointer = errors.New("expected a struct pointer")

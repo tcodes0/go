@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/tcodes0/go/src/errutil"
+	"github.com/tcodes0/go/errutil"
 )
 
 // marshals data to a reader.

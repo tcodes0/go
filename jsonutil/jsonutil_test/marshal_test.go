@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/tcodes0/go/src/jsonutil"
+	"github.com/tcodes0/go/jsonutil"
 )
 
 func TestMarshalReader(t *testing.T) {

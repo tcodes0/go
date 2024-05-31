@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/tcodes0/go/src/logging"
+	"github.com/tcodes0/go/logging"
 )
 
 //nolint:funlen,maintidx // test

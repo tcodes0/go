@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/tcodes0/go/src/misc"
+	"github.com/tcodes0/go/misc"
 )
 
 var (

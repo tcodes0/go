@@ -5,7 +5,7 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/tcodes0/go/src/errutil"
+	"github.com/tcodes0/go/errutil"
 )
 
 var (

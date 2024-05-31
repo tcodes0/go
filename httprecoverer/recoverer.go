@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"runtime/debug"
 
-	"github.com/tcodes0/go/src/logging"
+	"github.com/tcodes0/go/logging"
 )
 
 func Middleware(next http.Handler) http.Handler {

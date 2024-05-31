@@ -12,10 +12,10 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/tcodes0/go/src/errutil"
-	"github.com/tcodes0/go/src/logging"
-	"github.com/tcodes0/go/src/misc"
-	"github.com/tcodes0/go/src/reflectutil"
+	"github.com/tcodes0/go/errutil"
+	"github.com/tcodes0/go/logging"
+	"github.com/tcodes0/go/misc"
+	"github.com/tcodes0/go/reflectutil"
 )
 
 type Client struct {
