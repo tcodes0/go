@@ -112,3 +112,12 @@ requireGitBranch() {
 packages() {
   find . -mindepth 2 -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort --stable | uniq
 }
+
+# example: joinBy , a b c. output: a, b, c
+joinBy() {
+  local delim=${1:-} first=${2:-}
+
+  if shift 2; then
+    printf %s "$first" "${@/#/$delim}"
+  fi
+}

@@ -16,9 +16,9 @@ declare -rA opts=(
 read -rd "$CHAR_CARRIG_RET" -a packages < <(
   printf %b "${opts[all]} "
 
-  regExpSlashPrefix="^\/"
+  regExpDotSlashPrefix="^\.\/"
   # find folders directly under . that have at least 1 *.go file; prettify output
-  packages | sed -e "s/$regExpSlashPrefix//" | tr '\n' ' '
+  packages | sed -e "s/$regExpDotSlashPrefix//" | tr '\n' ' '
 
   printf %b "$CHAR_CARRIG_RET"
 )
@@ -51,8 +51,11 @@ declare -A optValue=(
 
 usageExit() {
   msg "$*\n"
-  msg "Usage: $0 [${packageCommands[*]}] [${packages[*]}]"
-  msg "Usage: $0 [${repoCommands[*]}]"
+  msg "Usage: $0 <repo command>"
+  msg "Usage: $0 <package command> <package>"
+  msg "repo commands:\n\t$(joinBy '\n\t' "${repoCommands[@]}")"
+  msg "package commands:\n\t$(joinBy '\n\t' "${packageCommands[@]}")"
+  msg "packages:\n\t$(joinBy '\n\t' "${packages[@]}")"
 
   exit 1
 }
