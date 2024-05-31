@@ -14,7 +14,7 @@ declare -rA opts=(
 )
 
 read -rd "$CHAR_CARRIG_RET" -a packages < <(
-  printf %b "${opts[all]} "
+  printf '%b ' "${opts[all]}"
 
   regExpDotSlashPrefix="^\.\/"
   # find folders directly under . that have at least 1 *.go file; prettify output
@@ -128,14 +128,13 @@ tag() {
 }
 
 run() {
-  local prefix=""
   local command=$1
   local package=$2
 
-  $command "${prefix}/$package" || true
+  $command "$package" || true
 
-  if [ -d "$PWD/${prefix}/$package/${package}_test" ]; then
-    $command "${prefix}/$package/${package}_test" || true
+  if [ -d "$PWD/$package/${package}_test" ]; then
+    $command "$package/${package}_test" || true
   fi
 }
 
