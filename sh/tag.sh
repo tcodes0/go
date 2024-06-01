@@ -129,6 +129,10 @@ addTag() {
 
 ### validation, input handling ###
 
+if requestedHelp "$*"; then
+  usageExit help
+fi
+
 if [ $# -lt 1 ]; then
   usageExit "Invalid number of arguments $# ($*)"
 fi

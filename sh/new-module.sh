@@ -9,13 +9,21 @@ source "$PWD/sh/lib.sh"
 
 ### vars and functions ###
 
+usageExit() {
+  msgLn "Usage: $0 <name>"
+  exit 1
+}
+
 name="${1:-}"
 
 ### validation, input handling ###
 
+if requestedHelp "$*"; then
+  usageExit
+fi
+
 if [ -z "$name" ]; then
-  echo "Usage: $0 <name>"
-  exit 1
+  usageExit
 fi
 
 ### script ###

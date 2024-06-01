@@ -128,3 +128,8 @@ joinBy() {
     printf %s "$first" "${@/#/$delim}"
   fi
 }
+
+requestedHelp() {
+  [[ "$*" =~ -h|--help|help ]] && return
+  return 1
+}

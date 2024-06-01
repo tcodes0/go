@@ -39,7 +39,8 @@ declare -ra commands=(
 usageExit() {
   usage() {
     name=$1
-    argCount=$2
+    type=$2
+    argCount=$3
 
     msg "$0" "$name"
 
@@ -47,7 +48,11 @@ usageExit() {
       printf %b \\t
 
       for ((i = 1; i <= argCount; i++)); do
-        printf "<arg%s>\t" $i
+        if [ "$type" == mod ]; then
+          printf "<module>\t"
+        else
+          printf "<arg%s>\t" $i
+        fi
       done
     fi
 
@@ -60,7 +65,7 @@ usageExit() {
   for info in "${commands[@]}"; do
     read -ra cmdInfo <<<"$info"
 
-    usage "${cmdInfo[0]/name:/}" "${cmdInfo[2]/argCount:/}"
+    usage "${cmdInfo[0]/name:/}" "${cmdInfo[1]/type:/}" "${cmdInfo[2]/argCount:/}"
   done
 
   printf %b \\n
@@ -144,28 +149,25 @@ testScripts() {
 
 # shellcheck disable=SC2317 # dynamic call
 tag() {
-  requireGitBranch main
+  # requireGitBranch main
   ./sh/tag.sh "$@"
-}
-
-run() {
-  local command=$1
-  local module=$2
-
-  if ! $command "$module"; then
-    msgLn "Failed: $command $module"
-  fi
-
-  if [ -d "$PWD/$module/${module}_test" ]; then
-    if ! $command "$module/${module}_test"; then
-      msgLn "Failed: $command $module/${module}_test"
-    fi
-  fi
 }
 
 runCommandInModule() {
   local command=$1
   local module=$2
+
+  run() {
+    if ! $command "$module"; then
+      msgLn "Failed: $command $module"
+    fi
+
+    if [ -d "$PWD/$module/${module}_test" ]; then
+      if ! $command "$module/${module}_test"; then
+        msgLn "Failed: $command $module/${module}_test"
+      fi
+    fi
+  }
 
   if [ "$module" != all ]; then
     run $command "$module"
@@ -215,6 +217,11 @@ for info in "${commands[@]}"; do
 
   if [ "$inputCommand" != "${command[0]/name:/}" ]; then
     continue
+  fi
+
+  if requestedHelp "$*"; then
+    "${command[0]/name:/}" "${inputArgs[@]}"
+    exit 1
   fi
 
   if [ "${#inputArgs[@]}" != "${command[2]/argCount:/}" ]; then
