@@ -10,67 +10,66 @@ source "$PWD/sh/lib.sh"
 ### vars and functions ###
 
 declare -rA opts=(
-  ["all"]="all"
+  [all]="all"
 )
 
-read -rd "$CHAR_CARRIG_RET" -a packages < <(
-  printf '%b ' "${opts[all]}"
-
+read -rd "$CHAR_CARRIG_RET" -a modules < <(
   regExpDotSlashPrefix="^\.\/"
   # find folders directly under . that have at least 1 *.go file; prettify output
-  packages | sed -e "s/$regExpDotSlashPrefix//" | tr '\n' ' '
+  findModules | sed -e "s/$regExpDotSlashPrefix//" | tr '\n' ' '
 
   printf %b "$CHAR_CARRIG_RET"
 )
 
-declare -rA packageCommands=(
-  ["build"]="build"
-  ["format"]="format"
-  ["lint"]="lint"
-  ["lintfix"]="lint-fix"
-  ["test"]="test"
+declare -ra modulesAndAll=("${opts[all]}" "${modules[@]}")
+
+declare -rA moduleCommands=(
+  [build]="build"
+  [format]="format"
+  [lint]="lint"
+  [lintfix]="lint-fix"
+  [test]="test"
 )
 
 declare -rA repoCommands=(
-  ["ci"]="ci"
-  ["coverage"]="coverage"
-  ["formatConfigs"]="format-configs"
-  ["mocks"]="generate-mocks"
-  ["spellcheck"]="spellcheck-docs"
-  ["setup"]="setup"
-  ["tag"]="tag"
-  ["testSh"]="test-scripts"
-  ["goWork"]="generate-go-work"
-  ["newMod"]="new-module"
+  [ci]="ci"
+  [coverage]="coverage"
+  [formatConfigs]="format-configs"
+  [mocks]="generate-mocks"
+  [spellcheck]="spellcheck-docs"
+  [setup]="setup"
+  [tag]="tag"
+  [testSh]="test-scripts"
+  [goWork]="generate-go-work"
+  [newMod]="new-module"
 )
 
 declare -rA repoCommandArgs=(
-  ["ci"]="0"
-  ["coverage"]="0"
-  ["formatConfigs"]="0"
-  ["mocks"]="0"
-  ["spellcheck"]="0"
-  ["setup"]="0"
-  ["tag"]="2"
-  ["testSh"]="0"
-  ["goWork"]="0"
-  ["newMod"]="1"
+  [ci]="0"
+  [coverage]="0"
+  [formatConfigs]="0"
+  [mocks]="0"
+  [spellcheck]="0"
+  [setup]="0"
+  [tag]="2"
+  [testSh]="0"
+  [goWork]="0"
+  [newMod]="1"
 )
 
 declare -A optValue=(
   # defaults
-  ["all"]=""
-  ["command"]=""
-  ["package"]=""
+  [command]=""
+  [module]=""
 )
 
 usageExit() {
   msg "$*\n"
   msg "Usage: $0 <repo command>"
-  msg "Usage: $0 <package command> <package>"
+  msg "Usage: $0 <module command> <module>"
   msg "repo commands:\n\t$(joinBy '\n\t' "${repoCommands[@]}")"
-  msg "package commands:\n\t$(joinBy '\n\t' "${packageCommands[@]}")"
-  msg "packages:\n\t$(joinBy '\n\t' "${packages[@]}")"
+  msg "module commands:\n\t$(joinBy '\n\t' "${moduleCommands[@]}")"
+  msg "modules:\n\t$(joinBy '\n\t' "${modulesAndAll[@]}")"
 
   exit 1
 }
@@ -108,15 +107,15 @@ formatConfigs() {
 }
 
 unitTests() {
-  PKG_PATH="$1" \
+  MOD_PATH="$1" \
     CACHE="true" \
     GITHUB_OUTPUT="/dev/null" \
-    ./sh/workflows/package-pr/test-pretty.sh
+    ./sh/workflows/module-pr/test-pretty.sh
 }
 
 build() {
-  PKG_PATH="$1" \
-    ./sh/workflows/package-pr/build-go.sh && echo ok
+  MOD_PATH="$1" \
+    ./sh/workflows/module-pr/build-go.sh && echo ok
 }
 
 ci() {
@@ -144,27 +143,28 @@ tag() {
 
 run() {
   local command=$1
-  local package=$2
+  local module=$2
 
-  $command "$package" || true
+  $command "$module" || true
 
-  if [ -d "$PWD/$package/${package}_test" ]; then
-    $command "$package/${package}_test" || true
+  if [ -d "$PWD/$module/${module}_test" ]; then
+    $command "$module/${module}_test" || true
   fi
 }
 
-runPkgCommand() {
+runCommandInModule() {
   local command=$1
+  local module=$2
 
-  if ! [ "${optValue[all]}" ]; then
-    run "$command" "${optValue["package"]}"
+  if [ "$module" != "${opts[all]}" ]; then
+    run $command "$module"
     return
   fi
 
-  for pkg in "${packages[@]}"; do
+  for mod in "${modules[@]}"; do
     printf %b "\n"
-    msg "$command $pkg..."
-    run "$command" "$pkg"
+    msg "$command $mod..."
+    run "$command" "$mod"
   done
 }
 
@@ -191,30 +191,24 @@ if [ $# -lt 1 ]; then
 fi
 
 optValue[command]=$1
-optValue[package]=${2:-}
+optValue[module]=${2:-}
 
-if ! [[ " ${packageCommands[*]}${repoCommands[*]} " =~ ${optValue[command]} ]]; then
+if ! [[ " ${moduleCommands[*]}${repoCommands[*]} " =~ ${optValue[command]} ]]; then
   usageExit "Invalid command: ${optValue[command]}"
 fi
 
-if [[ " ${packageCommands[*]} " =~ ${optValue[command]} ]]; then
-  if [ -z "${optValue[package]}" ]; then
-    usageExit "Command ${optValue[command]} requires a package"
+if [[ " ${moduleCommands[*]} " =~ ${optValue[command]} ]]; then
+  if [ -z "${optValue[module]}" ]; then
+    usageExit "Command ${optValue[command]} requires a module"
   fi
 
-  if ! [[ " ${packages[*]} " =~ ${optValue[package]} ]]; then
-    usageExit "Invalid package: ${optValue[package]}"
-  fi
-
-  if [ "${optValue[package]}" == "${opts[all]}" ]; then
-    optValue["all"]=true
-    optValue[package]=""
-    packages=("${packages[@]:1}")
+  if ! [[ " ${modulesAndAll[*]} " =~ ${optValue[module]} ]]; then
+    usageExit "Invalid module: ${optValue[module]}"
   fi
 elif [[ " ${repoCommands[*]} " =~ ${optValue[command]} ]]; then
   providedArgs=()
 
-  for arg in "${optValue[package]}" "${@:3}"; do
+  for arg in "${optValue[module]}" "${@:3}"; do
     if [ -n "$arg" ]; then
       providedArgs+=("$arg")
     fi
@@ -227,20 +221,20 @@ fi
 ### script ###
 
 case ${optValue[command]} in
-"${packageCommands[lint]}")
-  runPkgCommand lint
+"${moduleCommands[lint]}")
+  runCommandInModule lint "${optValue[module]}"
   ;;
-"${packageCommands[lintfix]}")
-  runPkgCommand lintFix
+"${moduleCommands[lintfix]}")
+  runCommandInModule lintFix "${optValue[module]}"
   ;;
-"${packageCommands[format]}")
-  runPkgCommand format
+"${moduleCommands[format]}")
+  runCommandInModule format "${optValue[module]}"
   ;;
-"${packageCommands[test]}")
-  runPkgCommand unitTests
+"${moduleCommands[test]}")
+  runCommandInModule unitTests "${optValue[module]}"
   ;;
-"${packageCommands[build]}")
-  runPkgCommand build
+"${moduleCommands[build]}")
+  runCommandInModule build "${optValue[module]}"
   ;;
 "${repoCommands[ci]}")
   ci
