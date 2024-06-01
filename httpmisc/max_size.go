@@ -1,4 +1,4 @@
-package httpflush
+package httpmisc
 
 import (
 	"errors"

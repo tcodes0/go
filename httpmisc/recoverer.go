@@ -1,4 +1,4 @@
-package httprecoverer
+package httpmisc
 
 import (
 	"net/http"

@@ -1,17 +1,17 @@
-package httpflush_test
+package httpmisc_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/tcodes0/go/httpflush"
+	"github.com/tcodes0/go/httpmisc"
 )
 
 func TestMaxSizeWrite(t *testing.T) {
 	t.Parallel()
-	writer1 := httpflush.NewMockwriterFlusher(t)
-	writer2 := httpflush.NewMockwriterFlusher(t)
-	writer3 := httpflush.NewMockwriterFlusher(t)
+	writer1 := httpmisc.NewMockwriterFlusher(t)
+	writer2 := httpmisc.NewMockwriterFlusher(t)
+	writer3 := httpmisc.NewMockwriterFlusher(t)
 
 	writer1.Expect().Write([]uint8{}).Return(5, nil).Once()
 	writer2.Expect().Write([]uint8{}).Return(10, nil).Once()
@@ -19,26 +19,26 @@ func TestMaxSizeWrite(t *testing.T) {
 	writer3.Expect().Flush()
 
 	tests := []struct {
-		maxSize *httpflush.MaxSize
+		maxSize *httpmisc.MaxSize
 		name    string
 		wantN   int
 		wantErr bool
 	}{
 		{
 			name:    "no flush smaller",
-			maxSize: &httpflush.MaxSize{Max: 10, Writer: writer1},
+			maxSize: &httpmisc.MaxSize{Max: 10, Writer: writer1},
 			wantN:   5,
 			wantErr: false,
 		},
 		{
 			name:    "no flush equal",
-			maxSize: &httpflush.MaxSize{Max: 10, Writer: writer2},
+			maxSize: &httpmisc.MaxSize{Max: 10, Writer: writer2},
 			wantN:   10,
 			wantErr: false,
 		},
 		{
 			name:    "flush larger",
-			maxSize: &httpflush.MaxSize{Max: 10, Writer: writer3},
+			maxSize: &httpmisc.MaxSize{Max: 10, Writer: writer3},
 			wantN:   20,
 			wantErr: false,
 		},
@@ -65,8 +65,8 @@ func TestMaxSizeWrite(t *testing.T) {
 func TestMaxSizeWrite_FlushesMany(t *testing.T) {
 	t.Parallel()
 	assert := require.New(t)
-	writer := httpflush.NewMockwriterFlusher(t)
-	maxSize := httpflush.MaxSize{
+	writer := httpmisc.NewMockwriterFlusher(t)
+	maxSize := httpmisc.MaxSize{
 		Max:    10,
 		Writer: writer,
 	}
