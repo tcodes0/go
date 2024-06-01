@@ -19,14 +19,19 @@ export ROOT_MODULE="github.com/tcodes0/go"
 export CHAR_CARRIG_RET
 CHAR_CARRIG_RET=$(printf "%b" "\r")
 
+# example: msgLn hello world
+msgLn() {
+  msg "$*\\n"
+}
+
 # example: msg hello world
 msg() {
-  echo -e "> $*"
+  echo -ne "> $*"
 }
 
 # example: msgExit could not find the file
 msgExit() {
-  msg "$*"
+  msgLn "$*"
   return 1
 }
 

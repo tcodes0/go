@@ -17,7 +17,7 @@ start=$(date +%s)
 
 ### script ###
 
-msg "$(basename $TESTEE)" test
+msgLn "$(basename $TESTEE)" test
 
 MOCK_TAG=v1.2.3 \
   MOCK_SHOW="deada55000 cactus (HEAD -> tag: v1.2.3)\n" \
@@ -111,4 +111,4 @@ EOF
 testsRunning+=($!)
 
 wait "${testsRunning[@]}"
-msg took $(($(date +%s) - start))s
+msgLn took $(($(date +%s) - start))s

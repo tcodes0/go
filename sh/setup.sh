@@ -13,7 +13,7 @@ fail() {
   printf "$FAIL_COLOR %b$COLOR_END\n" "$1"
 }
 
-installCommands=()
+fixProblems=()
 
 setup() {
   type="$1"
@@ -28,18 +28,18 @@ setup() {
 
   if ! command -v "$binary" >/dev/null; then
     fail "$binary $comments"
-    installCommands+=("${installCommandsByLang[$type]} $installLink")
+    fixProblems+=("${installCommandsByLang[$type]} $installLink")
   else
     pass "$binary"
   fi
 }
 
-exitWithIssues() {
-  if [ ${#installCommands[@]} -gt 0 ]; then
+exitShowProblems() {
+  if [ ${#fixProblems[@]} -gt 0 ]; then
     printf "\n"
-    msg "$1"
+    msgLn "$1"
 
-    for cmd in "${installCommands[@]}"; do
+    for cmd in "${fixProblems[@]}"; do
       printf '%s\n' "$cmd"
     done
 
@@ -50,6 +50,7 @@ exitWithIssues() {
 # by order of priority
 
 # basic gnu/linux tools included by default, git, etc...
+
 setup manual 'missing git' git a version control system
 setup manual 'missing bash' bash popular shell
 setup manual 'missing sed' sed stream editor
@@ -67,15 +68,17 @@ setup manual 'missing grep' grep search files for matches
 setup manual 'missing sleep' sleep block a script for some time
 setup manual 'missing head' head read a number of lines from a file
 
-exitWithIssues "missing basic gnu/linux binaries; please install for your platform; seek help and good luck!"
+exitShowProblems "missing basic gnu/linux binaries; please install for your platform; seek help and good luck!"
 
 # programming languages, package managers
+
 setup manual 'see https://nodejs.org/en/download/package-manager/' node javascript runtime built on top of v8
 setup manual 'see https://go.dev/doc/install' go a static, compiled, minimalistic, garbage collected language
 
-exitWithIssues "install the programming languages then run this script again"
+exitShowProblems "install the programming languages then run this script again"
 
 # go tools
+
 setup go mvdan.cc/gofumpt@latest gofumpt is a stricter gofmt
 setup go github.com/go-delve/delve/cmd/dlv@latest dlv delve go debugger
 setup go github.com/joho/godotenv/cmd/godotenv@latest godotenv runs go programs with a .env local file
@@ -94,6 +97,7 @@ setup go mvdan.cc/sh/v3/cmd/shfmt@latest shfmt formats shell scripts
 setup go golang.org/x/tools/cmd/goimports@latest goimports updates go import lines
 
 # auto fix tools for go vet linter
+
 setup go golang.org/x/tools/go/analysis/passes/defers/cmd/defers@latest defers
 setup go golang.org/x/tools/go/analysis/passes/fieldalignment/cmd/fieldalignment@latest fieldalignment
 setup go golang.org/x/tools/go/analysis/passes/findcall/cmd/findcall@latest findcall
@@ -108,10 +112,12 @@ setup go golang.org/x/tools/go/analysis/passes/unusedresult/cmd/unusedresult@lat
 setup go github.com/4meepo/tagalign/cmd/tagalign@latest tagalign
 
 # JS
+
 setup js cspell@latest cspell a spellchecker for source code
 setup js prettier@latest prettier a code formatter for several languages
 
 # others
+
 setup manual 'see https://golangci-lint.run/welcome/install' golangci-lint a fast lint runner for Go
 setup manual 'see https://vektra.github.io/mockery/latest/installation' mockery a go code generator for tests
 setup manual 'see https://nektosact.com/installation/index.html' act run github actions locally using containers
@@ -119,24 +125,33 @@ setup manual 'see https://github.com/cli/cli#installation' gh new github CLI
 setup manual 'see https://github.com/koalaman/shellcheck?tab=readme-ov-file#installing' shellcheck shell script linter
 setup manual 'see https://docs.docker.com/get-docker/' docker container runtime
 
-exitWithIssues "install the missing tools with"
+exitShowProblems "install the missing tools with"
 
 # configuration
+
+if ! [[ "$SHELL" =~ bash ]]; then
+  fail 'shell is bash' "expected bash as shell but got $SHELL"
+  fixProblems+=("either use bash as default shell or switch to bash using 'bash'")
+else
+  pass 'shell is bash'
+fi
+
 if ! gh auth token >/dev/null 2>&1; then
   fail 'gh auth token' 'not signed in to gh'
-  installCommands+=("please sign in to gh using 'gh auth login'")
+  fixProblems+=("please sign in to gh using 'gh auth login'")
 else
   pass 'gh auth token'
 fi
 
 if ! docker stats --no-stream >/dev/null 2>&1; then
   fail 'docker running' 'docker daemon not running'
-  installCommands+=("please start docker")
+  fixProblems+=("please start docker")
 else
   pass 'docker running'
 fi
 
 # notes
-msg note: \'act\' requires first time setup
 
-exitWithIssues "fix configuration issues"
+msgLn note: \'act\' requires first time setup
+
+exitShowProblems "fix configuration issues"

@@ -14,15 +14,15 @@ source "$PWD/sh/lib.sh"
 ### script ###
 
 if [ ! -f "$COVERAGE_FILE" ]; then
-  msg "$COVERAGE_FILE not found, did you run tests?"
+  msgLn "$COVERAGE_FILE not found, did you run tests?"
   exit 1
 fi
 
 cover -html="$COVERAGE_FILE" -o coverage.html.out
 
 if xdg-open "$PWD/coverage.html.out" >/dev/null 2>&1 || open "$PWD/coverage.html.out" >/dev/null 2>&1; then
-  msg see your browser
+  msgLn see your browser
   exit 0
 fi
 
-msg "Open $PWD/coverage.html.out in your browser"
+msgLn "Open $PWD/coverage.html.out in your browser"

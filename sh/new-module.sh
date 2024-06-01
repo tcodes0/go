@@ -27,7 +27,7 @@ cd "$name"
 go mod init "$module"
 printf "package %s\n" "$name" >"$name.go"
 
-msg "todo:
+msgLn "todo:
   - run script to update go.work
   - add $module to github workflows
   - add $module to vscode json config

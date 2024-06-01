@@ -57,17 +57,17 @@ usageExit() {
     printf "%s" -"${!optsHelp[*]}"
   )
 
-  msg "$*\n"
-  msg "Usage: $0 [$commandsHelpInfo] [$optsHelpInfo]"
+  msgLn "$*\n"
+  msgLn "Usage: $0 [$commandsHelpInfo] [$optsHelpInfo]"
 
   printf "\n"
   for command in "${!commandsHelp[@]}"; do
-    msg "$command:  ${commandsHelp[$command]}"
+    msgLn "$command:  ${commandsHelp[$command]}"
   done
 
   printf "\n"
   for opt in "${!optsHelp[@]}"; do
-    msg "-$opt:  ${optsHelp[$opt]}"
+    msgLn "-$opt:  ${optsHelp[$opt]}"
   done
 
   exit 1
