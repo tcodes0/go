@@ -122,7 +122,7 @@ tests() {
 # shellcheck disable=SC2317 # dynamic call
 build() {
   MOD_PATH="$1" \
-    ./sh/workflows/module-pr/build-go.sh
+    ./sh/workflows/module-pr/build.sh
 }
 
 # shellcheck disable=SC2317 # dynamic call

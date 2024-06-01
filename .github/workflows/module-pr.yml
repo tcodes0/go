@@ -29,7 +29,7 @@ jobs:
       - name: Build
         env:
           MOD_PATH: ${{ inputs.modulePath }}
-        run: go build -mod=readonly -v ./${{ inputs.modulePath }}
+        run: ./sh/workflows/module-pr/build.sh
 
   test:
     name: Test

@@ -14,17 +14,12 @@ jobs:
     outputs:
       # modules
       modClock: ${{ steps.list-changed-files.outputs.clock_all_changed_files }}
-      modErrutil: ${{ steps.list-changed-files.outputs.errutil_all_changed_files }}
-      modHttpclient: ${{ steps.list-changed-files.outputs.httpclient_all_changed_files }}
-      modHttpflush: ${{ steps.list-changed-files.outputs.httpflush_all_changed_files }}
-      modHttprecoverer: ${{ steps.list-changed-files.outputs.httprecoverer_all_changed_files }}
-      modHttproundtrip: ${{ steps.list-changed-files.outputs.httproundtrip_all_changed_files }}
+      modHttpmisc: ${{ steps.list-changed-files.outputs.httpmisc_all_changed_files }}
       modHue: ${{ steps.list-changed-files.outputs.hue_all_changed_files }}
       modIdentifier: ${{ steps.list-changed-files.outputs.identifier_all_changed_files }}
       modJsonutil: ${{ steps.list-changed-files.outputs.jsonutil_all_changed_files }}
       modLogging: ${{ steps.list-changed-files.outputs.logging_all_changed_files }}
       modMisc: ${{ steps.list-changed-files.outputs.misc_all_changed_files }}
-      modReflectutil: ${{ steps.list-changed-files.outputs.reflectutil_all_changed_files }}
       # others
       goMod: ${{ steps.list-changed-files.outputs.go_mod_all_changed_files }}
       config: ${{ steps.list-changed-files.outputs.config_all_changed_files }}
@@ -32,17 +27,12 @@ jobs:
       doc: ${{ steps.list-changed-files.outputs.doc_all_changed_files }}
       anyMod: ${{
         steps.list-changed-files.outputs.clock_all_changed_files
-        || steps.list-changed-files.outputs.errutil_all_changed_files
-        || steps.list-changed-files.outputs.httpclient_all_changed_files
-        || steps.list-changed-files.outputs.httpflush_all_changed_files
-        || steps.list-changed-files.outputs.httprecoverer_all_changed_files
-        || steps.list-changed-files.outputs.httproundtrip_all_changed_files
+        || steps.list-changed-files.outputs.httpmisc_all_changed_files
         || steps.list-changed-files.outputs.hue_all_changed_files
         || steps.list-changed-files.outputs.identifier_all_changed_files
         || steps.list-changed-files.outputs.jsonutil_all_changed_files
         || steps.list-changed-files.outputs.logging_all_changed_files
         || steps.list-changed-files.outputs.misc_all_changed_files
-        || steps.list-changed-files.outputs.reflectutil_all_changed_files
         }}
     steps:
       - name: Checkout
@@ -67,16 +57,8 @@ jobs:
               - sh/**.sh
             clock:
               - clock/**.go
-            errutil:
-              - errutil/**.go
-            httpclient:
-              - httpclient/**.go
-            httpflush:
-              - httpflush/**.go
-            httprecoverer:
-              - httprecoverer/**.go
-            httproundtrip:
-              - httproundtrip/**.go
+            httpmisc:
+              - httpmisc/**.go
             hue:
               - hue/**.go
             identifier:
@@ -87,8 +69,6 @@ jobs:
               - logging/**.go
             misc:
               - misc/**.go
-            reflectutil:
-              - reflectutil/**.go
 
   debug:
     name: Debug
@@ -138,7 +118,7 @@ jobs:
         uses: brokeyourbike/go-mockery-action@v0
         with:
           mockery-version: "2.43.0"
-      - run: ./sh/mocks.sh
+      - run: ./sh/generate-mocks.sh
 
       - name: Diff mocks
         working-directory: .
@@ -199,7 +179,7 @@ jobs:
         with:
           files: "**/*.md"
           incremental_files_only: true
-          config: ./cspell.config.yaml
+          config: ./cspell.config.yml
 
   clock:
     name: clock
@@ -210,50 +190,14 @@ jobs:
       goVersion: 1.22
       modulePath: clock
 
-  errutil:
-    name: errutil
+  httpmisc:
+    name: httpmisc
     needs: changed-files
-    if: needs.changed-files.outputs.modErrutil
+    if: needs.changed-files.outputs.modHttpMisc
     uses: ./.github/workflows/module-pr.yml
     with:
       goVersion: 1.22
-      modulePath: errutil
-
-  httpclient:
-    name: httpclient
-    needs: changed-files
-    if: needs.changed-files.outputs.modHttpclient
-    uses: ./.github/workflows/module-pr.yml
-    with:
-      goVersion: 1.22
-      modulePath: httpclient
-
-  httpflush:
-    name: httpflush
-    needs: changed-files
-    if: needs.changed-files.outputs.modHttpflush
-    uses: ./.github/workflows/module-pr.yml
-    with:
-      goVersion: 1.22
-      modulePath: httpflush
-
-  httprecoverer:
-    name: httprecoverer
-    needs: changed-files
-    if: needs.changed-files.outputs.modHttprecoverer
-    uses: ./.github/workflows/module-pr.yml
-    with:
-      goVersion: 1.22
-      modulePath: httprecoverer
-
-  httproundtrip:
-    name: httproundtrip
-    needs: changed-files
-    if: needs.changed-files.outputs.modHttproundtrip
-    uses: ./.github/workflows/module-pr.yml
-    with:
-      goVersion: 1.22
-      modulePath: httproundtrip
+      modulePath: httpmisc
 
   hue:
     name: hue
@@ -299,12 +243,3 @@ jobs:
     with:
       goVersion: 1.22
       modulePath: misc
-
-  reflectutil:
-    name: reflectutil
-    needs: changed-files
-    if: needs.changed-files.outputs.modReflectutil
-    uses: ./.github/workflows/module-pr.yml
-    with:
-      goVersion: 1.22
-      modulePath: reflectutil
