@@ -9,10 +9,6 @@ source "$PWD/sh/lib.sh"
 
 ### vars and functions ###
 
-declare -rA opts=(
-  [all]="all"
-)
-
 read -rd "$CHAR_CARRIG_RET" -a modules < <(
   regExpDotSlashPrefix="^\.\/"
   # find folders directly under . that have at least 1 *.go file; prettify output
@@ -20,8 +16,6 @@ read -rd "$CHAR_CARRIG_RET" -a modules < <(
 
   printf %b "$CHAR_CARRIG_RET"
 )
-
-declare -ra modulesAndAll=("${opts[all]}" "${modules[@]}")
 
 declare -ra commands=(
   "name:build          type:mod  argCount:1"
@@ -70,7 +64,8 @@ usageExit() {
   done
 
   printf %b \\n
-  msgLn "modules:\n$(joinBy ', ' "${modulesAndAll[@]}")"
+  msgLn "modules: $(joinBy ', ' "${modules[@]}")"
+  msgLn use \'all\' as module to iterate all modules
 
   exit 1
 }
@@ -122,7 +117,7 @@ tests() {
 # shellcheck disable=SC2317 # dynamic call
 build() {
   MOD_PATH="$1" \
-    ./sh/workflows/module-pr/build-go.sh && echo ok
+    ./sh/workflows/module-pr/build-go.sh
 }
 
 # shellcheck disable=SC2317 # dynamic call
@@ -157,10 +152,14 @@ run() {
   local command=$1
   local module=$2
 
-  $command "$module" || true
+  if ! $command "$module"; then
+    msgLn "Failed: $command $module"
+  fi
 
   if [ -d "$PWD/$module/${module}_test" ]; then
-    $command "$module/${module}_test" || true
+    if ! $command "$module/${module}_test"; then
+      msgLn "Failed: $command $module/${module}_test"
+    fi
   fi
 }
 
@@ -168,7 +167,7 @@ runCommandInModule() {
   local command=$1
   local module=$2
 
-  if [ "$module" != "${opts[all]}" ]; then
+  if [ "$module" != all ]; then
     run $command "$module"
     return
   fi
@@ -223,7 +222,7 @@ for info in "${commands[@]}"; do
   fi
 
   if [ "${command[1]/type:/}" == mod ]; then
-    if ! [[ " ${modulesAndAll[*]} " =~ ${inputArgs[0]} ]]; then
+    if ! [[ " all ${modules[*]} " =~ ${inputArgs[0]} ]]; then
       usageExit "Invalid module: ${inputArgs[0]}"
     fi
 

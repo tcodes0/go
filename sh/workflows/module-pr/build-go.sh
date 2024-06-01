@@ -8,4 +8,7 @@ flags+=(-mod=readonly)
 # verbose
 flags+=(-v)
 
-go build "${flags[@]}" "./$MOD_PATH"
+# building tests without regular .go files will fail
+if ! [[ "$MOD_PATH" =~ test$ ]]; then
+  go build "${flags[@]}" "./$MOD_PATH"
+fi
