@@ -111,7 +111,7 @@ requireGitBranch() {
 }
 
 # find all packages in the project by looking for go files
-packages() {
+findModules() {
   find . -mindepth 2 -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort --stable | uniq
 }
 

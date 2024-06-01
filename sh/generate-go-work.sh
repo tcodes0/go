@@ -22,11 +22,11 @@ parseGoVersion() {
 ### script ###
 
 goVersion=$(parseGoVersion)
-pkgs=$(packages)
-formattedPkgs=""
+mods=$(findModules)
+formattedMods=""
 
-for pkg in $pkgs; do
-  formattedPkgs=${formattedPkgs}$(printf %s "	$pkg\\n")
+for mod in $mods; do
+  formattedMods=${formattedMods}$(printf %s "	$mod\\n")
 done
 
 printf %b "// generated do not edit.
@@ -34,6 +34,6 @@ $goVersion
 
 use (
 	.
-$formattedPkgs
+$formattedMods
 )
 " >go.work

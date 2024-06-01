@@ -6,8 +6,8 @@ shopt -s globstar
 source "$PWD/sh/lib.sh"
 
 # extract package name from path
-testPkg=$(basename "$PKG_PATH")_test
-testDir="./$PKG_PATH/$testPkg"
+testPkg=$(basename "$MOD_PATH")_test
+testDir="./$MOD_PATH/$testPkg"
 
 if ! [ -d "$testDir" ]; then
   # some packages have no tests
@@ -25,7 +25,7 @@ flags+=(-vet=off)
 # output coverage profile to file
 flags+=(-coverprofile="$COVERAGE_FILE")
 # package to scan coverage, necessary for blackbox testing
-flags+=(-coverpkg="./$PKG_PATH")
+flags+=(-coverpkg="./$MOD_PATH")
 
 if [ "$CACHE" == "false" ]; then
   # disable passed test caching

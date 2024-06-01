@@ -1,5 +1,5 @@
-name: Package PR
-run-name: ${{ inputs.packagePath }}@${{ github.sha }}
+name: Module PR
+run-name: ${{ inputs.modulePath }}@${{ github.sha }}
 
 on:
   workflow_call:
@@ -8,8 +8,8 @@ on:
         description: "Go version"
         required: true
         type: number
-      packagePath:
-        description: "Package path"
+      modulePath:
+        description: "Module path"
         required: true
         type: string
 
@@ -28,8 +28,8 @@ jobs:
 
       - name: Build
         env:
-          PKG_PATH: ${{ inputs.packagePath }}
-        run: go build -mod=readonly -v ./${{ inputs.packagePath }}
+          MOD_PATH: ${{ inputs.modulePath }}
+        run: go build -mod=readonly -v ./${{ inputs.modulePath }}
 
   test:
     name: Test
@@ -50,10 +50,10 @@ jobs:
       - name: Test pretty
         id: test-pretty
         env:
-          PKG_PATH: ${{ inputs.packagePath }}
+          MOD_PATH: ${{ inputs.modulePath }}
           CACHE: true
         shell: bash
-        run: ./sh/workflows/package-pr/test-pretty.sh
+        run: ./sh/workflows/module-pr/test-pretty.sh
 
       - name: Annotate
         if: always()
@@ -80,6 +80,6 @@ jobs:
         with:
           install-mode: goinstall
           version: v1.58.2
-          working-directory: ${{ inputs.packagePath }}
+          working-directory: ${{ inputs.modulePath }}
           skip-cache: false
           args: --print-issued-lines=false
