@@ -40,6 +40,8 @@ declare -rA repoCommands=(
   ["setup"]="setup"
   ["tag"]="tag"
   ["testSh"]="test-scripts"
+  ["goWork"]="generate-go-work"
+  ["newMod"]="new-module"
 )
 
 declare -A optValue=(
@@ -154,11 +156,19 @@ runPkgCommand() {
 }
 
 generateMocks() {
-  ./sh/mocks.sh
+  ./sh/generate-mocks.sh
 }
 
 coverage() {
   ./sh/coverage.sh
+}
+
+goWork() {
+  ./sh/generate-go-work.sh
+}
+
+newMod() {
+  ./sh/new-module.sh
 }
 
 ### validation, input handling ###
@@ -235,5 +245,11 @@ case ${optValue[command]} in
   ;;
 "${repoCommands[coverage]}")
   coverage
+  ;;
+"${repoCommands[goWork]}")
+  goWork
+  ;;
+"${repoCommands[newMod]}")
+  newMod
   ;;
 esac

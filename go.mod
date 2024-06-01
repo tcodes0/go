@@ -1,3 +1,4 @@
+// generated do not edit.
 module github.com/tcodes0/go
 
 go 1.22
