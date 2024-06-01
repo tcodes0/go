@@ -23,63 +23,59 @@ read -rd "$CHAR_CARRIG_RET" -a modules < <(
 
 declare -ra modulesAndAll=("${opts[all]}" "${modules[@]}")
 
-declare -rA moduleCommands=(
-  [build]="build"
-  [format]="format"
-  [lint]="lint"
-  [lintfix]="lint-fix"
-  [test]="test"
+declare -ra commands=(
+  "name:build          type:mod  argCount:1"
+  "name:format         type:mod  argCount:1"
+  "name:lint           type:mod  argCount:1"
+  "name:lintFix        type:mod  argCount:1"
+  # do not name "test"; shadowed builtin test command
+  "name:tests          type:mod  argCount:1"
+  "name:ci             type:repo argCount:0"
+  "name:coverage       type:repo argCount:0"
+  "name:formatConfigs  type:repo argCount:0"
+  "name:generateMocks  type:repo argCount:0"
+  "name:spellcheckDocs type:repo argCount:0"
+  "name:setup          type:repo argCount:0"
+  "name:tag            type:repo argCount:2"
+  "name:testScripts    type:repo argCount:0"
+  "name:generateGoWork type:repo argCount:0"
+  "name:newModule      type:repo argCount:1"
 )
-
-declare -rA repoCommands=(
-  [ci]="ci"
-  [coverage]="coverage"
-  [formatConfigs]="format-configs"
-  [mocks]="generate-mocks"
-  [spellcheck]="spellcheck-docs"
-  [setup]="setup"
-  [tag]="tag"
-  [testSh]="test-scripts"
-  [goWork]="generate-go-work"
-  [newMod]="new-module"
-)
-
-declare -rA repoCommandArgs=(
-  [ci]="0"
-  [coverage]="0"
-  [formatConfigs]="0"
-  [mocks]="0"
-  [spellcheck]="0"
-  [setup]="0"
-  [tag]="2"
-  [testSh]="0"
-  [goWork]="0"
-  [newMod]="1"
-)
-
-declare -A optValue=(
-  # defaults
-  [command]=""
-  [module]=""
-)
-
-declare -A repoCommandValues=()
-
-for key in "${!repoCommands[@]}"; do
-  repoCommandValues["${repoCommands[$key]}"]=$key
-done
 
 usageExit() {
-  msg "$*\n"
-  msg "Usage: $0 <repo command>"
-  msg "Usage: $0 <module command> <module>"
-  msg "repo commands:\n\t$(joinBy '\n\t' "${repoCommands[@]}")"
-  msg "module commands:\n\t$(joinBy '\n\t' "${moduleCommands[@]}")"
-  msg "modules:\n\t$(joinBy '\n\t' "${modulesAndAll[@]}")"
+  usage() {
+    name=$1
+    argCount=$2
+
+    msg "$0" "$name"
+
+    if [ "$argCount" != 0 ]; then
+      printf %b \\t
+
+      for ((i = 1; i <= argCount; i++)); do
+        printf "<arg%s>\t" $i
+      done
+    fi
+
+    printf %b \\n
+  }
+
+  msgLn "$*\n"
+  msgLn Usage:
+
+  for info in "${commands[@]}"; do
+    read -ra cmdInfo <<<"$info"
+
+    usage "${cmdInfo[0]/name:/}" "${cmdInfo[2]/argCount:/}"
+  done
+
+  printf %b \\n
+  msgLn "modules:\n$(joinBy ', ' "${modulesAndAll[@]}")"
 
   exit 1
 }
 
+# shellcheck disable=SC2317 # dynamic call
 lint() {
   local path="$1"
   local lintFlags=(--timeout 10s --print-issued-lines=false)
@@ -87,6 +83,7 @@ lint() {
   golangci-lint run "${lintFlags[@]}" "$path"
 }
 
+# shellcheck disable=SC2317 # dynamic call
 lintFix() {
   local path="$1"
 
@@ -96,11 +93,12 @@ lintFix() {
 
   local lintFlags=(--timeout 10s --print-issued-lines=false --fix)
   golangci-lint run "${lintFlags[@]}" "$path"
-  wait $backgroundLinter
+  wait "$backgroundLinter"
 }
 
 prettierFileGlob="**/*{.yml,.yaml,.json}"
 
+# shellcheck disable=SC2317 # dynamic call
 format() {
   local path="$1"
 
@@ -108,40 +106,48 @@ format() {
   prettier --write "$1/$prettierFileGlob" 2>/dev/null || true
 }
 
+# shellcheck disable=SC2317 # dynamic call
 formatConfigs() {
   prettier --write "./$prettierFileGlob" 2>/dev/null || true
 }
 
-unitTests() {
+# shellcheck disable=SC2317 # dynamic call
+tests() {
   MOD_PATH="$1" \
     CACHE="true" \
     GITHUB_OUTPUT="/dev/null" \
     ./sh/workflows/module-pr/test-pretty.sh
 }
 
+# shellcheck disable=SC2317 # dynamic call
 build() {
   MOD_PATH="$1" \
     ./sh/workflows/module-pr/build-go.sh && echo ok
 }
 
+# shellcheck disable=SC2317 # dynamic call
 ci() {
   requireGitClean
   requireInternet Internet required to pull docker images
   ./sh/ci.sh
 }
 
+# shellcheck disable=SC2317 # dynamic call
 spellcheckDocs() {
   cspell "**/*.md" --gitignore
 }
 
+# shellcheck disable=SC2317 # dynamic call
 setup() {
   ./sh/setup.sh
 }
 
+# shellcheck disable=SC2317 # dynamic call
 testScripts() {
   find sh/sh_test -iname "*-test.sh" -exec ./{} \;
 }
 
+# shellcheck disable=SC2317 # dynamic call
 tag() {
   requireGitBranch main
   ./sh/tag.sh "$@"
@@ -169,108 +175,64 @@ runCommandInModule() {
 
   for mod in "${modules[@]}"; do
     printf %b "\n"
-    msg "$command $mod..."
+    msgLn "$command $mod..."
     run "$command" "$mod"
   done
 }
 
+# shellcheck disable=SC2317 # dynamic call
 generateMocks() {
   ./sh/generate-mocks.sh
 }
 
+# shellcheck disable=SC2317 # dynamic call
 coverage() {
   ./sh/coverage.sh
 }
 
-goWork() {
+# shellcheck disable=SC2317 # dynamic call
+generateGoWork() {
   ./sh/generate-go-work.sh
 }
 
-newMod() {
+# shellcheck disable=SC2317 # dynamic call
+newModule() {
   ./sh/new-module.sh "$@"
 }
 
 ### validation, input handling ###
 
 if [ $# -lt 1 ]; then
-  usageExit "One or more arguments required"
+  usageExit "A command is required"
 fi
 
-optValue[command]=$1
-optValue[module]=${2:-}
+inputCommand=${1}
+declare -a inputArgs=("${@:2}")
 
-if ! [[ " ${moduleCommands[*]}${repoCommands[*]} " =~ ${optValue[command]} ]]; then
-  usageExit "Invalid command: ${optValue[command]}"
-fi
-
-if [[ " ${moduleCommands[*]} " =~ ${optValue[command]} ]]; then
-  if [ -z "${optValue[module]}" ]; then
-    usageExit "Command ${optValue[command]} requires a module"
-  fi
-
-  if ! [[ " ${modulesAndAll[*]} " =~ ${optValue[module]} ]]; then
-    usageExit "Invalid module: ${optValue[module]}"
-  fi
-elif [[ " ${repoCommands[*]} " =~ ${optValue[command]} ]]; then
-  providedArgs=()
-  wantedArgs=${repoCommandArgs[${repoCommandValues[${optValue[command]}]}]}
-
-  for arg in "${optValue[module]}" "${@:3}"; do
-    if [ -n "$arg" ]; then
-      providedArgs+=("$arg")
-    fi
-  done
-
-  if [ ${#providedArgs[@]} != "$wantedArgs" ]; then
-    usageExit "Command ${optValue[command]} wants $wantedArgs arguments; received ${#providedArgs[@]} (${providedArgs[*]})"
-  fi
-fi
 ### script ###
 
-case ${optValue[command]} in
-"${moduleCommands[lint]}")
-  runCommandInModule lint "${optValue[module]}"
-  ;;
-"${moduleCommands[lintfix]}")
-  runCommandInModule lintFix "${optValue[module]}"
-  ;;
-"${moduleCommands[format]}")
-  runCommandInModule format "${optValue[module]}"
-  ;;
-"${moduleCommands[test]}")
-  runCommandInModule unitTests "${optValue[module]}"
-  ;;
-"${moduleCommands[build]}")
-  runCommandInModule build "${optValue[module]}"
-  ;;
-"${repoCommands[ci]}")
-  ci
-  ;;
-"${repoCommands[formatConfigs]}")
-  formatConfigs
-  ;;
-"${repoCommands[spellcheck]}")
-  spellcheckDocs
-  ;;
-"${repoCommands[setup]}")
-  setup
-  ;;
-"${repoCommands[testSh]}")
-  testScripts
-  ;;
-"${repoCommands[tag]}")
-  tag "${@:2}"
-  ;;
-"${repoCommands[mocks]}")
-  generateMocks
-  ;;
-"${repoCommands[coverage]}")
-  coverage
-  ;;
-"${repoCommands[goWork]}")
-  goWork
-  ;;
-"${repoCommands[newMod]}")
-  newMod "${@:2}"
-  ;;
-esac
+for info in "${commands[@]}"; do
+  read -ra command <<<"$info"
+
+  if [ "$inputCommand" != "${command[0]/name:/}" ]; then
+    continue
+  fi
+
+  if [ "${#inputArgs[@]}" != "${command[2]/argCount:/}" ]; then
+    usageExit "${command[0]/name:/} wants ${command[2]/argCount:/} arguments; received ${#inputArgs[@]} (${inputArgs[*]})"
+  fi
+
+  if [ "${command[1]/type:/}" == mod ]; then
+    if ! [[ " ${modulesAndAll[*]} " =~ ${inputArgs[0]} ]]; then
+      usageExit "Invalid module: ${inputArgs[0]}"
+    fi
+
+    runCommandInModule "${command[0]/name:/}" "${inputArgs[@]}"
+    exit
+  fi
+
+  "${command[0]/name:/}" "${inputArgs[@]}"
+  exit
+done
+
+usageExit "Invalid command: ${inputCommand}"
