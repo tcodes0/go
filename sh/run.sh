@@ -44,6 +44,19 @@ declare -rA repoCommands=(
   ["newMod"]="new-module"
 )
 
+declare -rA repoCommandArgs=(
+  ["ci"]="0"
+  ["coverage"]="0"
+  ["formatConfigs"]="0"
+  ["mocks"]="0"
+  ["spellcheck"]="0"
+  ["setup"]="0"
+  ["tag"]="2"
+  ["testSh"]="0"
+  ["goWork"]="0"
+  ["newMod"]="1"
+)
+
 declare -A optValue=(
   # defaults
   ["all"]=""
@@ -177,8 +190,8 @@ if [ $# -lt 1 ]; then
   usageExit "One or more arguments required"
 fi
 
-optValue["command"]=$1
-optValue["package"]=${2:-}
+optValue[command]=$1
+optValue[package]=${2:-}
 
 if ! [[ " ${packageCommands[*]}${repoCommands[*]} " =~ ${optValue[command]} ]]; then
   usageExit "Invalid command: ${optValue[command]}"
@@ -199,11 +212,18 @@ if [[ " ${packageCommands[*]} " =~ ${optValue[command]} ]]; then
     packages=("${packages[@]:1}")
   fi
 elif [[ " ${repoCommands[*]} " =~ ${optValue[command]} ]]; then
-  if [ "${optValue[package]}" ] && [ "${optValue[command]}" != "${repoCommands[tag]}" ] && [ "${optValue[command]}" != "${repoCommands[newMod]}" ]; then
-    usageExit "Command ${optValue[command]} takes no arguments; received ${*:2}"
+  providedArgs=()
+
+  for arg in "${optValue[package]}" "${@:3}"; do
+    if [ -n "$arg" ]; then
+      providedArgs+=("$arg")
+    fi
+  done
+
+  if [ ${#providedArgs[@]} != "${repoCommandArgs[${optValue[command]}]}" ]; then
+    usageExit "Command ${optValue[command]} wants ${repoCommandArgs[${optValue[command]}]} arguments; received ${#providedArgs[@]} (${providedArgs[*]})"
   fi
 fi
-
 ### script ###
 
 case ${optValue[command]} in
