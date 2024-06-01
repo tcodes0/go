@@ -9,21 +9,23 @@ source "$PWD/sh/lib.sh"
 
 ### vars and functions ###
 
-module="${1:-}"
+name="${1:-}"
 
 ### validation, input handling ###
 
-if [ -z "$module" ]; then
-  echo "Usage: $0 <module>"
+if [ -z "$name" ]; then
+  echo "Usage: $0 <name>"
   exit 1
 fi
 
 ### script ###
 
-mkdir -p "$module/${module}_test"
-cd "$module"
+module="$ROOT_MODULE/$name"
+
+mkdir -p "$name/${name}_test"
+cd "$name"
 go mod init "$module"
-printf "package %s\n" "$module" >"$module.go"
+printf "package %s\n" "$name" >"$name.go"
 
 msg "todo:
   - run script to update go.work

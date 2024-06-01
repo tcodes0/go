@@ -13,9 +13,11 @@ export PASS_COLOR="\e[7;38;05;242m PASS \e[0m"
 export FAIL_COLOR="\e[2;7;38;05;197;47m FAIL \e[0m"
 export COLOR_DIM="\e[2m"
 export COLOR_END="\e[0m"
+export COVERAGE_FILE="coverage.out"
+export ROOT_MODULE="github.com/tcodes0/go"
+
 export CHAR_CARRIG_RET
 CHAR_CARRIG_RET=$(printf "%b" "\r")
-export COVERAGE_FILE="coverage.out"
 
 # example: msg hello world
 msg() {

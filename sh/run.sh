@@ -168,7 +168,7 @@ goWork() {
 }
 
 newMod() {
-  ./sh/new-module.sh
+  ./sh/new-module.sh "$@"
 }
 
 ### validation, input handling ###
@@ -199,7 +199,7 @@ if [[ " ${packageCommands[*]} " =~ ${optValue[command]} ]]; then
     packages=("${packages[@]:1}")
   fi
 elif [[ " ${repoCommands[*]} " =~ ${optValue[command]} ]]; then
-  if [ "${optValue[package]}" ] && [ "${optValue[command]}" != "${repoCommands["tag"]}" ]; then
+  if [ "${optValue[package]}" ] && [ "${optValue[command]}" != "${repoCommands[tag]}" ] && [ "${optValue[command]}" != "${repoCommands[newMod]}" ]; then
     usageExit "Command ${optValue[command]} takes no arguments; received ${*:2}"
   fi
 fi
@@ -250,6 +250,6 @@ case ${optValue[command]} in
   goWork
   ;;
 "${repoCommands[newMod]}")
-  newMod
+  newMod "${@:2}"
   ;;
 esac
