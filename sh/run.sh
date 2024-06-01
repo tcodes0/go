@@ -63,6 +63,12 @@ declare -A optValue=(
   [module]=""
 )
 
+declare -A repoCommandValues=()
+
+for key in "${!repoCommands[@]}"; do
+  repoCommandValues["${repoCommands[$key]}"]=$key
+done
+
 usageExit() {
   msg "$*\n"
   msg "Usage: $0 <repo command>"
@@ -207,6 +213,7 @@ if [[ " ${moduleCommands[*]} " =~ ${optValue[command]} ]]; then
   fi
 elif [[ " ${repoCommands[*]} " =~ ${optValue[command]} ]]; then
   providedArgs=()
+  wantedArgs=${repoCommandArgs[${repoCommandValues[${optValue[command]}]}]}
 
   for arg in "${optValue[module]}" "${@:3}"; do
     if [ -n "$arg" ]; then
@@ -214,8 +221,8 @@ elif [[ " ${repoCommands[*]} " =~ ${optValue[command]} ]]; then
     fi
   done
 
-  if [ ${#providedArgs[@]} != "${repoCommandArgs[${optValue[command]}]}" ]; then
-    usageExit "Command ${optValue[command]} wants ${repoCommandArgs[${optValue[command]}]} arguments; received ${#providedArgs[@]} (${providedArgs[*]})"
+  if [ ${#providedArgs[@]} != "$wantedArgs" ]; then
+    usageExit "Command ${optValue[command]} wants $wantedArgs arguments; received ${#providedArgs[@]} (${providedArgs[*]})"
   fi
 fi
 ### script ###
