@@ -1,11 +1,9 @@
-package reflectutil
+package misc
 
 import (
 	"errors"
 	"fmt"
 	"reflect"
-
-	"github.com/tcodes0/go/misc"
 )
 
 var (
@@ -29,7 +27,7 @@ func Merge[T any](base, partial *T, ignore []string) (clone *T, ignored []string
 		return partial, nil, nil
 	}
 
-	c := misc.Copy(*base)
+	c := Copy(*base)
 	clone = &c
 
 	if partial == nil {

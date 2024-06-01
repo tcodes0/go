@@ -1,11 +1,10 @@
-package reflectutil_test
+package misc_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"github.com/tcodes0/go/misc"
-	"github.com/tcodes0/go/reflectutil"
 )
 
 //nolint:funlen //test
@@ -70,7 +69,7 @@ func TestPickValid(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(test.want, reflectutil.PickValid(test.values...))
+			assert.Equal(test.want, misc.PickValid(test.values...))
 		})
 	}
 }

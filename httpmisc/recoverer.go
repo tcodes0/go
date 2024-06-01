@@ -9,6 +9,7 @@ import (
 
 func Middleware(next http.Handler) http.Handler {
 	middlewareFunc := func(writer http.ResponseWriter, req *http.Request) {
+		//nolint:contextcheck // context in scope
 		defer func() {
 			if msg := recover(); msg != nil && msg != http.ErrAbortHandler {
 				logger := logging.FromContext(req.Context())

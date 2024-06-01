@@ -1,4 +1,4 @@
-package errutil
+package misc
 
 import "fmt"
 

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/tcodes0/go/errutil"
+	"github.com/tcodes0/go/misc"
 )
 
 // unmarshals a reader to a pointer; closes the reader.
@@ -13,7 +13,7 @@ func UnmarshalReader[T any](r io.ReadCloser) (*T, error) {
 
 	data, err := io.ReadAll(r)
 	if err != nil {
-		return nil, errutil.Wrap(err, "reading")
+		return nil, misc.Wrap(err, "reading")
 	}
 
 	if len(data) > 0 {
@@ -30,7 +30,7 @@ func UnmarshalBytes[T any](b []byte) (*T, error) {
 	if len(b) > 0 {
 		err := json.Unmarshal(b, out)
 		if err != nil {
-			return nil, errutil.Wrap(err, "unmarshalling bytes")
+			return nil, misc.Wrap(err, "unmarshalling bytes")
 		}
 	}
 

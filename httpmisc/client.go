@@ -12,10 +12,8 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/tcodes0/go/errutil"
 	"github.com/tcodes0/go/logging"
 	"github.com/tcodes0/go/misc"
-	"github.com/tcodes0/go/reflectutil"
 )
 
 type Client struct {
@@ -32,9 +30,9 @@ type SetClientOptions struct {
 }
 
 func (c *Client) Init(userAgent, baseURL, apiKey string, opts *SetClientOptions) {
-	opts = reflectutil.Default(opts, &SetClientOptions{})
-	opts.Client = reflectutil.Default(opts.Client, &http.Client{})
-	opts.Timeout = reflectutil.Default(opts.Timeout, misc.Seconds(15))
+	opts = misc.Default(opts, &SetClientOptions{})
+	opts.Client = misc.Default(opts.Client, &http.Client{})
+	opts.Timeout = misc.Default(opts.Timeout, misc.Seconds(15))
 	c.httpClient = opts.Client
 
 	dialer := &net.Dialer{Timeout: opts.Timeout}
@@ -68,7 +66,7 @@ func (c Client) Request(ctx context.Context, method, path string, body any, head
 		return nil, nil, err
 	}
 
-	req.Header = reflectutil.Default(headers, http.Header{})
+	req.Header = misc.Default(headers, http.Header{})
 	req.Header.Set("Authorization", "Bearer "+c.apiKey)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("User-Agent", c.userAgent)
@@ -79,7 +77,7 @@ func (c Client) Request(ctx context.Context, method, path string, body any, head
 
 	res, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, nil, errutil.Wrap(err, "doing request")
+		return nil, nil, misc.Wrap(err, "doing request")
 	}
 	defer res.Body.Close()
 
@@ -91,7 +89,7 @@ func (c Client) Request(ctx context.Context, method, path string, body any, head
 
 	data, err := io.ReadAll(res.Body)
 	if err != nil {
-		return res, nil, errutil.Wrap(err, "reading response body")
+		return res, nil, misc.Wrap(err, "reading response body")
 	}
 
 	logger.Debug().Logf("response %s", string(data))
@@ -107,7 +105,7 @@ func makeRequest(ctx context.Context, method, url string, body any) (*http.Reque
 	if body == nil {
 		req, err := http.NewRequestWithContext(ctx, method, url, http.NoBody)
 		if err != nil {
-			return nil, errutil.Wrap(err, "creating request without body")
+			return nil, misc.Wrap(err, "creating request without body")
 		}
 
 		return req, nil
@@ -115,7 +113,7 @@ func makeRequest(ctx context.Context, method, url string, body any) (*http.Reque
 
 	data, err := json.Marshal(body)
 	if err != nil {
-		return nil, errutil.Wrap(err, "marshalling body")
+		return nil, misc.Wrap(err, "marshalling body")
 	}
 
 	logger.Debug().Logf("body %v", body)
@@ -130,7 +128,7 @@ func makeRequest(ctx context.Context, method, url string, body any) (*http.Reque
 
 	req, err := http.NewRequestWithContext(ctx, method, url, reader)
 	if err != nil {
-		return nil, errutil.Wrap(err, "creating request")
+		return nil, misc.Wrap(err, "creating request")
 	}
 
 	return req, nil

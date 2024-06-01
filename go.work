@@ -4,13 +4,11 @@ go 1.22
 use (
 	.
 	./clock
-	./errutil
 	./httpmisc
 	./hue
 	./identifier
 	./jsonutil
 	./logging
 	./misc
-	./reflectutil
 
 )

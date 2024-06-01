@@ -1,11 +1,9 @@
-package reflectutil
+package misc
 
 import (
 	"errors"
 	"os"
 	"reflect"
-
-	"github.com/tcodes0/go/errutil"
 )
 
 var (
@@ -30,7 +28,7 @@ func (envTag EnvTag) UpdateField(field *reflect.StructField, valField reflect.Va
 	}
 
 	if valField.Type() != reflect.TypeOf("") {
-		return errutil.Wrap(ErrNotString, valField.String())
+		return Wrap(ErrNotString, valField.String())
 	}
 
 	if valField.String() != "" {

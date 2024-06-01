@@ -1,4 +1,4 @@
-package reflectutil
+package misc
 
 // from left to right returns the first valid value or the last value
 // if all are nil or zero.

@@ -1,11 +1,10 @@
-package reflectutil_test
+package misc_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"github.com/tcodes0/go/misc"
-	"github.com/tcodes0/go/reflectutil"
 )
 
 //nolint:funlen // test
@@ -65,7 +64,7 @@ func TestMerge(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			out, ignored, err := reflectutil.Merge(test.base, test.partial, test.ignore)
+			out, ignored, err := misc.Merge(test.base, test.partial, test.ignore)
 			assert.NoError(err)
 			assert.Equal(test.expected, out)
 			assert.Equal(test.expectedIgnore, ignored)

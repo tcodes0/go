@@ -1,11 +1,11 @@
-package reflectutil_test
+package misc_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"github.com/tcodes0/go/reflectutil"
+	"github.com/tcodes0/go/misc"
 )
 
 func TestFieldUpdater_UpdateField(t *testing.T) {
@@ -18,11 +18,11 @@ func TestFieldUpdater_UpdateField(t *testing.T) {
 	}
 
 	cfg := &config{}
-	updater := reflectutil.NewMockFieldUpdater(t)
+	updater := misc.NewMockFieldUpdater(t)
 	updater.Expect().UpdateField(mock.AnythingOfType("*reflect.StructField"), mock.AnythingOfType("reflect.Value")).
 		Return(nil).
 		Twice()
 
-	err := reflectutil.ApplyToFields(updater, cfg)
+	err := misc.ApplyToFields(updater, cfg)
 	assert.NoError(err)
 }

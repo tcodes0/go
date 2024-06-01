@@ -1,4 +1,4 @@
-package reflectutil_test
+package misc_test
 
 import (
 	"reflect"
@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/tcodes0/go/misc"
-	"github.com/tcodes0/go/reflectutil"
 )
 
 //nolint:funlen // test
@@ -69,7 +68,7 @@ func TestIsNil(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(test.want, reflectutil.IsNil(test.value))
+			assert.Equal(test.want, misc.IsNil(test.value))
 		})
 	}
 }
@@ -113,7 +112,7 @@ func TestIsZero(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(test.want, reflectutil.IsZero(test.value))
+			assert.Equal(test.want, misc.IsZero(test.value))
 		})
 	}
 }

@@ -1,11 +1,9 @@
-package reflectutil
+package misc
 
 import (
 	"errors"
 	"fmt"
 	"reflect"
-
-	"github.com/tcodes0/go/errutil"
 )
 
 var ErrNotStructPointer = errors.New("expected a struct pointer")
@@ -35,7 +33,7 @@ func ApplyToFields[T any](updater FieldUpdater, base *T) (err error) {
 
 		err := updater.UpdateField(&f, elemBase.Field(i))
 		if err != nil {
-			return errutil.Wrapf(err, "resolving field %s", typeBase.Field(i).Name)
+			return Wrapf(err, "resolving field %s", typeBase.Field(i).Name)
 		}
 	}
 

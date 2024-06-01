@@ -1,4 +1,4 @@
-package reflectutil_test
+package misc_test
 
 import (
 	"reflect"
@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/tcodes0/go/misc"
-	"github.com/tcodes0/go/reflectutil"
 )
 
 //nolint:funlen // test
@@ -19,7 +18,7 @@ func TestEnvTag_UpdateField(t *testing.T) {
 		Owner string
 	}
 
-	envTag := reflectutil.EnvTag{
+	envTag := misc.EnvTag{
 		Tag:     "env",
 		Default: "default",
 	}

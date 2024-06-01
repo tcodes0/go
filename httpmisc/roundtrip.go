@@ -3,8 +3,8 @@ package httpmisc
 import (
 	"net/http"
 
-	"github.com/tcodes0/go/errutil"
 	"github.com/tcodes0/go/logging"
+	"github.com/tcodes0/go/misc"
 )
 
 type Roundtrip struct {
@@ -36,5 +36,5 @@ func (r Roundtrip) RoundTrip(req *http.Request) (*http.Response, error) {
 		Metadata("headers", res.Header).
 		Log("res")
 
-	return res, errutil.Wrap(err, "http roundtrip")
+	return res, misc.Wrap(err, "http roundtrip")
 }
