@@ -19,6 +19,7 @@ type EnvTag struct {
 
 var _ FieldUpdater = (*EnvTag)(nil)
 
+// updates a field with an env variable.
 func (envTag EnvTag) UpdateField(field *reflect.StructField, valField reflect.Value) error {
 	tag := field.Tag.Get(envTag.Tag)
 	def := field.Tag.Get(envTag.Default)

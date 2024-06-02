@@ -14,6 +14,7 @@ const (
 	appendSuffix = ", "
 )
 
+// Logger has no public fields; wraps log.Logger with additional functionality.
 type Logger struct {
 	l         *log.Logger
 	exit      func(code int) // proxy to os.Exit(1)

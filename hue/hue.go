@@ -3,7 +3,7 @@ package hue
 import "fmt"
 
 var (
-	// end terminal formatting.
+	// end terminal formats and colors.
 	TermEnd   = "\033[0m"
 	Gray      = 240
 	Brown     = 100
@@ -18,10 +18,10 @@ func TermColor(n int) string {
 	return fmt.Sprintf("\033[38;05;%dm", n)
 }
 
-// color print, does not terminate color; use hue.TermEnd.
-func Cprint(color int, args ...string) string {
+// color print, does not terminate color; append the exported var.
+func Cprint(color int, messages ...string) string {
 	out := TermColor(color)
-	for _, s := range args {
+	for _, s := range messages {
 		out += s
 	}
 

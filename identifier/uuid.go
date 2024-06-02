@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// This concrete type implements the Generator interface.
 type UUIDGenerator struct{}
 
 var _ Generator = (*UUIDGenerator)(nil)

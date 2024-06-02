@@ -8,6 +8,7 @@ import (
 
 var ErrNotStructPointer = errors.New("expected a struct pointer")
 
+// FieldUpdater updates a field in a struct.
 type FieldUpdater interface {
 	UpdateField(field *reflect.StructField, base reflect.Value) error
 }

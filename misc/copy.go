@@ -18,7 +18,7 @@ func CopyPointed[T any](ptr *T) T {
 	return c
 }
 
-// return a copy.
+// return a copy of T.
 func Copy[T any](val T) T {
 	return val
 }

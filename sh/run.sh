@@ -85,6 +85,8 @@ runCommandInModule() {
   local cmd=$1 module=$2
 
   run() {
+    local cmd=$1 module=$2
+
     if ! $cmd "$module"; then
       msgln "failed: $cmd $module"
     fi

@@ -7,7 +7,8 @@ import (
 	"github.com/tcodes0/go/logging"
 )
 
-func Middleware(next http.Handler) http.Handler {
+// a middleware that recovers from panics.
+func Recoverer(next http.Handler) http.Handler {
 	middlewareFunc := func(writer http.ResponseWriter, req *http.Request) {
 		//nolint:contextcheck // context in scope
 		defer func() {

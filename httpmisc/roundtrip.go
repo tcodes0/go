@@ -7,12 +7,16 @@ import (
 	"github.com/tcodes0/go/misc"
 )
 
+// implements http.RoundTripper with debug logging.
 type Roundtrip struct {
 	Transport *http.Transport
 	Logger    *logging.Logger
 	UserAgent string
 }
 
+var _ http.RoundTripper = (*Roundtrip)(nil)
+
+// executes a roundtrip with debug logging.
 func (r Roundtrip) RoundTrip(req *http.Request) (*http.Response, error) {
 	if r.UserAgent != "" {
 		req.Header.Set("User-Agent", r.UserAgent)

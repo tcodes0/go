@@ -16,6 +16,7 @@ import (
 	"github.com/tcodes0/go/misc"
 )
 
+// an http client.
 type Client struct {
 	apiKey     string
 	baseURL    string
@@ -24,13 +25,23 @@ type Client struct {
 	timeout    time.Duration
 }
 
+// options for setting a client; some options are required.
 type SetClientOptions struct {
-	Client  *http.Client
-	Timeout time.Duration
+	Client    *http.Client
+	UserAgent string
+	BaseURL   string
+	APIKey    string
+	Timeout   time.Duration
 }
 
-func (c *Client) Init(userAgent, baseURL, apiKey string, opts *SetClientOptions) {
+// initializes a client with options.
+func (c *Client) Init(opts *SetClientOptions) error {
 	opts = misc.Default(opts, &SetClientOptions{})
+
+	if opts.UserAgent == "" || opts.BaseURL == "" || opts.APIKey == "" {
+		return errors.New("user agent, base url, api key are required")
+	}
+
 	opts.Client = misc.Default(opts.Client, &http.Client{})
 	opts.Timeout = misc.Default(opts.Timeout, misc.Seconds(15))
 	c.httpClient = opts.Client
@@ -38,13 +49,16 @@ func (c *Client) Init(userAgent, baseURL, apiKey string, opts *SetClientOptions)
 	dialer := &net.Dialer{Timeout: opts.Timeout}
 	c.httpClient.Transport = &http.Transport{Dial: dialer.Dial}
 
-	c.baseURL = baseURL
-	c.apiKey = apiKey
-	c.userAgent = userAgent
+	c.baseURL = opts.BaseURL
+	c.apiKey = opts.APIKey
+	c.userAgent = opts.UserAgent
 	c.timeout = opts.Timeout
+
+	return nil
 }
 
-func (c Client) Request(ctx context.Context, method, path string, body any, headers http.Header) (*http.Response, []byte, error) {
+// sends a request with a body and headers.
+func (c Client) Request(ctx context.Context, method, resource string, body any, headers http.Header) (*http.Response, []byte, error) {
 	if c.httpClient == nil {
 		return nil, nil, errors.New("nil client")
 	}
@@ -61,7 +75,7 @@ func (c Client) Request(ctx context.Context, method, path string, body any, head
 		defer cancel()
 	}
 
-	req, err := makeRequest(ctx, method, c.baseURL+path, body)
+	req, err := makeRequest(ctx, method, c.baseURL+resource, body)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -132,4 +146,24 @@ func makeRequest(ctx context.Context, method, url string, body any) (*http.Reque
 	}
 
 	return req, nil
+}
+
+func (c Client) Get(ctx context.Context, resource string, body any, headers http.Header) (*http.Response, []byte, error) {
+	return c.Request(ctx, http.MethodGet, resource, body, headers)
+}
+
+func (c Client) Post(ctx context.Context, resource string, body any, headers http.Header) (*http.Response, []byte, error) {
+	return c.Request(ctx, http.MethodPost, resource, body, headers)
+}
+
+func (c Client) Put(ctx context.Context, resource string, body any, headers http.Header) (*http.Response, []byte, error) {
+	return c.Request(ctx, http.MethodPut, resource, body, headers)
+}
+
+func (c Client) Patch(ctx context.Context, resource string, body any, headers http.Header) (*http.Response, []byte, error) {
+	return c.Request(ctx, http.MethodPatch, resource, body, headers)
+}
+
+func (c Client) Delete(ctx context.Context, resource string, body any, headers http.Header) (*http.Response, []byte, error) {
+	return c.Request(ctx, http.MethodDelete, resource, body, headers)
 }

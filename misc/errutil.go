@@ -2,14 +2,16 @@ package misc
 
 import "fmt"
 
-func Wrap(err error, msg string) error {
+// Wrap wraps an error with a message.
+func Wrap(err error, message string) error {
 	if err == nil {
 		return nil
 	}
 
-	return fmt.Errorf("%s: %w", msg, err)
+	return fmt.Errorf("%s: %w", message, err)
 }
 
+// Wrapf wraps an error with a formatted message.
 func Wrapf(err error, format string, args ...any) error {
 	if err == nil {
 		return nil

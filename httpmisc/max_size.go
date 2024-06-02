@@ -18,6 +18,7 @@ type MaxSize struct {
 
 var _ writerFlusher = (*MaxSize)(nil)
 
+// implementation of http.ResponseWriter.Write.
 func (maxSize *MaxSize) Write(b []byte) (n int, err error) {
 	n, err = maxSize.Writer.Write(b)
 	if err != nil {
@@ -38,14 +39,17 @@ func (maxSize *MaxSize) Write(b []byte) (n int, err error) {
 	return n, nil
 }
 
+// implementation of http.ResponseWriter.Header.
 func (maxSize MaxSize) Header() http.Header {
 	return maxSize.Writer.Header()
 }
 
+// implementation of http.ResponseWriter.WriteHeader.
 func (maxSize MaxSize) WriteHeader(statusCode int) {
 	maxSize.Writer.WriteHeader(statusCode)
 }
 
+// Flush flushes the writer.
 func (maxSize *MaxSize) Flush() {
 	f, _ := maxSize.Writer.(http.Flusher)
 	f.Flush()
