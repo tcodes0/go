@@ -37,10 +37,8 @@ declare -ra commands=(
 )
 
 usageExit() {
-  usage() {
-    name=$1
-    type=$2
-    argCount=$3
+  cmdUsage() {
+    local name=$1 type=$2 argCount=$3
 
     msg "$0" "$name"
 
@@ -59,18 +57,26 @@ usageExit() {
     printf \\n
   }
 
+  local regExpInvalidCapture='.nvalid\ [^:]+:\ ([[:alpha:]]*)' cmdNames=()
+
   msgln "$*"
-  msgln Usage:
+  msgln usage:
 
   for info in "${commands[@]}"; do
     read -ra command <<<"$info"
 
-    usage "${command[0]/name:/}" "${command[1]/type:/}" "${command[2]/argCount:/}"
+    cmdNames+=("${command[0]/name:/}")
+
+    cmdUsage "${command[0]/name:/}" "${command[1]/type:/}" "${command[2]/argCount:/}"
   done
 
   printf \\n
   msgln "modules: $(joinBy ', ' "${modules[@]}")"
   msgln use \'all\' as module to iterate all modules
+
+  if [[ "$*" =~ $regExpInvalidCapture ]]; then
+    didYouMean "${BASH_REMATCH[1]}" "${modules[@]}" "${cmdNames[@]}"
+  fi
 
   exit 1
 }
@@ -80,12 +86,12 @@ runCommandInModule() {
 
   run() {
     if ! $cmd "$module"; then
-      msgln "Failed: $cmd $module"
+      msgln "failed: $cmd $module"
     fi
 
     if [ -d "$PWD/$module/${module}_test" ]; then
       if ! $cmd "$module/${module}_test"; then
-        msgln "Failed: $cmd $module/${module}_test"
+        msgln "failed: $cmd $module/${module}_test"
       fi
     fi
   }
@@ -202,7 +208,7 @@ newModule() {
 ### validation, input handling ###
 
 if [ $# -lt 1 ]; then
-  usageExit "A command is required"
+  usageExit "a command is required"
 fi
 
 inputCommand=${1}
@@ -229,7 +235,7 @@ for info in "${commands[@]}"; do
 
   if [ "${command[1]/type:/}" == mod ]; then
     if ! [[ " all ${modules[*]} " =~ ${inputArgs[0]} ]]; then
-      usageExit "Invalid module: ${inputArgs[0]}"
+      usageExit "invalid module: ${inputArgs[0]}"
     fi
 
     runCommandInModule "${command[0]/name:/}" "${inputArgs[@]}"
@@ -240,4 +246,4 @@ for info in "${commands[@]}"; do
   exit
 done
 
-usageExit "Invalid command: ${inputCommand}"
+usageExit "invalid command: ${inputCommand}"

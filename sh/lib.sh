@@ -103,7 +103,7 @@ requireGitBranch() {
   current=$(git branch --show-current)
 
   if [ "$branch" != "$current" ]; then
-    msgExit "Please checkout $branch; on $current"
+    msgExit "please checkout $branch; on $current"
   fi
 }
 
@@ -125,4 +125,29 @@ joinBy() {
 requestedHelp() {
   [[ "$*" =~ -h|--help|help ]] && return
   return 1
+}
+
+# example: didYouMean "helo" "hello" "world" output "Did you mean: hello"
+didYouMean() {
+  local input=$1 idx=0 len=${#1}
+  declare -a options=("${@:2}") candidates=()
+
+  if [ "$len" -gt 2 ]; then
+    idx=$((len - 2))
+  fi
+
+  for o in "${options[@]}"; do
+    # candidates are options that look like input OR start with input's 2 letters OR end with input's 2 letters
+    if [[ $o =~ $input ]] || [[ $o =~ ${input:0:2} ]] || [[ $o =~ ${input:$idx} ]]; then
+      candidates+=("$o")
+    fi
+  done
+
+  if [ ${#candidates[@]} == 0 ]; then
+    return
+  fi
+
+  printf \\n
+  msgln "instead of '$input' did you mean..."
+  msg "$(joinBy ", " "${candidates[@]}")" ...?
 }

@@ -31,6 +31,7 @@ words:
   - inpackage
   - maintidx
   - msgln
+  - nocasematch
   - scandir
   - Seqs
   - SHELLCHECK
