@@ -16,6 +16,7 @@ dictionaries:
   - computing-acronyms
 words:
   - bellynha
+  - Cmds
   - DEBG
   - erro
   - FATL
@@ -29,6 +30,7 @@ words:
   - ifaceassert
   - iname
   - inpackage
+  - inplace
   - maintidx
   - msgln
   - nocasematch

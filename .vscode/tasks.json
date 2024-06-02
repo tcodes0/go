@@ -3,9 +3,9 @@
   "tasks": [
     {
       "type": "shell",
-      "label": "Package tasks",
+      "label": "Module tasks",
       "command": "./run",
-      "args": ["${input:commandPackage}", "${input:package}"],
+      "args": ["${input:commandModule}", "${input:module}"],
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -28,8 +28,8 @@
     },
     {
       "type": "shell",
-      "label": "Package: format, lintfix, test",
-      "command": "./run format ${input:package} && ./run lintfix ${input:package} && ./run test ${input:package}",
+      "label": "Module: format, lintfix, test",
+      "command": "./run format ${input:module} && ./run lintfix ${input:module} && ./run test ${input:module}",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -42,36 +42,35 @@
   "inputs": [
     {
       "type": "pickString",
-      "id": "package",
-      "description": "Package",
-      "options": [
-        "all",
-        "clock",
-        "errutil",
-        "httpclient",
-        "httpflush",
-        "httprecoverer",
-        "httproundtrip",
-        "identifier",
-        "jsonutil",
-        "logging",
-        "misc",
-        "reflectutil"
-      ],
+      "id": "module",
+      "description": "Module",
+      "options": ["all", "clock", "httpmisc", "hue", "identifier", "jsonutil", "logging", "misc"],
       "default": ""
     },
     {
       "type": "pickString",
-      "id": "commandPackage",
-      "description": "Package Commands",
-      "options": ["lint", "lint-fix", "format", "test", "build"],
+      "id": "commandModule",
+      "description": "Module Commands",
+      "options": ["build", "format", "lint", "lintFix", "tests"],
       "default": ""
     },
     {
       "type": "pickString",
       "id": "commandRepo",
       "description": "Repo Commands",
-      "options": ["ci", "format-configs", "spellcheck-docs", "setup", "test-scripts", "tag", "generate-mocks", "coverage"],
+      "options": [
+        "ci",
+        "coverage",
+        "formatConfigs",
+        "generateMocks",
+        "spellcheckDocs",
+        "setup",
+        "tag",
+        "testScripts",
+        "generateGoWork",
+        "newModule",
+        "updateVscodeConfigs"
+      ],
       "default": ""
     }
   ]

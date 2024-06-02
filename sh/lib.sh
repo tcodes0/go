@@ -10,9 +10,7 @@ shopt -s globstar
 
 export COLOR_PASS="\e[7;38;05;242m PASS \e[0m" COLOR_FAIL="\e[2;7;38;05;197;47m FAIL \e[0m" FORMAT_DIM="\e[2m"
 export VISUAL_END="\e[0m" COVERAGE_FILE="coverage.out" ROOT_MODULE="github.com/tcodes0/go"
-
-export CHAR_CARRIAGE_RET
-CHAR_CARRIAGE_RET=$(printf "%b" "\r")
+export REGEXP_DOT_SLASH="\.\/"
 
 # example: msgln hello world
 msgln() {
@@ -60,8 +58,7 @@ requireInternet() {
 testCase() {
   local description=$1 input=$2 expected=$3 result
 
-  # let the command expand
-  # shellcheck disable=SC2086
+  # shellcheck disable=SC2086 # let the command expand
   if ! result=$($TESTEE $input); then
     printf "%b\n" "$COLOR_FAIL $description"
     printf "%b\n" "non zero exit"
@@ -107,9 +104,16 @@ requireGitBranch() {
   fi
 }
 
-# find all packages in the project by looking for go files
+# find folders directly under . that have at least one *.go file and prettify output
+# outputs one module per line
 findModules() {
   find . -mindepth 2 -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort --stable | uniq
+}
+
+# find folders directly under . that have at least one *.go file and prettify output
+# outputs space separated modules without ./
+findModulesPretty() {
+  findModules | sed -Ee "s/\.\///" | tr '\n' ' '
 }
 
 # example: joinBy , a b c. output: a, b, c
@@ -123,8 +127,9 @@ joinBy() {
 
 # example: requestedHelp "$*"
 requestedHelp() {
-  [[ "$*" =~ -h|--help|help ]] && return
-  return 1
+  if ! [[ "$*" =~ -h|--help|help ]]; then
+    return 1
+  fi
 }
 
 # example: didYouMean "helo" "hello" "world" output "Did you mean: hello"

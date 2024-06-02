@@ -9,31 +9,29 @@ source "$PWD/sh/lib.sh"
 
 ### vars and functions ###
 
-read -rd "$CHAR_CARRIAGE_RET" -a modules < <(
-  regExpDotSlashPrefix="^\.\/"
-  # find folders directly under . that have at least 1 *.go file; prettify output
-  findModules | sed -e "s/$regExpDotSlashPrefix//" | tr '\n' ' '
-
-  printf %b "$CHAR_CARRIAGE_RET"
+read -rd "$(printf \\r)" -a modules < <(
+  findModulesPretty
+  printf \\r
 )
 
 declare -ra commands=(
-  "name:build          type:mod  argCount:1"
-  "name:format         type:mod  argCount:1"
-  "name:lint           type:mod  argCount:1"
-  "name:lintFix        type:mod  argCount:1"
+  "name:build               type:mod  argCount:1"
+  "name:format              type:mod  argCount:1"
+  "name:lint                type:mod  argCount:1"
+  "name:lintFix             type:mod  argCount:1"
   # do not name "test"; shadowed by builtin test command
-  "name:tests          type:mod  argCount:1"
-  "name:ci             type:repo argCount:0"
-  "name:coverage       type:repo argCount:0"
-  "name:formatConfigs  type:repo argCount:0"
-  "name:generateMocks  type:repo argCount:0"
-  "name:spellcheckDocs type:repo argCount:0"
-  "name:setup          type:repo argCount:0"
-  "name:tag            type:repo argCount:2"
-  "name:testScripts    type:repo argCount:0"
-  "name:generateGoWork type:repo argCount:0"
-  "name:newModule      type:repo argCount:1"
+  "name:tests               type:mod  argCount:1"
+  "name:ci                  type:repo argCount:0"
+  "name:coverage            type:repo argCount:0"
+  "name:formatConfigs       type:repo argCount:0"
+  "name:generateMocks       type:repo argCount:0"
+  "name:spellcheckDocs      type:repo argCount:0"
+  "name:setup               type:repo argCount:0"
+  "name:tag                 type:repo argCount:2"
+  "name:testScripts         type:repo argCount:0"
+  "name:generateGoWork      type:repo argCount:0"
+  "name:newModule           type:repo argCount:1"
+  "name:updateVscodeConfigs type:repo argCount:0"
 )
 
 usageExit() {
@@ -205,6 +203,23 @@ generateGoWork() {
 # shellcheck disable=SC2317 # dynamic call
 newModule() {
   ./sh/new-module.sh "$@"
+}
+
+# shellcheck disable=SC2317 # dynamic call
+updateVscodeConfigs() {
+  local mods=() repo=()
+
+  for info in "${commands[@]}"; do
+    read -ra command <<<"$info"
+
+    if [ "${command[1]/type:/}" == mod ]; then
+      mods+=("${command[0]/name:/}")
+    else
+      repo+=("${command[0]/name:/}")
+    fi
+  done
+
+  ./sh/update-vscode-configs.sh "${mods[*]}" "${repo[*]}"
 }
 
 ### validation, input handling ###

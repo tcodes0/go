@@ -172,10 +172,10 @@ fi
 
 ### script ###
 
-IFS=$'\n' read -rd "$CHAR_CARRIAGE_RET" -a tags < <(
+IFS=$'\n' read -rd \\r -a tags < <(
   set +e # flaky for some reason
   $EXEC_GIT_READ tag --list --sort=-refname | head
-  printf %b "$CHAR_CARRIAGE_RET"
+  printf \\r
 )
 
 latestTag="${tags[0]}"
