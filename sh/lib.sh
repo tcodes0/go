@@ -1,26 +1,21 @@
 #! /usr/bin/env bash
 
-####################################
-## this script is sourced by path ##
-## from other scripts, careful    ##
-## if moving or renaming it       ##
-####################################
+########################################################
+## this script is sourced by path from other scripts, ##
+## careful if moving or renaming it                   ##
+########################################################
 
 set -euo pipefail
 shopt -s globstar
 
-export PASS_COLOR="\e[7;38;05;242m PASS \e[0m"
-export FAIL_COLOR="\e[2;7;38;05;197;47m FAIL \e[0m"
-export COLOR_DIM="\e[2m"
-export COLOR_END="\e[0m"
-export COVERAGE_FILE="coverage.out"
-export ROOT_MODULE="github.com/tcodes0/go"
+export COLOR_PASS="\e[7;38;05;242m PASS \e[0m" COLOR_FAIL="\e[2;7;38;05;197;47m FAIL \e[0m" FORMAT_DIM="\e[2m"
+export VISUAL_END="\e[0m" COVERAGE_FILE="coverage.out" ROOT_MODULE="github.com/tcodes0/go"
 
-export CHAR_CARRIG_RET
-CHAR_CARRIG_RET=$(printf "%b" "\r")
+export CHAR_CARRIAGE_RET
+CHAR_CARRIAGE_RET=$(printf "%b" "\r")
 
-# example: msgLn hello world
-msgLn() {
+# example: msgln hello world
+msgln() {
   msg "$*\\n"
 }
 
@@ -31,7 +26,7 @@ msg() {
 
 # example: msgExit could not find the file
 msgExit() {
-  msgLn "$*"
+  msgln "$*"
   return 1
 }
 
@@ -63,28 +58,25 @@ requireInternet() {
 
 # run a test case and print the result
 testCase() {
-  local description=$1
-  local input=$2
-  local expected=$3
-  local result
+  local description=$1 input=$2 expected=$3 result
 
   # let the command expand
   # shellcheck disable=SC2086
   if ! result=$($TESTEE $input); then
-    printf "%b\n" "$FAIL_COLOR $description"
+    printf "%b\n" "$COLOR_FAIL $description"
     printf "%b\n" "non zero exit"
     exit 1
   fi
 
   if [ "$result" != "$expected" ]; then
-    printf "%b\n" "$FAIL_COLOR $description"
+    printf "%b\n" "$COLOR_FAIL $description"
     printf "%b\n" "expectation not met:"
     printf "%b\n" "< expected"
     diff <(printf %b "$expected") <(printf %b "$result")
     exit 1
   fi
 
-  printf "%b\n" "$PASS_COLOR $description"
+  printf "%b\n" "$COLOR_PASS $description"
 }
 
 # wait for all processes to finish
@@ -129,6 +121,7 @@ joinBy() {
   fi
 }
 
+# example: requestedHelp "$*"
 requestedHelp() {
   [[ "$*" =~ -h|--help|help ]] && return
   return 1

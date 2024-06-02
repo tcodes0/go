@@ -30,6 +30,7 @@ words:
   - iname
   - inpackage
   - maintidx
+  - msgln
   - scandir
   - Seqs
   - SHELLCHECK

@@ -6,11 +6,11 @@ shopt -s globstar
 source "$PWD/sh/lib.sh"
 
 pass() {
-  printf "$PASS_COLOR$COLOR_DIM %b$COLOR_END\n" "$1"
+  printf "$COLOR_PASS$FORMAT_DIM %b$VISUAL_END\n" "$1"
 }
 
 fail() {
-  printf "$FAIL_COLOR %b$COLOR_END\n" "$1"
+  printf "$COLOR_FAIL %b$VISUAL_END\n" "$1"
 }
 
 fixProblems=()
@@ -35,16 +35,18 @@ setup() {
 }
 
 exitShowProblems() {
-  if [ ${#fixProblems[@]} -gt 0 ]; then
-    printf "\n"
-    msgLn "$1"
-
-    for cmd in "${fixProblems[@]}"; do
-      printf '%s\n' "$cmd"
-    done
-
-    exit 1
+  if [ ${#fixProblems[@]} == 0 ]; then
+    return
   fi
+
+  printf \\n
+  msgln "$1"
+
+  for cmd in "${fixProblems[@]}"; do
+    printf '%s\n' "$cmd"
+  done
+
+  exit 1
 }
 
 # by order of priority
@@ -131,7 +133,7 @@ exitShowProblems "install the missing tools with"
 
 if ! [[ "$SHELL" =~ bash ]]; then
   fail 'shell is bash' "expected bash as shell but got $SHELL"
-  fixProblems+=("either use bash as default shell or switch to bash using 'bash'")
+  fixProblems+=("either use bash as default shell or start bash as subshell using 'bash'")
 else
   pass 'shell is bash'
 fi
@@ -152,6 +154,6 @@ fi
 
 # notes
 
-msgLn note: \'act\' requires first time setup
+msgln note: \'act\' requires first time setup
 
 exitShowProblems "fix configuration issues"

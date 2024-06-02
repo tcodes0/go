@@ -10,7 +10,6 @@ source "$PWD/sh/lib.sh"
 ### vars and functions ###
 
 parseGoVersion() {
-
   while read -r line; do
     if [[ $line =~ ^go ]]; then
       printf %s "$line"

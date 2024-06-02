@@ -57,17 +57,17 @@ usageExit() {
     printf "%s" -"${!optsHelp[*]}"
   )
 
-  msgLn "$*\n"
-  msgLn "Usage: $0 [$commandsHelpInfo] [$optsHelpInfo]"
+  msgln "$*"
+  msgln "Usage: $0 [$commandsHelpInfo] [$optsHelpInfo]"
 
-  printf "\n"
+  printf \\n
   for command in "${!commandsHelp[@]}"; do
-    msgLn "$command:  ${commandsHelp[$command]}"
+    msgln "$command:  ${commandsHelp[$command]}"
   done
 
-  printf "\n"
+  printf \\n
   for opt in "${!optsHelp[@]}"; do
-    msgLn "-$opt:  ${optsHelp[$opt]}"
+    msgln "-$opt:  ${optsHelp[$opt]}"
   done
 
   exit 1
@@ -123,8 +123,8 @@ bump() {
 addTag() {
   $EXEC_GIT_WRITE tag "$1" "${optValue["commit"]}" || msgExit "git tag failed"
 
-  local formatShortHashMessageTags="%h %s (%D)"
-  $EXEC_GIT_READ show --format="$formatShortHashMessageTags" "${optValue["commit"]}" | head -1 | grep --color=auto -Ee 'tag:[^,]+'
+  local formatShortHashMessageTags="%h %s (%D)" regExpTagUntilComma="tag:[^,]+"
+  $EXEC_GIT_READ show --format="$formatShortHashMessageTags" "${optValue["commit"]}" | head -1 | grep --color=auto -Ee "$regExpTagUntilComma"
 }
 
 ### validation, input handling ###
@@ -172,10 +172,10 @@ fi
 
 ### script ###
 
-IFS=$'\n' read -rd "$CHAR_CARRIG_RET" -a tags < <(
+IFS=$'\n' read -rd "$CHAR_CARRIAGE_RET" -a tags < <(
   set +e # flaky for some reason
   $EXEC_GIT_READ tag --list --sort=-refname | head
-  printf %b "$CHAR_CARRIG_RET"
+  printf %b "$CHAR_CARRIAGE_RET"
 )
 
 latestTag="${tags[0]}"

@@ -11,7 +11,7 @@ flags+=(-mod=readonly)
 flags+=(-v)
 
 if requestedHelp "$*"; then
-  msgLn "Usage: $0 <module-path>"
+  msgln "Usage: $0 <module-path>"
   exit 1
 fi
 

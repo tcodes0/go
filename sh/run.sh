@@ -9,12 +9,12 @@ source "$PWD/sh/lib.sh"
 
 ### vars and functions ###
 
-read -rd "$CHAR_CARRIG_RET" -a modules < <(
+read -rd "$CHAR_CARRIAGE_RET" -a modules < <(
   regExpDotSlashPrefix="^\.\/"
   # find folders directly under . that have at least 1 *.go file; prettify output
   findModules | sed -e "s/$regExpDotSlashPrefix//" | tr '\n' ' '
 
-  printf %b "$CHAR_CARRIG_RET"
+  printf %b "$CHAR_CARRIAGE_RET"
 )
 
 declare -ra commands=(
@@ -22,7 +22,7 @@ declare -ra commands=(
   "name:format         type:mod  argCount:1"
   "name:lint           type:mod  argCount:1"
   "name:lintFix        type:mod  argCount:1"
-  # do not name "test"; shadowed builtin test command
+  # do not name "test"; shadowed by builtin test command
   "name:tests          type:mod  argCount:1"
   "name:ci             type:repo argCount:0"
   "name:coverage       type:repo argCount:0"
@@ -45,7 +45,7 @@ usageExit() {
     msg "$0" "$name"
 
     if [ "$argCount" != 0 ]; then
-      printf %b \\t
+      printf \\t
 
       for ((i = 1; i <= argCount; i++)); do
         if [ "$type" == mod ]; then
@@ -56,29 +56,55 @@ usageExit() {
       done
     fi
 
-    printf %b \\n
+    printf \\n
   }
 
-  msgLn "$*\n"
-  msgLn Usage:
+  msgln "$*"
+  msgln Usage:
 
   for info in "${commands[@]}"; do
-    read -ra cmdInfo <<<"$info"
+    read -ra command <<<"$info"
 
-    usage "${cmdInfo[0]/name:/}" "${cmdInfo[1]/type:/}" "${cmdInfo[2]/argCount:/}"
+    usage "${command[0]/name:/}" "${command[1]/type:/}" "${command[2]/argCount:/}"
   done
 
-  printf %b \\n
-  msgLn "modules: $(joinBy ', ' "${modules[@]}")"
-  msgLn use \'all\' as module to iterate all modules
+  printf \\n
+  msgln "modules: $(joinBy ', ' "${modules[@]}")"
+  msgln use \'all\' as module to iterate all modules
 
   exit 1
 }
 
+runCommandInModule() {
+  local cmd=$1 module=$2
+
+  run() {
+    if ! $cmd "$module"; then
+      msgln "Failed: $cmd $module"
+    fi
+
+    if [ -d "$PWD/$module/${module}_test" ]; then
+      if ! $cmd "$module/${module}_test"; then
+        msgln "Failed: $cmd $module/${module}_test"
+      fi
+    fi
+  }
+
+  if [ "$module" != all ]; then
+    run $cmd "$module"
+    return
+  fi
+
+  for mod in "${modules[@]}"; do
+    printf \\n
+    msgln "$cmd $mod..."
+    run "$cmd" "$mod"
+  done
+}
+
 # shellcheck disable=SC2317 # dynamic call
 lint() {
-  local path="$1"
-  local lintFlags=(--timeout 10s --print-issued-lines=false)
+  local path="$1" lintFlags=(--timeout 10s --print-issued-lines=false)
 
   golangci-lint run "${lintFlags[@]}" "$path"
 }
@@ -153,34 +179,6 @@ tag() {
   ./sh/tag.sh "$@"
 }
 
-runCommandInModule() {
-  local command=$1
-  local module=$2
-
-  run() {
-    if ! $command "$module"; then
-      msgLn "Failed: $command $module"
-    fi
-
-    if [ -d "$PWD/$module/${module}_test" ]; then
-      if ! $command "$module/${module}_test"; then
-        msgLn "Failed: $command $module/${module}_test"
-      fi
-    fi
-  }
-
-  if [ "$module" != all ]; then
-    run $command "$module"
-    return
-  fi
-
-  for mod in "${modules[@]}"; do
-    printf %b "\n"
-    msgLn "$command $mod..."
-    run "$command" "$mod"
-  done
-}
-
 # shellcheck disable=SC2317 # dynamic call
 generateMocks() {
   ./sh/generate-mocks.sh
@@ -220,6 +218,7 @@ for info in "${commands[@]}"; do
   fi
 
   if requestedHelp "$*"; then
+    # forward -h to the command
     "${command[0]/name:/}" "${inputArgs[@]}"
     exit 1
   fi

@@ -146,7 +146,7 @@ jobs:
           # sh_checker_comment: true
 
       - name: Test
-        run: find ./sh/sh_test -name "*-test.sh" -exec ./{} \;
+        run: find sh/sh_test -name "*-test.sh" -exec ./{} \;
 
   config:
     name: Format config

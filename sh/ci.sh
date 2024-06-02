@@ -8,7 +8,7 @@ source "$PWD/sh/lib.sh"
 start=$(date +%s)
 
 usageExit() {
-  msgLn "Usage: $0 "
+  msgln "Usage: $0 "
   exit 1
 }
 
@@ -35,10 +35,10 @@ printJobProgress() {
         status="${BASH_REMATCH[2]}"
 
         if [ "$status" == "$successToken" ]; then
-          printf "%b %b%s%b\n" "$PASS_COLOR" "$COLOR_DIM" "$job" "$COLOR_END"
+          printf "%b %b%s%b\n" "$COLOR_PASS" "$FORMAT_DIM" "$job" "$VISUAL_END"
           hasSuccessfulJob=true
         else
-          printf "%b %b\n" "$FAIL_COLOR" "$job"
+          printf "%b %b\n" "$COLOR_FAIL" "$job"
           if [ -z "$firstFailedJob" ]; then
             firstFailedJob="$job"
           fi
@@ -49,18 +49,18 @@ printJobProgress() {
 }
 
 if [ $# != 0 ]; then
-  msgLn "Invalid argument: $1"
+  msgln "Invalid argument: $1"
   usageExit
 fi
 
 eventJson=$(mktemp /tmp/ci-event-json-XXXXXX)
 gitLocalBranch=$(git branch --show-current)
 
-printf %s "
+printf "
 {
   \"pull_request\": {
     \"head\": {
-      \"ref\": \"$gitLocalBranch\"
+      \"ref\": \"%s\"
     },
     \"base\": {
       \"ref\": \"main\"
@@ -68,7 +68,7 @@ printf %s "
   },
   \"local\": true
 }
-" >"$eventJson"
+" "$gitLocalBranch" >"$eventJson"
 
 ciCommand="act"
 ciCommandArgs=(-e "$eventJson")
@@ -84,9 +84,9 @@ expectedOutput=35
 
 if [ "$(currentTerminalLine)" -gt "$((lastLine - expectedOutput))" ]; then
   clear -x
-  msgLn "running ci... (terminal scrolled up to make room for output)"
+  msgln "running ci... (terminal scrolled up to make room for output)"
 else
-  msgLn "running ci..."
+  msgln "running ci..."
 fi
 
 tput sc
@@ -104,33 +104,33 @@ printJobProgress "$ciLog"
 exitStatus=0
 somethingWrong=5
 if [ "$iterations" -le "$somethingWrong" ]; then
-  printf "\n"
+  printf \\n
   tac "$ciLog" | head
   exitStatus=1
 elif [ -n "$firstFailedJob" ]; then
-  printf "\n"
+  printf \\n
   grep --color=always -Eie "$firstFailedJob" "$ciLog" || true
-  msgLn "above: logs for '$firstFailedJob'"
+  msgln "above: logs for '$firstFailedJob'"
   exitStatus=1
 elif [ -z "$hasSuccessfulJob" ]; then
-  printf "\n"
+  printf \\n
   grep --color=always -Eie "error" "$ciLog" || true
-  msgLn "error: no jobs succeeded"
+  msgln "error: no jobs succeeded"
   exitStatus=1
   # look for errors at end of log
 elif tac "$ciLog" | head | grep --color=always -Eie error; then
-  printf "\n"
+  printf \\n
   exitStatus=1
 fi
 
-printf "\n"
-msgLn full logs
-msgLn eventJson:\\t\\t"$eventJson"
-msgLn ciLog:\\t\\t"$ciLog"
+printf \\n
+msgln full logs
+msgln eventJson:\\t\\t"$eventJson"
+msgln ciLog:\\t\\t"$ciLog"
 
-printf "\n"
-msgLn took $(($(date +%s) - start))s
+printf \\n
+msgln took $(($(date +%s) - start))s
 
 if [ "$exitStatus" != 0 ]; then
-  printf "%b" "$FAIL_COLOR"
+  printf "%b" "$COLOR_FAIL"
 fi

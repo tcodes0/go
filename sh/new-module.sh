@@ -10,7 +10,7 @@ source "$PWD/sh/lib.sh"
 ### vars and functions ###
 
 usageExit() {
-  msgLn "Usage: $0 <name>"
+  msgln "Usage: $0 <name>"
   exit 1
 }
 
@@ -35,7 +35,7 @@ cd "$name"
 go mod init "$module"
 printf "package %s\n" "$name" >"$name.go"
 
-msgLn "todo:
+msgln "todo:
   - run script to update go.work
   - add $module to github workflows
   - add $module to vscode json config
