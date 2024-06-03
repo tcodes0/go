@@ -89,10 +89,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Create package.json
+        working-directory: .
+        shell: bash
+        run: echo '{}' > package.json
+
       - name: Setup Node.js environment
         uses: actions/setup-node@v4.0.2
         with:
-          version: lts/iron
+          node-version: lts/iron
           cache: npm
 
       - name: Run commitlint
