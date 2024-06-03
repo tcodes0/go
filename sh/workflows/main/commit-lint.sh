@@ -11,10 +11,8 @@ shopt -s globstar
 
 ### script ###
 
-diff=$(git diff .)
-
-if [ -n "$diff" ]; then
-  echo "$diff"
-  echo "update files and commit changes"
-  exit 1
+if ! command -v commitlint >/dev/null; then
+  npm install -g npm install @commitlint/cli@"$VERSION"
 fi
+
+commitlint --config="$CONFIG_PATH" <<<"$(git log --format=%B -n 1 HEAD)"

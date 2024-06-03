@@ -85,16 +85,20 @@ jobs:
     name: Commit Lint
     runs-on: ubuntu-latest
     needs: changed-files
-    # does not work locally, see CI scripts
-    if: github.event.local != true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Run Commitlint
-        uses: ahmadnassri/action-commit-lint@v2.1.17
-        with:
-          config: ./.commitlintrc.yml
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4.0.2
+
+      - name: Run commitlint
+        working-directory: .
+        shell: bash
+        env:
+          CONFIG_PATH: .commitlintrc.yml
+          VERSION: 19.3.0
+        run: ./sh/workflows/main/commit-lint.sh
 
   go-mod:
     name: Go.mod up to date
