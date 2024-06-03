@@ -34,7 +34,11 @@ if [ -z "$BASE_REF" ]; then
   exit 1
 fi
 
-log=$(git log --format=%s refs/remotes/origin/"$BASE_REF"..HEAD --)
+revision=refs/remotes/origin/"$BASE_REF"..HEAD
+
+echo git log "$revision"
+
+log=$(git log --format=%s "$revision" --)
 issues=$(lintCommits "$log")
 
 if [ -n "$issues" ]; then
