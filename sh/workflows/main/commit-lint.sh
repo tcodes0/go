@@ -23,9 +23,8 @@ lintCommits() {
 
 ### validation, input handling ###
 
-if [ -z "$BASE_REF" ]; then
-  echo "BASE_REF is empty"
-  exit 1
+if [ -z "${BASE_REF:-}" ]; then
+  BASE_REF=main
 fi
 
 ### script ###
@@ -39,6 +38,12 @@ revision=refs/remotes/origin/"$BASE_REF"..HEAD
 echo git log "$revision"
 
 log=$(git log --format=%s "$revision" --)
+
+if [ -z "$log" ]; then
+  echo "empty git log"
+  exit
+fi
+
 issues=$(lintCommits "$log")
 
 if [ -n "$issues" ]; then

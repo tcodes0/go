@@ -108,6 +108,7 @@ jobs:
         env:
           CONFIG_PATH: .commitlintrc.yml
           VERSION: 19.3.0
+          # will not be set when running on push/merge to main
           BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: ./sh/workflows/main/commit-lint.sh
 
