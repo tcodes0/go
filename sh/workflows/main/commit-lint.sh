@@ -39,7 +39,7 @@ if [ "$BASE_REF" == "$HEAD_REF" ]; then
   exit 0
 fi
 
-log=$(git log --format=%s origin/"$BASE_REF".."$HEAD_REF")
+log=$(git log --format=%s "$BASE_REF".."$HEAD_REF" --)
 issues=$(lintCommits "$log")
 
 if [ -n "$issues" ]; then
