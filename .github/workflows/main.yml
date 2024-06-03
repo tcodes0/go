@@ -91,7 +91,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create package.json
+      - name: Create package-lock.json
         working-directory: .
         shell: bash
         run: echo '{}' > package-lock.json

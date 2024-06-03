@@ -8,7 +8,7 @@ shopt -s globstar
 ### vars and functions ###
 
 lintCommits() {
-  local log="$1" problems=() out
+  local log="$1" problems=()
 
   while read -r commit; do
     out="$(commitlint --config="$CONFIG_PATH" <<<"$commit" || true)"
@@ -23,15 +23,15 @@ lintCommits() {
 
 ### validation, input handling ###
 
+if [ -z "$BASE_REF" ]; then
+  echo "BASE_REF is empty"
+  exit 1
+fi
+
 ### script ###
 
 if ! command -v commitlint >/dev/null; then
   npm install --global @commitlint/cli@"$VERSION" >/dev/null
-fi
-
-if [ -z "$BASE_REF" ]; then
-  echo "BASE_REF is empty"
-  exit 1
 fi
 
 revision=refs/remotes/origin/"$BASE_REF"..HEAD
@@ -54,6 +54,6 @@ if [ -n "$issues" ]; then
   echo
   echo "Commit messages not formatted properly: $badCommits out of $totalCommits commits"
   echo "See https://www.conventionalcommits.org/en/v1.0.0/"
-  echo "To fix all, try 'git rebase -i origin/main..HEAD', change bad commits to 'reword', fix messages and 'git push --force'"
+  echo "To fix all, try 'git rebase -i $revision', change bad commits to 'reword', fix messages and 'git push --force'"
   exit 1
 fi
