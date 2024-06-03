@@ -12,37 +12,27 @@ jobs:
     name: Analyze changed files
     runs-on: ubuntu-latest
     outputs:
-      # packages
-      goPkgClock: ${{ steps.list-changed-files.outputs.pkg_clock_all_changed_files }}
-      goPkgErrutil: ${{ steps.list-changed-files.outputs.pkg_errutil_all_changed_files }}
-      goPkgHttpclient: ${{ steps.list-changed-files.outputs.pkg_httpclient_all_changed_files }}
-      goPkgHttpflush: ${{ steps.list-changed-files.outputs.pkg_httpflush_all_changed_files }}
-      goPkgHttprecoverer: ${{ steps.list-changed-files.outputs.pkg_httprecoverer_all_changed_files }}
-      goPkgHttproundtrip: ${{ steps.list-changed-files.outputs.pkg_httproundtrip_all_changed_files }}
-      goPkgHue: ${{ steps.list-changed-files.outputs.pkg_hue_all_changed_files }}
-      goPkgIdentifier: ${{ steps.list-changed-files.outputs.pkg_identifier_all_changed_files }}
-      goPkgJsonutil: ${{ steps.list-changed-files.outputs.pkg_jsonutil_all_changed_files }}
-      goPkgLogging: ${{ steps.list-changed-files.outputs.pkg_logging_all_changed_files }}
-      goPkgMisc: ${{ steps.list-changed-files.outputs.pkg_misc_all_changed_files }}
-      goPkgReflectutil: ${{ steps.list-changed-files.outputs.pkg_reflectutil_all_changed_files }}
+      # modules
+      modClock: ${{ steps.list-changed-files.outputs.clock_all_changed_files }}
+      modHttpmisc: ${{ steps.list-changed-files.outputs.httpmisc_all_changed_files }}
+      modHue: ${{ steps.list-changed-files.outputs.hue_all_changed_files }}
+      modIdentifier: ${{ steps.list-changed-files.outputs.identifier_all_changed_files }}
+      modJsonutil: ${{ steps.list-changed-files.outputs.jsonutil_all_changed_files }}
+      modLogging: ${{ steps.list-changed-files.outputs.logging_all_changed_files }}
+      modMisc: ${{ steps.list-changed-files.outputs.misc_all_changed_files }}
       # others
       goMod: ${{ steps.list-changed-files.outputs.go_mod_all_changed_files }}
       config: ${{ steps.list-changed-files.outputs.config_all_changed_files }}
       shell: ${{ steps.list-changed-files.outputs.shell_all_changed_files }}
       doc: ${{ steps.list-changed-files.outputs.doc_all_changed_files }}
-      anyGoPkg: ${{
-        steps.list-changed-files.outputs.pkg_clock_all_changed_files
-        || steps.list-changed-files.outputs.pkg_errutil_all_changed_files
-        || steps.list-changed-files.outputs.pkg_httpclient_all_changed_files
-        || steps.list-changed-files.outputs.pkg_httpflush_all_changed_files
-        || steps.list-changed-files.outputs.pkg_httprecoverer_all_changed_files
-        || steps.list-changed-files.outputs.pkg_httproundtrip_all_changed_files
-        || steps.list-changed-files.outputs.pkg_hue_all_changed_files
-        || steps.list-changed-files.outputs.pkg_identifier_all_changed_files
-        || steps.list-changed-files.outputs.pkg_jsonutil_all_changed_files
-        || steps.list-changed-files.outputs.pkg_logging_all_changed_files
-        || steps.list-changed-files.outputs.pkg_misc_all_changed_files
-        || steps.list-changed-files.outputs.pkg_reflectutil_all_changed_files
+      anyMod: ${{
+        steps.list-changed-files.outputs.clock_all_changed_files
+        || steps.list-changed-files.outputs.httpmisc_all_changed_files
+        || steps.list-changed-files.outputs.hue_all_changed_files
+        || steps.list-changed-files.outputs.identifier_all_changed_files
+        || steps.list-changed-files.outputs.jsonutil_all_changed_files
+        || steps.list-changed-files.outputs.logging_all_changed_files
+        || steps.list-changed-files.outputs.misc_all_changed_files
         }}
     steps:
       - name: Checkout
@@ -64,31 +54,21 @@ jobs:
             doc:
               - '**/*.md'
             shell:
-              - src/sh/**.sh
-            pkg_clock:
-              - src/clock/**.go
-            pkg_errutil:
-              - src/errutil/**.go
-            pkg_httpclient:
-              - src/httpclient/**.go
-            pkg_httpflush:
-              - src/httpflush/**.go
-            pkg_httprecoverer:
-              - src/httprecoverer/**.go
-            pkg_httproundtrip:
-              - src/httproundtrip/**.go
-            pkg_hue:
-              - src/hue/**.go
-            pkg_identifier:
-              - src/identifier/**.go
-            pkg_jsonutil:
-              - src/jsonutil/**.go
-            pkg_logging:
-              - src/logging/**.go
-            pkg_misc:
-              - src/misc/**.go
-            pkg_reflectutil:
-              - src/reflectutil/**.go
+              - sh/**.sh
+            clock:
+              - clock/**.go
+            httpmisc:
+              - httpmisc/**.go
+            hue:
+              - hue/**.go
+            identifier:
+              - identifier/**.go
+            jsonutil:
+              - jsonutil/**.go
+            logging:
+              - logging/**.go
+            misc:
+              - misc/**.go
 
   debug:
     name: Debug
@@ -105,7 +85,7 @@ jobs:
     name: Go.mod up to date
     runs-on: ubuntu-latest
     needs: changed-files
-    if: needs.changed-files.outputs.anyGoPkg || needs.changed-files.outputs.goMod
+    if: needs.changed-files.outputs.anyMod || needs.changed-files.outputs.goMod
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -124,7 +104,7 @@ jobs:
     name: Go mocks up to date
     runs-on: ubuntu-latest
     needs: changed-files
-    if: needs.changed-files.outputs.anyGoPkg
+    if: needs.changed-files.outputs.anyMod
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -138,12 +118,12 @@ jobs:
         uses: brokeyourbike/go-mockery-action@v0
         with:
           mockery-version: "2.43.0"
-      - run: ./src/sh/mocks.sh
+      - run: ./sh/generate-mocks.sh
 
       - name: Diff mocks
         working-directory: .
         shell: bash
-        run: ./src/sh/workflows/main/diff.sh
+        run: ./sh/workflows/main/diff.sh
 
   shell:
     name: Lint format and test shell
@@ -166,7 +146,7 @@ jobs:
           # sh_checker_comment: true
 
       - name: Test
-        run: find src/sh/sh_test -name "*-test.sh" -exec ./{} \;
+        run: find sh/sh_test -name "*-test.sh" -exec ./{} \;
 
   config:
     name: Format config
@@ -199,112 +179,67 @@ jobs:
         with:
           files: "**/*.md"
           incremental_files_only: true
-          config: ./cspell.config.yaml
+          config: ./cspell.config.yml
 
   clock:
     name: clock
     needs: changed-files
-    if: needs.changed-files.outputs.goPkgClock
-    uses: ./.github/workflows/package-pr.yml
+    if: needs.changed-files.outputs.modClock
+    uses: ./.github/workflows/module-pr.yml
     with:
       goVersion: 1.22
-      packagePath: src/clock
+      modulePath: clock
 
-  errutil:
-    name: errutil
+  httpmisc:
+    name: httpmisc
     needs: changed-files
-    if: needs.changed-files.outputs.goPkgErrutil
-    uses: ./.github/workflows/package-pr.yml
+    if: needs.changed-files.outputs.modHttpMisc
+    uses: ./.github/workflows/module-pr.yml
     with:
       goVersion: 1.22
-      packagePath: src/errutil
-
-  httpclient:
-    name: httpclient
-    needs: changed-files
-    if: needs.changed-files.outputs.goPkgHttpclient
-    uses: ./.github/workflows/package-pr.yml
-    with:
-      goVersion: 1.22
-      packagePath: src/httpclient
-
-  httpflush:
-    name: httpflush
-    needs: changed-files
-    if: needs.changed-files.outputs.goPkgHttpflush
-    uses: ./.github/workflows/package-pr.yml
-    with:
-      goVersion: 1.22
-      packagePath: src/httpflush
-
-  httprecoverer:
-    name: httprecoverer
-    needs: changed-files
-    if: needs.changed-files.outputs.goPkgHttprecoverer
-    uses: ./.github/workflows/package-pr.yml
-    with:
-      goVersion: 1.22
-      packagePath: src/httprecoverer
-
-  httproundtrip:
-    name: httproundtrip
-    needs: changed-files
-    if: needs.changed-files.outputs.goPkgHttproundtrip
-    uses: ./.github/workflows/package-pr.yml
-    with:
-      goVersion: 1.22
-      packagePath: src/httproundtrip
+      modulePath: httpmisc
 
   hue:
     name: hue
     needs: changed-files
-    if: needs.changed-files.outputs.goPkgHue
-    uses: ./.github/workflows/package-pr.yml
+    if: needs.changed-files.outputs.modHue
+    uses: ./.github/workflows/module-pr.yml
     with:
       goVersion: 1.22
-      packagePath: src/hue
+      modulePath: hue
 
   identifier:
     name: identifier
     needs: changed-files
-    if: needs.changed-files.outputs.goPkgIdentifier
-    uses: ./.github/workflows/package-pr.yml
+    if: needs.changed-files.outputs.modIdentifier
+    uses: ./.github/workflows/module-pr.yml
     with:
       goVersion: 1.22
-      packagePath: src/identifier
+      modulePath: identifier
 
   jsonutil:
     name: jsonutil
     needs: changed-files
-    if: needs.changed-files.outputs.goPkgJsonutil
-    uses: ./.github/workflows/package-pr.yml
+    if: needs.changed-files.outputs.modJsonutil
+    uses: ./.github/workflows/module-pr.yml
     with:
       goVersion: 1.22
-      packagePath: src/jsonutil
+      modulePath: jsonutil
 
   logging:
     name: logging
     needs: changed-files
-    if: needs.changed-files.outputs.goPkgLogging
-    uses: ./.github/workflows/package-pr.yml
+    if: needs.changed-files.outputs.modLogging
+    uses: ./.github/workflows/module-pr.yml
     with:
       goVersion: 1.22
-      packagePath: src/logging
+      modulePath: logging
 
   misc:
     name: misc
     needs: changed-files
-    if: needs.changed-files.outputs.goPkgMisc
-    uses: ./.github/workflows/package-pr.yml
+    if: needs.changed-files.outputs.modMisc
+    uses: ./.github/workflows/module-pr.yml
     with:
       goVersion: 1.22
-      packagePath: src/misc
-
-  reflectutil:
-    name: reflectutil
-    needs: changed-files
-    if: needs.changed-files.outputs.goPkgReflectutil
-    uses: ./.github/workflows/package-pr.yml
-    with:
-      goVersion: 1.22
-      packagePath: src/reflectutil
+      modulePath: misc

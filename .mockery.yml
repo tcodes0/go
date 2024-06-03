@@ -6,5 +6,5 @@ outpkg: "{{.PackageName}}"
 filename: "mock_{{.InterfaceName | snakecase}}.go"
 include-regex: ".*"
 packages:
-  github.com/tcodes0/go/src/httpflush:
-  github.com/tcodes0/go/src/reflectutil:
+  github.com/tcodes0/go/httpmisc:
+  github.com/tcodes0/go/misc:

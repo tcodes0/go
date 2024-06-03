@@ -1,0 +1,85 @@
+name: Module PR
+run-name: ${{ inputs.modulePath }}@${{ github.sha }}
+
+on:
+  workflow_call:
+    inputs:
+      goVersion:
+        description: "Go version"
+        required: true
+        type: number
+      modulePath:
+        description: "Module path"
+        required: true
+        type: string
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ inputs.goVersion }}
+
+      - name: Build
+        env:
+          MOD_PATH: ${{ inputs.modulePath }}
+        run: ./sh/workflows/module-pr/build.sh
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        id: setup-up-go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ inputs.goVersion }}
+
+      - name: Install gotestfmt
+        run: go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt@latest
+
+      - name: Test pretty
+        id: test-pretty
+        env:
+          MOD_PATH: ${{ inputs.modulePath }}
+          CACHE: true
+        shell: bash
+        run: ./sh/workflows/module-pr/test-pretty.sh
+
+      - name: Annotate
+        if: always()
+        uses: guyarb/golang-test-annotations@v0.8.0
+        with:
+          test-results: ${{ steps.test-pretty.outputs.testOutputJson }}
+          package-name: github.com/tcodes0/go
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        id: setup-up-go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ inputs.goVersion }}
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v6.0.1
+        with:
+          install-mode: goinstall
+          version: v1.58.2
+          working-directory: ${{ inputs.modulePath }}
+          skip-cache: false
+          args: --print-issued-lines=false
