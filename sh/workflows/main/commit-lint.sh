@@ -12,7 +12,7 @@ shopt -s globstar
 ### script ###
 
 if ! command -v commitlint >/dev/null; then
-  npm install -g npm install @commitlint/cli@"$VERSION"
+  npm install --global @commitlint/cli@"$VERSION"
 fi
 
 commitlint --config="$CONFIG_PATH" <<<"$(git log --format=%B -n 1 HEAD)"
