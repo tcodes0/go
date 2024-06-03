@@ -29,6 +29,11 @@ if ! command -v commitlint >/dev/null; then
   npm install --global @commitlint/cli@"$VERSION" >/dev/null
 fi
 
+if [ -z "$BASE_REF" ] || [ -z "$HEAD_REF" ]; then
+  echo "BASE_REF or HEAD_REF are empty"
+  exit 1
+fi
+
 if [ "$BASE_REF" == "$HEAD_REF" ]; then
   echo "No commits to lint"
   exit 0

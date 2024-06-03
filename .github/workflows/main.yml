@@ -89,11 +89,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: main
-
       - name: Create package.json
         working-directory: .
         shell: bash
@@ -111,8 +106,8 @@ jobs:
         env:
           CONFIG_PATH: .commitlintrc.yml
           VERSION: 19.3.0
-          HEAD_REF: ${{ github.head_ref }}
-          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: ./sh/workflows/main/commit-lint.sh
 
   go-mod:
