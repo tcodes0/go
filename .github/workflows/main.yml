@@ -92,7 +92,7 @@ jobs:
       - name: Create package.json
         working-directory: .
         shell: bash
-        run: echo '{}' > package.json
+        run: echo '{}' > package-lock.json
 
       - name: Setup Node.js environment
         uses: actions/setup-node@v4.0.2
