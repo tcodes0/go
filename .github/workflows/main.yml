@@ -108,7 +108,6 @@ jobs:
         env:
           CONFIG_PATH: .commitlintrc.yml
           VERSION: 19.3.0
-          HEAD_REF: ${{ github.event.pull_request.head.ref }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: ./sh/workflows/main/commit-lint.sh
 
