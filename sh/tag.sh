@@ -10,6 +10,7 @@ source "$PWD/sh/lib.sh"
 if [ -z "${EXEC_GIT_READ:-}" ]; then
   EXEC_GIT_READ=git
 fi
+
 if [ -z "${EXEC_GIT_WRITE:-}" ]; then
   EXEC_GIT_WRITE="git"
 fi

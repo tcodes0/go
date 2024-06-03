@@ -22,7 +22,6 @@
 # vendor/
 
 # vscode
-
 .vscode/launch.json
 
 # Project files
@@ -31,3 +30,4 @@ notes.md
 banner*.txt
 *__debug_bin*
 *pgdump
+local/*
