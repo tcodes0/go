@@ -89,6 +89,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: origin/main
+
       - name: Create package.json
         working-directory: .
         shell: bash

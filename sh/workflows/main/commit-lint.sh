@@ -21,6 +21,12 @@ lintCommits() {
   printf %s "${problems[*]}"
 }
 
+# gitLog() {
+#   if ! log=$(git log --format=%s origin/main..HEAD); then
+#     log=$(git log --format=%s main..HEAD)
+#   fi
+# }
+
 ### validation, input handling ###
 
 ### script ###
@@ -29,7 +35,7 @@ if ! command -v commitlint >/dev/null; then
   npm install --global @commitlint/cli@"$VERSION" >/dev/null
 fi
 
-log=$(git log --format=%s main..HEAD)
+log=$(git log --format=%s origin/main..HEAD)
 issues=$(lintCommits "$log")
 
 if [ -n "$issues" ]; then
