@@ -75,8 +75,8 @@ jobs:
     runs-on: ubuntu-latest
     if: false # change to debug
     env:
-      HEADREF: ${{ github.head_ref }}
-      BASEREF: ${{ github.base_ref }}
+      HEAD_REF: ${{ github.head_ref }}
+      BASE_REF: ${{ github.base_ref }}
     steps:
       - name: Debug
         run: true
@@ -92,7 +92,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: origin/main
+          ref: main
 
       - name: Create package.json
         working-directory: .
@@ -111,6 +111,8 @@ jobs:
         env:
           CONFIG_PATH: .commitlintrc.yml
           VERSION: 19.3.0
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.base_ref }}
         run: ./sh/workflows/main/commit-lint.sh
 
   go-mod:
