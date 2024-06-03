@@ -1,0 +1,47 @@
+$schema: https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json
+version: "0.2"
+language: en
+allowCompoundWords: true
+maxNumberOfProblems: 5
+dictionaries:
+  - en-US
+  - bash
+  - docker
+  - filetypes
+  - fullstack
+  - golang
+  - k8s
+  - lorem-ipsum
+  - softwareTerms
+  - computing-acronyms
+words:
+  - bellynha
+  - Cmds
+  - DEBG
+  - erro
+  - FATL
+  - gofumpt
+  - goinstall
+  - golangci
+  - gosec
+  - gotestfmt
+  - govet
+  - httpflush
+  - ifaceassert
+  - iname
+  - inpackage
+  - inplace
+  - maintidx
+  - msgln
+  - nocasematch
+  - scandir
+  - Seqs
+  - SHELLCHECK
+  - SHFMT
+  - stretchr
+  - tcodes
+  - tcodes0
+  - tparallel
+  - Unappend
+  - unmarshalling
+  - unmarshals

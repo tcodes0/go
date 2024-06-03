@@ -1,0 +1,14 @@
+// generated do not edit.
+go 1.22
+
+use (
+	.
+	./clock
+	./httpmisc
+	./hue
+	./identifier
+	./jsonutil
+	./logging
+	./misc
+
+)
