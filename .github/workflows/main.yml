@@ -91,6 +91,9 @@ jobs:
 
       - name: Setup Node.js environment
         uses: actions/setup-node@v4.0.2
+        with:
+          version: lts/iron
+          cache: npm
 
       - name: Run commitlint
         working-directory: .
