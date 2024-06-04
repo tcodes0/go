@@ -7,6 +7,8 @@ shopt -s globstar
 
 ### vars and functions ###
 
+CONVENTIONAL_COMMITS_URL="See https://www.conventionalcommits.org/en/v1.0.0/"
+
 lintCommits() {
   local log="$1" problems=()
 
@@ -31,6 +33,12 @@ fi
 
 if ! command -v commitlint >/dev/null; then
   npm install --global @commitlint/cli@"$VERSION" >/dev/null
+fi
+
+if ! commitlint --config="$CONFIG_PATH" <<<"$PR_TITLE"; then
+  echo "PR title must be a conventional commit, got: $PR_TITLE"
+  echo "$CONVENTIONAL_COMMITS_URL"
+  exit 1
 fi
 
 revision=refs/remotes/origin/"$BASE_REF"..HEAD
@@ -58,7 +66,7 @@ if [ -n "$issues" ]; then
   echo "$issues"
   echo
   echo "Commit messages not formatted properly: $badCommits out of $totalCommits commits"
-  echo "See https://www.conventionalcommits.org/en/v1.0.0/"
+  echo "$CONVENTIONAL_COMMITS_URL"
   echo "To fix all, try 'git rebase -i $revision', change bad commits to 'reword', fix messages and 'git push --force'"
   exit 1
 fi

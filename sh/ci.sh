@@ -59,6 +59,7 @@ gitLocalBranch=$(git branch --show-current)
 printf "
 {
   \"pull_request\": {
+    \"title\": \"feat(ci): add PR title to act event\",
     \"head\": {
       \"ref\": \"%s\"
     },
