@@ -22,6 +22,7 @@ declare -ra commands=(
   # do not name "test"; shadowed by builtin test command
   "name:tests               type:mod  argCount:1"
   "name:ci                  type:repo argCount:0"
+  "name:ciPush              type:repo argCount:0"
   "name:coverage            type:repo argCount:0"
   "name:formatConfigs       type:repo argCount:0"
   "name:generateMocks       type:repo argCount:0"
@@ -220,6 +221,13 @@ updateVscodeConfigs() {
   done
 
   ./sh/update-vscode-configs.sh "${mods[*]}" "${repo[*]}"
+}
+
+# shellcheck disable=SC2317 # dynamic call
+ciPush() {
+  requireGitClean
+  requireInternet Internet required to pull docker images
+  ./sh/ci.sh push
 }
 
 ### validation, input handling ###
