@@ -35,11 +35,15 @@ if ! command -v commitlint >/dev/null; then
   npm install --global @commitlint/cli@"$VERSION" >/dev/null
 fi
 
+echo "$PR_TITLE"
+
 if ! commitlint --config="$CONFIG_PATH" <<<"$PR_TITLE"; then
   echo "PR title must be a conventional commit, got: $PR_TITLE"
   echo "$CONVENTIONAL_COMMITS_URL"
   exit 1
 fi
+
+echo "PR title ok"
 
 revision=refs/remotes/origin/"$BASE_REF"..HEAD
 
@@ -51,6 +55,8 @@ if [ -z "$log" ]; then
   echo "empty git log"
   exit
 fi
+
+echo "$log"
 
 issues=$(lintCommits "$log")
 
@@ -70,3 +76,5 @@ if [ -n "$issues" ]; then
   echo "To fix all, try 'git rebase -i $revision', change bad commits to 'reword', fix messages and 'git push --force'"
   exit 1
 fi
+
+echo "commits ok"
