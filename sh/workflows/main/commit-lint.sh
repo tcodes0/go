@@ -35,15 +35,17 @@ if ! command -v commitlint >/dev/null; then
   npm install --global @commitlint/cli@"$VERSION" >/dev/null
 fi
 
-echo "$PR_TITLE"
+if [ -n "${PR_TITLE:-}" ]; then
+  echo "$PR_TITLE"
 
-if ! commitlint --config="$CONFIG_PATH" <<<"$PR_TITLE"; then
-  echo "PR title must be a conventional commit, got: $PR_TITLE"
-  echo "$CONVENTIONAL_COMMITS_URL"
-  exit 1
+  if ! commitlint --config="$CONFIG_PATH" <<<"$PR_TITLE"; then
+    echo "PR title must be a conventional commit, got: $PR_TITLE"
+    echo "$CONVENTIONAL_COMMITS_URL"
+    exit 1
+  fi
+
+  echo "PR title ok"
 fi
-
-echo "PR title ok"
 
 revision=refs/remotes/origin/"$BASE_REF"..HEAD
 

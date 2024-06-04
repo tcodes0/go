@@ -1,19 +1,28 @@
 #! /usr/bin/env bash
 
+### options, imports, mocks ###
+
 set -euo pipefail
 shopt -s globstar
 # shellcheck disable=SC1091
 source "$PWD/sh/lib.sh"
 
+### vars and functions ###
+
 start=$(date +%s)
 
 usageExit() {
   msgln "Usage: $0 "
+  msgln "Usage: $0 push"
   exit 1
 }
 
 firstFailedJob=""
 hasSuccessfulJob=""
+gitLocalBranch=$(git branch --show-current)
+inputArg="${1:-}"
+eventJson=""
+
 printJobProgress() {
   successToken="succeeded"
   failedToken="failed"
@@ -48,20 +57,12 @@ printJobProgress() {
   fi
 }
 
-if [ $# != 0 ]; then
-  msgln "Invalid argument: $1"
-  usageExit
-fi
-
-eventJson=$(mktemp /tmp/ci-event-json-XXXXXX)
-gitLocalBranch=$(git branch --show-current)
-
-printf "
+prJson="
 {
   \"pull_request\": {
     \"title\": \"feat(ci): add PR title to act event\",
     \"head\": {
-      \"ref\": \"%s\"
+      \"ref\": \"$gitLocalBranch\"
     },
     \"base\": {
       \"ref\": \"main\"
@@ -69,15 +70,45 @@ printf "
   },
   \"local\": true
 }
-" "$gitLocalBranch" >"$eventJson"
+"
 
-ciCommand="act"
-ciCommandArgs=(-e "$eventJson")
-ciCommandArgs+=(-s GITHUB_TOKEN="$(gh auth token)")
-ciCommandArgs+=(--container-architecture linux/amd64)
+pushJson="
+{
+  \"push\": {
+    \"base_ref\": \"refs/heads/main\"
+  },
+  \"local\": true
+}
+"
+
+### validation, input handling ###
+
+if [ $# -gt 1 ]; then
+  msgln "Invalid arguments: $*"
+  usageExit
+fi
+
+### script ###
+
+if [ "$inputArg" ] && [ "$inputArg" == "push" ]; then
+  eventJson="$pushJson"
+else
+  eventJson="$prJson"
+fi
+
+eventJsonFile=$(mktemp /tmp/ci-event-json-XXXXXX)
 ciLog=$(mktemp /tmp/ci-log-json-XXXXXX)
 
-$ciCommand "${ciCommandArgs[@]}" >"$ciLog" 2>&1 || true &
+printf "event json:" >"$ciLog"
+printf %s "$eventJson" >>"$ciLog"
+printf %s "$eventJson" >"$eventJsonFile"
+
+ciCommand="act"
+ciCommandArgs=(-e "$eventJsonFile")
+ciCommandArgs+=(-s GITHUB_TOKEN="$(gh auth token)")
+ciCommandArgs+=(--container-architecture linux/amd64)
+
+$ciCommand "${ciCommandArgs[@]}" >>"$ciLog" 2>&1 || true &
 ciPid=$!
 
 lastLine=$(tput lines)
@@ -126,7 +157,6 @@ fi
 
 printf \\n
 msgln full logs
-msgln eventJson:\\t\\t"$eventJson"
 msgln ciLog:\\t\\t"$ciLog"
 
 printf \\n
