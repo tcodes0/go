@@ -21,7 +21,8 @@ jobs:
       modLogging: ${{ steps.list-changed-files.outputs.logging_all_changed_files }}
       modMisc: ${{ steps.list-changed-files.outputs.misc_all_changed_files }}
       # others
-      goMod: ${{ steps.list-changed-files.outputs.go_mod_all_changed_files }}
+      anyGoMod: ${{ steps.list-changed-files.outputs.any_go_mod_all_changed_files }}
+      rootGoMod: ${{ steps.list-changed-files.outputs.root_go_mod_all_changed_files }}
       config: ${{ steps.list-changed-files.outputs.config_all_changed_files }}
       shell: ${{ steps.list-changed-files.outputs.shell_all_changed_files }}
       doc: ${{ steps.list-changed-files.outputs.doc_all_changed_files }}
@@ -43,40 +44,15 @@ jobs:
         uses: tj-actions/changed-files@v44
         with:
           # since_last_remote_commit: true # use only for testing, it's easy to produce no changed files
-          files_yaml: |
-            go_mod:
-              - '**/go.mod'
-              - '**/go.sum'
-            config:
-              - '**/*.yaml'
-              - '**/*.yml'
-              - '**/*.json'
-            doc:
-              - '**/*.md'
-            shell:
-              - sh/**.sh
-            clock:
-              - clock/**.go
-            httpmisc:
-              - httpmisc/**.go
-            hue:
-              - hue/**.go
-            identifier:
-              - identifier/**.go
-            jsonutil:
-              - jsonutil/**.go
-            logging:
-              - logging/**.go
-            misc:
-              - misc/**.go
+          files_yaml_from_source_file: .github/workflows/files.yml
 
   debug:
     name: Debug
     runs-on: ubuntu-latest
     if: false # change to debug
     env:
-      HEAD_REF: ${{ github.head_ref }}
-      BASE_REF: ${{ github.base_ref }}
+      HEAD_REF: ${{ github.event.pull_request.head.ref }}
+      BASE_REF: ${{ github.event.pull_request.base.ref }}
     steps:
       - name: Debug
         run: true
@@ -85,6 +61,8 @@ jobs:
     name: Commit Lint
     runs-on: ubuntu-latest
     needs: changed-files
+    env:
+      PR_TITLE: ${{ github.event.pull_request.title }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -108,14 +86,15 @@ jobs:
         env:
           CONFIG_PATH: .commitlintrc.yml
           VERSION: 19.3.0
+          # will not be set when running on push/merge to main
           BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: ./sh/workflows/main/commit-lint.sh
 
-  go-mod:
-    name: Go.mod up to date
+  root-go-mod:
+    name: Root go.mod up to date
     runs-on: ubuntu-latest
     needs: changed-files
-    if: needs.changed-files.outputs.anyMod || needs.changed-files.outputs.goMod
+    if: needs.changed-files.outputs.rootGoMod
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -129,6 +108,25 @@ jobs:
         uses: j0hnsmith/go-mod-check@v1
         with:
           working-directory: .
+
+  go-work:
+    name: Go.work up to date
+    runs-on: ubuntu-latest
+    needs: changed-files
+    if: needs.changed-files.outputs.anyGoMod
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate go work
+        working-directory: .
+        shell: bash
+        run: ./sh/generate-go-work.sh
+
+      - name: Diff go work
+        working-directory: .
+        shell: bash
+        run: ./sh/workflows/main/diff.sh
 
   mocks:
     name: Go mocks up to date

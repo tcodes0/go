@@ -1,0 +1,42 @@
+root_go_mod:
+  - go.mod
+  - go.sum
+any_go_mod:
+  - "**/go.mod"
+  - "**/go.sum"
+config:
+  - "**/*.yaml"
+  - "**/*.yml"
+  - "**/*.json"
+doc:
+  - "**/*.md"
+shell:
+  - sh/**.sh
+clock:
+  - clock/**.go
+  - clock/go.mod
+  - clock/go.sum
+httpmisc:
+  - httpmisc/**.go
+  - httpmisc/go.mod
+  - httpmisc/go.sum
+hue:
+  - hue/**.go
+  - hue/go.mod
+  - hue/go.sum
+identifier:
+  - identifier/**.go
+  - identifier/go.mod
+  - identifier/go.sum
+jsonutil:
+  - jsonutil/**.go
+  - jsonutil/go.mod
+  - jsonutil/go.sum
+logging:
+  - logging/**.go
+  - logging/go.mod
+  - logging/go.sum
+misc:
+  - misc/**.go
+  - misc/go.mod
+  - misc/go.sum

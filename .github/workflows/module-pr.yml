@@ -83,3 +83,20 @@ jobs:
           working-directory: ${{ inputs.modulePath }}
           skip-cache: false
           args: --print-issued-lines=false
+
+  go-mod:
+    name: Go.mod up to date
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ inputs.goVersion }}
+
+      - name: Go mod
+        uses: j0hnsmith/go-mod-check@v1
+        with:
+          working-directory: ${{ inputs.modulePath }}
