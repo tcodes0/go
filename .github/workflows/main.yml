@@ -44,49 +44,7 @@ jobs:
         uses: tj-actions/changed-files@v44
         with:
           # since_last_remote_commit: true # use only for testing, it's easy to produce no changed files
-          files_yaml: |
-            root_go_mod:
-              - go.mod
-              - go.sum
-            any_go_mod:
-              - **/go.mod
-              - **/go.sum
-            config:
-              - **/*.yaml
-              - **/*.yml
-              - **/*.json
-            doc:
-              - **/*.md
-            shell:
-              - sh/**.sh
-            clock:
-              - clock/**.go
-              - clock/go.mod
-              - clock/go.sum
-            httpmisc:
-              - httpmisc/**.go
-              - httpmisc/go.mod
-              - httpmisc/go.sum
-            hue:
-              - hue/**.go
-              - hue/go.mod
-              - hue/go.sum
-            identifier:
-              - identifier/**.go
-              - identifier/go.mod
-              - identifier/go.sum
-            jsonutil:
-              - jsonutil/**.go
-              - jsonutil/go.mod
-              - jsonutil/go.sum
-            logging:
-              - logging/**.go
-              - logging/go.mod
-              - logging/go.sum
-            misc:
-              - misc/**.go
-              - misc/go.mod
-              - misc/go.sum
+          files_yaml_from_source_file: .github/workflows/files.yml
 
   debug:
     name: Debug
@@ -130,7 +88,7 @@ jobs:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: ./sh/workflows/main/commit-lint.sh
 
-  go-mod:
+  root-go-mod:
     name: Root go.mod up to date
     runs-on: ubuntu-latest
     needs: changed-files
