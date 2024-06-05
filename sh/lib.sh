@@ -60,7 +60,7 @@ requireInternet() {
 
 # run a test case and print the result
 testCase() {
-  local description=$1 input=$2 expected=$3 result
+  description=$1 input=$2 expected=$3 result=""
 
   # shellcheck disable=SC2086 # let the command expand
   if ! result=$($TESTEE $input); then
@@ -111,18 +111,19 @@ requireGitBranch() {
 # find folders directly under . that have at least one *.go file and prettify output
 # outputs one module per line
 findModules() {
-  find . -mindepth 2 -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort --stable | uniq
+  regExpTestSuffix="test$"
+  find . -mindepth 2 -maxdepth 3 -type f -name '*.go' -exec dirname {} \; | sed -Ee "/$regExpTestSuffix/d" | sort --stable | uniq
 }
 
 # find folders directly under . that have at least one *.go file and prettify output
 # outputs space separated modules without ./
 findModulesPretty() {
-  findModules | sed -Ee "s/\.\///" | tr '\n' ' '
+  findModules | sed -Ee "s/$REGEXP_DOT_SLASH//" | tr '\n' ' '
 }
 
 # example: joinBy , a b c. output: a, b, c
 joinBy() {
-  local delim=${1:-} first=${2:-}
+  delim=${1:-} first=${2:-}
 
   if shift 2; then
     printf %s "$first" "${@/#/$delim}"
@@ -138,7 +139,7 @@ requestedHelp() {
 
 # example: didYouMean "helo" "hello" "world" output "Did you mean: hello"
 didYouMean() {
-  local input=$1 idx=0 len=${#1}
+  input=$1 idx=0 len=${#1}
   declare -a options=("${@:2}") candidates=()
 
   if [ "$len" -gt 2 ]; then

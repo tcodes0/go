@@ -28,7 +28,7 @@ declare -ra commands=(
   "name:ci                  type:repo argCount:0"
   "name:ciPush              type:repo argCount:0"
   "name:coverage            type:repo argCount:0"
-  "name:formatConfigs       type:repo argCount:0"
+  "name:formatConfigs        type:repo argCount:0"
   "name:generateMocks       type:repo argCount:0"
   "name:spellcheckDocs      type:repo argCount:0"
   "name:setup               type:repo argCount:0"
@@ -36,7 +36,7 @@ declare -ra commands=(
   "name:testScripts         type:repo argCount:0"
   "name:generateGoWork      type:repo argCount:0"
   "name:newModule           type:repo argCount:1"
-  "name:updateVscodeConfigs type:repo argCount:0"
+  "name:updateVscodeConfigs  type:repo argCount:0"
 )
 
 usageExit() {

@@ -44,7 +44,7 @@
       "type": "pickString",
       "id": "module",
       "description": "Module",
-      "options": ["all", "clock", "httpmisc", "hue", "identifier", "jsonutil", "logging", "misc"],
+      "options": ["all", "clock", "cmd/copyrightboilerplate", "httpmisc", "hue", "identifier", "jsonutil", "logging", "misc"],
       "default": ""
     },
     {

@@ -6,7 +6,9 @@
 package main
 
 import (
+	"context"
 	_ "embed"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -125,7 +127,9 @@ func CopyrightBoilerplate(logger logging.Logger, globs []string, ignoreRegexps [
 			continue
 		}
 
-		var headerWithComments string
+		headerWithComments := ""
+		errChan := make(chan error)
+		ctx, cancel := context.WithCancel(context.Background())
 
 	matchesLoop:
 		for _, match := range matches {
@@ -141,29 +145,53 @@ func CopyrightBoilerplate(logger logging.Logger, globs []string, ignoreRegexps [
 				headerWithComments = addComments(licenseHeader, Glob(glob))
 			}
 
-			hasHeader, content, err := checkForHeader(match, headerWithComments)
-			if err != nil {
-				return misc.Wrap(err, "failed to check for header")
-			}
-
-			if hasHeader {
-				logger.Debug().Logf("header already applied: %s", match)
-
-				continue
-			}
-
-			if !dryrun {
-				err = applyHeader(headerWithComments, match, content, Glob(glob))
-				if err != nil {
-					return misc.Wrap(err, "failed to apply header")
+			go func() {
+				//nolint:govet // scope
+				err, processed := processFile(ctx, logger, match, glob, headerWithComments, dryrun)
+				if !errors.Is(err, context.Canceled) {
+					errChan <- misc.Wrapf(err, "failed: %s", match)
+					cancel()
 				}
-			}
 
-			logger.Log(match)
+				if processed {
+					logger.Log(match)
+				}
+			}()
+		}
+
+		err = <-errChan
+		if err != nil {
+			return misc.Wrap(err, "failed to process file")
 		}
 	}
 
 	return nil
+}
+
+func processFile(ctx context.Context, logger logging.Logger, path, glob, header string, dryrun bool) (err error, processed bool) {
+	if ctx.Err() != nil {
+		return misc.Wrap(ctx.Err(), "context cancelled"), false
+	}
+
+	hasHeader, content, err := checkForHeader(path, header)
+	if err != nil {
+		return misc.Wrap(err, "failed to check for header"), false
+	}
+
+	if hasHeader {
+		logger.Debug().Logf("header already applied: %s", path)
+
+		return nil, false
+	}
+
+	if !dryrun {
+		err = applyHeader(header, path, content, Glob(glob))
+		if err != nil {
+			return misc.Wrap(err, "failed to apply header"), false
+		}
+	}
+
+	return nil, true
 }
 
 func checkForHeader(path, header string) (hasHeader bool, content string, err error) {
