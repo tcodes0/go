@@ -26,12 +26,12 @@ const (
 
 type Glob string
 
-func (sourceFile Glob) String() string {
-	return string(sourceFile)
+func (glob Glob) String() string {
+	return string(glob)
 }
 
-func (sourceFile Glob) CommentToken() string {
-	switch sourceFile.Kind() {
+func (glob Glob) CommentToken() string {
+	switch glob.Kind() {
 	default:
 		return ""
 	case Go:
@@ -41,12 +41,12 @@ func (sourceFile Glob) CommentToken() string {
 	}
 }
 
-func (sourceFile Glob) Kind() int {
-	if strings.HasSuffix(sourceFile.String(), ".go") {
+func (glob Glob) Kind() int {
+	if strings.HasSuffix(glob.String(), ".go") {
 		return Go
 	}
 
-	if strings.HasSuffix(sourceFile.String(), ".sh") {
+	if strings.HasSuffix(glob.String(), ".sh") {
 		return Shell
 	}
 
@@ -104,14 +104,14 @@ func main() {
 	}
 }
 
-func CopyrightBoilerplate(logger logging.Logger, sourceFiles []string, ignoreRegexps []*regexp.Regexp) error {
-	for _, sourceFile := range sourceFiles {
-		matches, err := filepath.Glob(sourceFile)
+func CopyrightBoilerplate(logger logging.Logger, globs []string, ignoreRegexps []*regexp.Regexp) error {
+	for _, glob := range globs {
+		matches, err := filepath.Glob(glob)
 		if err != nil {
 			return misc.Wrap(err, "failed to glob files")
 		}
 
-		logger.Debug().Logf("files: %s, count %d", matches, len(matches))
+		logger.Debug().Logf("glob: '%s', count %d, files: %s", glob, len(matches), matches)
 
 		if len(matches) == 0 {
 			logger.Log("no files matched")
@@ -125,14 +125,14 @@ func CopyrightBoilerplate(logger logging.Logger, sourceFiles []string, ignoreReg
 		for _, match := range matches {
 			for _, regexp := range ignoreRegexps {
 				if regexp.MatchString(match) {
-					logger.Debug().Logf("skipping %s because ignore %s matches", match, regexp.String())
+					logger.Debug().Logf("skipping %s because ignore '%s' matches", match, regexp.String())
 
 					continue matchesLoop
 				}
 			}
 
 			if headerWithComments == "" {
-				headerWithComments = addComments(licenseHeader, Glob(sourceFile))
+				headerWithComments = addComments(licenseHeader, Glob(glob))
 			}
 
 			hasHeader, content, err := checkForHeader(match, headerWithComments)
@@ -141,12 +141,12 @@ func CopyrightBoilerplate(logger logging.Logger, sourceFiles []string, ignoreReg
 			}
 
 			if hasHeader {
-				logger.Debug().Logf("header already present %s", match)
+				logger.Debug().Logf("header already applied: %s", match)
 
-				break
+				continue
 			}
 
-			err = applyHeader(headerWithComments, match, content, Glob(sourceFile))
+			err = applyHeader(headerWithComments, match, content, Glob(glob))
 			if err != nil {
 				return misc.Wrap(err, "failed to apply header")
 			}
