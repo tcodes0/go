@@ -22,7 +22,7 @@ setup() {
   comments="${*:4}"
   declare -A installCommandsByLang=(
     ["go"]="go install"
-    ["js"]="npm install -g"
+    ["js"]="npm install --global"
     ["manual"]="-"
   )
 
@@ -117,6 +117,7 @@ setup go github.com/4meepo/tagalign/cmd/tagalign@latest tagalign
 
 setup js cspell@latest cspell a spellchecker for source code
 setup js prettier@latest prettier a code formatter for several languages
+setup js @commitlint/cli@latest commitlint a linter for commit messages
 
 # others
 
@@ -155,5 +156,9 @@ fi
 # notes
 
 msgln note: \'act\' requires first time setup
+
+if [ "$(nvm_version || true)" ]; then
+  msgln note: when using nvm and upgrading node, global packages need to be reinstalled
+fi
 
 exitShowProblems "fix configuration issues"
