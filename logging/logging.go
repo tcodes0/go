@@ -17,12 +17,12 @@ const (
 	// lowest level.
 	LDebug Level = iota + 1
 	// default level.
-	LInfo  Level = iota + 1
-	LWarn  Level = iota + 1
-	LError Level = iota + 1
-	LFatal Level = iota + 1
+	LInfo
+	LWarn
+	LError
+	LFatal
 	// highest level.
-	LNone Level = iota + 1
+	LNone
 
 	debug string = "DEBG "
 	info  string = "INFO "

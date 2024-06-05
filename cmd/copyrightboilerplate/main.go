@@ -18,13 +18,12 @@ import (
 var (
 	//go:embed header.txt
 	licenseHeader string
-	mockRegexp    = regexp.MustCompile(`/?mock_[^.]+\.go`)
 )
 
 const (
 	//nolint:varnamelen // go is the programming language
-	Go    int = iota + 1
-	Shell int = iota + 1
+	Go int = iota + 1
+	Shell
 )
 
 type Glob string
@@ -115,6 +114,12 @@ func CopyrightBoilerplate(logger logging.Logger, sourceFiles []string, ignoreReg
 		}
 
 		logger.Debug().Logf("files: %s, count %d", matches, len(matches))
+
+		if len(matches) == 0 {
+			logger.Log("no files matched")
+
+			return nil
+		}
 
 		var headerWithComments string
 
