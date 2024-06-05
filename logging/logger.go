@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 
 	"github.com/tcodes0/go/hue"
 )
@@ -22,6 +23,7 @@ const (
 // Logger has no public fields; wraps log.Logger with additional functionality.
 type Logger struct {
 	l         *log.Logger
+	mu        *sync.Mutex    // use Logger wrapper methods to avoid panic
 	exit      func(code int) // proxy to os.Exit(1)
 	metadata  string         // added to all messages
 	level     Level          // only log if message level is >= to this
@@ -62,6 +64,11 @@ func (logger *Logger) WithContext(ctx context.Context) context.Context {
 
 // set Level of the next message to warning.
 func (logger *Logger) Warn() *Logger {
+	ok := logger.lock()
+	if ok {
+		defer logger.unlock()
+	}
+
 	logger.setPrefix(warn)
 	logger.msgLevel = LWarn
 
@@ -70,6 +77,11 @@ func (logger *Logger) Warn() *Logger {
 
 // set Level of the next message to error.
 func (logger *Logger) Error() *Logger {
+	ok := logger.lock()
+	if ok {
+		defer logger.unlock()
+	}
+
 	logger.setPrefix(erro)
 	logger.msgLevel = LError
 
@@ -78,6 +90,11 @@ func (logger *Logger) Error() *Logger {
 
 // set Level of the next message to debug.
 func (logger *Logger) Debug() *Logger {
+	ok := logger.lock()
+	if ok {
+		defer logger.unlock()
+	}
+
 	logger.setPrefix(debug)
 	logger.msgLevel = LDebug
 
@@ -91,6 +108,11 @@ func (logger *Logger) Log(msg ...any) {
 		logger.calldepth = defaultCalldepth
 		logger.msgLevel = LInfo
 	}()
+
+	ok := logger.lock()
+	if ok {
+		defer logger.unlock()
+	}
 
 	if logger.l == nil || logger.msgLevel < logger.level {
 		return
@@ -123,8 +145,13 @@ func (logger *Logger) Log(msg ...any) {
 }
 
 // send a formatted message.
-func (logger *Logger) Logf(format string, v ...any) {
-	out := fmt.Sprintf(format, v...)
+func (logger *Logger) Logf(format string, args ...any) {
+	ok := logger.lock()
+	if ok {
+		defer logger.unlock()
+	}
+
+	out := fmt.Sprintf(format, args...)
 
 	logger.calldepth++
 
@@ -133,6 +160,9 @@ func (logger *Logger) Logf(format string, v ...any) {
 
 // sends a message and then calls Logger.exit().
 func (logger *Logger) Fatal(msg ...any) {
+	// doesn't matter since we exit(1)
+	_ = logger.lock()
+
 	logger.setPrefix(fatal)
 
 	logger.calldepth++
@@ -147,6 +177,11 @@ func (logger *Logger) Fatal(msg ...any) {
 
 // sends a formatted message and then calls Logger.exit().
 func (logger *Logger) Fatalf(format string, msg ...any) {
+	ok := logger.lock()
+	if ok {
+		defer logger.unlock()
+	}
+
 	out := fmt.Sprintf(format, msg...)
 
 	logger.calldepth++
@@ -158,6 +193,11 @@ func (logger *Logger) Fatalf(format string, msg ...any) {
 // metadata is formated in key value pairs;
 // see Wipe.
 func (logger *Logger) Metadata(key string, val any) *Logger {
+	ok := logger.lock()
+	if ok {
+		defer logger.unlock()
+	}
+
 	formatVal := fmt.Sprintf("%v", val)
 
 	if logger.color {
@@ -173,17 +213,50 @@ func (logger *Logger) Metadata(key string, val any) *Logger {
 // remove all metadata from future messages,
 // see Metadata.
 func (logger *Logger) Wipe() *Logger {
+	ok := logger.lock()
+	if ok {
+		defer logger.unlock()
+	}
+
 	logger.metadata = ""
 
 	return logger
 }
 
 // sets the function to call from Logger.Fatal methods.
-func (logger *Logger) SetExit(f func(int)) {
-	logger.exit = f
+func (logger *Logger) SetExit(exitFunc func(int)) {
+	ok := logger.lock()
+	if ok {
+		defer logger.unlock()
+	}
+
+	logger.exit = exitFunc
 }
 
 // set the level of the logger, messages < Logger.level will be ignored.
 func (logger *Logger) SetLevel(level Level) {
+	ok := logger.lock()
+	if ok {
+		defer logger.unlock()
+	}
+
 	logger.level = level
+}
+
+// lock the logger mutex with TryLock.
+func (logger *Logger) lock() bool {
+	if logger.mu == nil {
+		return false
+	}
+
+	return logger.mu.TryLock()
+}
+
+// unlock the logger mutex.
+func (logger *Logger) unlock() {
+	if logger.mu == nil {
+		return
+	}
+
+	logger.mu.Unlock()
 }

@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"sync"
 
 	"github.com/tcodes0/go/hue"
 )
@@ -124,6 +125,7 @@ func Create(options ...CreateOptions) *Logger {
 
 	return &Logger{
 		l:         log.New(opts.writer, prefix, opts.flags),
+		mu:        &sync.Mutex{},
 		level:     opts.level,
 		color:     opts.color,
 		msgLevel:  LInfo,
