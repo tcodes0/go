@@ -1,3 +1,8 @@
+// Copyright 2024 Raphael Thomazella. All rights reserved.
+// Use of this source code is governed by the BSD-3-Clause
+// license that can be found in the LICENSE file and online
+// at https://opensource.org/license/BSD-3-clause.
+
 package main
 
 import (
@@ -55,11 +60,11 @@ func (glob Glob) Kind() int {
 
 func main() {
 	flagset := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	fLogLevel := flagset.Int("log-level", int(logging.LInfo), "control logging output; 1 is debug, 5 is fatal; default 2 info.")
-	fColor := flagset.Bool("color", false, "colored logging output; default false.")
-	fGlobs := flagset.String("globs", "", "comma-space separated list of globs to search for files. Default empty.")
-	fIgnore := flagset.String("ignore", "", "comma-space separated list of regexes to exclude files by path match. Default empty.")
-	fDryrun := flagset.Bool("dryrun", false, "do not modify files, only log what would be done. Default false.")
+	fLogLevel := flagset.Int("log-level", int(logging.LInfo), "control logging output; 1 is debug, 5 is fatal")
+	fColor := flagset.Bool("color", false, "colored logging output. default false")
+	fGlobs := flagset.String("globs", "", "comma-space separated list of globs to search for files. Default empty")
+	fIgnore := flagset.String("ignore", "", "comma-space separated list of regexes to exclude files by path match. Default empty")
+	fDryrun := flagset.Bool("dryrun", false, "do not modify files, only log what would be done. Default false")
 
 	err := flagset.Parse(os.Args[1:])
 	if err != nil {
@@ -115,7 +120,7 @@ func CopyrightBoilerplate(logger logging.Logger, globs []string, ignoreRegexps [
 		logger.Debug().Logf("glob: '%s', count %d, files: %s", glob, len(matches), matches)
 
 		if len(matches) == 0 {
-			logger.Logf("no files matched: %s", glob)
+			logger.Warn().Logf("no files matched: %s", glob)
 
 			continue
 		}
