@@ -59,6 +59,7 @@ func main() {
 	fColor := flagset.Bool("color", false, "colored logging output; default false.")
 	fGlobs := flagset.String("globs", "", "comma-space separated list of globs to search for files. Default empty.")
 	fIgnore := flagset.String("ignore", "", "comma-space separated list of regexes to exclude files by path match. Default empty.")
+	fDryrun := flagset.Bool("dryrun", false, "do not modify files, only log what would be done. Default false.")
 
 	err := flagset.Parse(os.Args[1:])
 	if err != nil {
@@ -98,13 +99,13 @@ func main() {
 		ignores = append(ignores, reg)
 	}
 
-	err = CopyrightBoilerplate(*logger, globs, ignores)
+	err = CopyrightBoilerplate(*logger, globs, ignores, *fDryrun)
 	if err != nil {
 		logger.Fatalf("failed: %v", err)
 	}
 }
 
-func CopyrightBoilerplate(logger logging.Logger, globs []string, ignoreRegexps []*regexp.Regexp) error {
+func CopyrightBoilerplate(logger logging.Logger, globs []string, ignoreRegexps []*regexp.Regexp, dryrun bool) error {
 	for _, glob := range globs {
 		matches, err := filepath.Glob(glob)
 		if err != nil {
@@ -114,9 +115,9 @@ func CopyrightBoilerplate(logger logging.Logger, globs []string, ignoreRegexps [
 		logger.Debug().Logf("glob: '%s', count %d, files: %s", glob, len(matches), matches)
 
 		if len(matches) == 0 {
-			logger.Log("no files matched")
+			logger.Logf("no files matched: %s", glob)
 
-			return nil
+			continue
 		}
 
 		var headerWithComments string
@@ -146,9 +147,11 @@ func CopyrightBoilerplate(logger logging.Logger, globs []string, ignoreRegexps [
 				continue
 			}
 
-			err = applyHeader(headerWithComments, match, content, Glob(glob))
-			if err != nil {
-				return misc.Wrap(err, "failed to apply header")
+			if !dryrun {
+				err = applyHeader(headerWithComments, match, content, Glob(glob))
+				if err != nil {
+					return misc.Wrap(err, "failed to apply header")
+				}
 			}
 
 			logger.Log(match)
