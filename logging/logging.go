@@ -70,9 +70,9 @@ func OptFlags(flags int) CreateOptions {
 }
 
 // option to enable color output.
-func OptColor(color bool) CreateOptions {
+func OptColor() CreateOptions {
 	return func(c *createOpts) {
-		c.color = color
+		c.color = true
 	}
 }
 

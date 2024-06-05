@@ -33,7 +33,7 @@ type SourceFile struct {
 }
 
 func main() {
-	logger := logging.Create(logging.OptFlags(log.Lshortfile), logging.OptLevel(logging.LDebug), logging.OptColor(true))
+	logger := logging.Create(logging.OptFlags(log.Lshortfile), logging.OptLevel(logging.LDebug), logging.OptColor())
 	sourceFiles := []*SourceFile{
 		{Glob: "./**/*.go", Kind: Go, CommentToken: "// "},
 		{Glob: "./*.go", Kind: Go, CommentToken: "// "},
