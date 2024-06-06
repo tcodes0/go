@@ -98,7 +98,6 @@ setup go github.com/uudashr/gopkgs/v2/cmd/gopkgs@latest gopkgs a faster go list 
 setup go golang.org/x/tools/gopls@latest gopls go language server
 setup go golang.org/x/tools/cmd/cover@latest cover go coverage tool
 setup go github.com/cweill/gotests/gotests@latest gotests a test generator
-setup go github.com/vektra/mockery/v2@latest mockery a mock interface generator
 setup go github.com/ramya-rao-a/go-outline@latest go-outline utility to extract a json representation of a go source file
 setup go github.com/haya14busa/goplay/cmd/goplay@latest goplay playground client of https://play.golang.org
 setup go github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt@latest gotestfmt go test output formatter
