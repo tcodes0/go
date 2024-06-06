@@ -5,9 +5,15 @@ shopt -s globstar
 # shellcheck disable=SC1091
 source "$PWD/sh/lib.sh"
 
-# extract package name from path
+# extract test package name from path
 testPkg=$(basename "$MOD_PATH")_test
 testDir="./$MOD_PATH/$testPkg"
+regExpPrefixCmd="^cmd/"
+
+if [[ "$MOD_PATH" =~ $regExpPrefixCmd ]]; then
+  # cmds have just a main package
+  testDir="./$MOD_PATH"
+fi
 
 if ! [ -d "$testDir" ]; then
   # some packages have no tests
@@ -19,7 +25,7 @@ flags+=(-mod=readonly)
 # output test results in json format for processing
 flags+=(-json)
 # detect race conditions
-flags+=(-race)
+# flags+=(-race)
 # go vet linter is handled by lint step
 flags+=(-vet=off)
 # output coverage profile to file

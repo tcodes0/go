@@ -30,4 +30,5 @@ notes.md
 banner*.txt
 *__debug_bin*
 *pgdump
-local/*
+.local/*
+.build/*
