@@ -27,8 +27,15 @@ parseGoVersion() {
 goVersion=$(parseGoVersion)
 mods=$(findModules)
 formattedMods=""
+regexpPathHasSlash="(.*[[:alnum:]])\/([[:alnum:]].*)"
 
 for mod in $mods; do
+  if [[ $mod =~ $regexpPathHasSlash ]]; then
+    # use base module name
+    # if deeply nested this check can be used recursively until no more slashes are found
+    mod=${BASH_REMATCH[1]}
+  fi
+
   formattedMods=${formattedMods}$(printf %s "	$mod\\n")
 done
 
