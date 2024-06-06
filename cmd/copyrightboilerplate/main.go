@@ -15,10 +15,8 @@ import (
 	"github.com/tcodes0/go/misc"
 )
 
-var (
-	//go:embed header.txt
-	licenseHeader string
-)
+//go:embed header.txt
+var licenseHeader string
 
 const (
 	//nolint:varnamelen // go is the programming language
