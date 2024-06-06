@@ -1,1 +1,0 @@
-Copyright MR. Tester Golang 2021

@@ -70,7 +70,7 @@ func (logger *Logger) Warn() *Logger {
 	}
 
 	logger.setPrefix(warn)
-	logger.msgLevel = LWarn
+	logger.setMsgLevel(LWarn)
 
 	return logger
 }
@@ -83,7 +83,7 @@ func (logger *Logger) Error() *Logger {
 	}
 
 	logger.setPrefix(erro)
-	logger.msgLevel = LError
+	logger.setMsgLevel(LError)
 
 	return logger
 }
@@ -96,7 +96,7 @@ func (logger *Logger) Debug() *Logger {
 	}
 
 	logger.setPrefix(debug)
-	logger.msgLevel = LDebug
+	logger.setMsgLevel(LDebug)
 
 	return logger
 }
@@ -105,8 +105,8 @@ func (logger *Logger) Debug() *Logger {
 func (logger *Logger) Log(msg ...any) {
 	defer func() {
 		logger.setPrefix(info)
-		logger.calldepth = defaultCalldepth
-		logger.msgLevel = LInfo
+		logger.resetCallDepth()
+		logger.setMsgLevel(LInfo)
 	}()
 
 	ok := logger.lock()
@@ -153,7 +153,7 @@ func (logger *Logger) Logf(format string, args ...any) {
 
 	out := fmt.Sprintf(format, args...)
 
-	logger.calldepth++
+	logger.incrCallDepth()
 
 	logger.Log(out)
 }
@@ -165,8 +165,8 @@ func (logger *Logger) Fatal(msg ...any) {
 
 	logger.setPrefix(fatal)
 
-	logger.calldepth++
-	logger.msgLevel = LFatal
+	logger.incrCallDepth()
+	logger.setMsgLevel(LFatal)
 
 	logger.Log(msg...)
 
@@ -184,7 +184,7 @@ func (logger *Logger) Fatalf(format string, msg ...any) {
 
 	out := fmt.Sprintf(format, msg...)
 
-	logger.calldepth++
+	logger.incrCallDepth()
 
 	logger.Fatal(out)
 }
@@ -243,7 +243,6 @@ func (logger *Logger) SetLevel(level Level) {
 	logger.level = level
 }
 
-// lock the logger mutex with TryLock.
 func (logger *Logger) lock() bool {
 	if logger.mu == nil {
 		return false
@@ -252,11 +251,37 @@ func (logger *Logger) lock() bool {
 	return logger.mu.TryLock()
 }
 
-// unlock the logger mutex.
 func (logger *Logger) unlock() {
 	if logger.mu == nil {
 		return
 	}
 
 	logger.mu.Unlock()
+}
+
+func (logger *Logger) setMsgLevel(level Level) {
+	ok := logger.lock()
+	if ok {
+		defer logger.unlock()
+	}
+
+	logger.msgLevel = level
+}
+
+func (logger *Logger) resetCallDepth() {
+	ok := logger.lock()
+	if ok {
+		defer logger.unlock()
+	}
+
+	logger.calldepth = defaultCalldepth
+}
+
+func (logger *Logger) incrCallDepth() {
+	ok := logger.lock()
+	if ok {
+		defer logger.unlock()
+	}
+
+	logger.calldepth++
 }
