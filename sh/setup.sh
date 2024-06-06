@@ -59,7 +59,6 @@ exitShowProblems() {
 
 setup manual 'missing git' git a version control system
 setup manual 'missing bash' bash popular shell
-setup manual 'missing sed' sed stream editor
 setup manual 'missing mktemp' mktemp create temporary files and directories
 setup manual 'missing tput' tput terminal control
 setup manual 'missing find' find search for files in a directory hierarchy
@@ -73,6 +72,12 @@ setup manual 'missing ps' ps view running programs
 setup manual 'missing grep' grep search files for matches
 setup manual 'missing sleep' sleep block a script for some time
 setup manual 'missing head' head read a number of lines from a file
+
+if macos; then
+  setup manual 'missing gsed' gsed gnu sed stream editor, available on brew as 'gnu-sed'
+else
+  setup manual 'missing sed' sed stream editor
+fi
 
 exitShowProblems "missing basic gnu/linux binaries; please install for your platform; seek help and good luck!"
 

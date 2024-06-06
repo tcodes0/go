@@ -27,6 +27,7 @@ words:
   - gosec
   - gotestfmt
   - govet
+  - gsed
   - httpflush
   - ifaceassert
   - iname

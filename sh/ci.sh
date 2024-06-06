@@ -35,7 +35,7 @@ printJobProgress() {
   tput rc
   grepOut=$(grep -Eie "Job ($successToken|$failedToken)" "$ciLog" || true)
   regExpAfterSpace=" .*"
-  linesPrinted=$(wc -l <<<"$grepOut" | sed -e "s/$regExpAfterSpace//")
+  linesPrinted=$(wc -l <<<"$grepOut" | _sed -e "s/$regExpAfterSpace//")
 
   if [ "$linesPrinted" != 0 ]; then
     while read -r line; do

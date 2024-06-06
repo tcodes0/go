@@ -112,13 +112,13 @@ requireGitBranch() {
 # outputs one module per line
 findModules() {
   regExpTestSuffix="test$"
-  find . -mindepth 2 -maxdepth 3 -type f -name '*.go' -exec dirname {} \; | sed -Ee "/$regExpTestSuffix/d" | sort --stable | uniq
+  find . -mindepth 2 -maxdepth 3 -type f -name '*.go' -exec dirname {} \; | _sed -e "/$regExpTestSuffix/d" | sort --stable | uniq
 }
 
 # find folders directly under . that have at least one *.go file and prettify output
 # outputs space separated modules without ./
 findModulesPretty() {
-  findModules | sed -Ee "s/$REGEXP_DOT_SLASH//" | tr '\n' ' '
+  findModules | _sed -e "s/$REGEXP_DOT_SLASH//" | tr '\n' ' '
 }
 
 # example: joinBy , a b c. output: a, b, c
@@ -160,4 +160,19 @@ didYouMean() {
   printf \\n
   msgln "instead of '$input' did you mean..."
   msg "$(joinBy ", " "${candidates[@]}")" ...?
+}
+
+# example: if macos;
+macos() {
+  ([ "$(uname)" == "Darwin" ] && true) || false
+}
+
+# wrapper to avoid macos sed incompatibilities
+_sed() {
+  if macos; then
+    gsed "$@"
+    return
+  fi
+
+  sed "$@"
 }
