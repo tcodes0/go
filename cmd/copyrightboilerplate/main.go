@@ -68,6 +68,7 @@ type OSFiles interface {
 	Glob(pattern string) (matches []string, err error)
 	OpenFile(name string, flag int, perm os.FileMode) (file File, err error)
 	Open(name string) (file File, err error)
+	ReadAll(r io.Reader) (b []byte, err error)
 }
 
 type osFiles struct{}
@@ -87,6 +88,11 @@ func (osf osFiles) OpenFile(name string, flags int, perm os.FileMode) (file File
 func (osf osFiles) Open(name string) (file File, err error) {
 	//nolint:wrapcheck // test
 	return os.Open(name)
+}
+
+func (osf osFiles) ReadAll(r io.Reader) (b []byte, err error) {
+	//nolint:wrapcheck // test
+	return io.ReadAll(r)
 }
 
 func main() {
@@ -135,22 +141,29 @@ func main() {
 		ignores = append(ignores, reg)
 	}
 
-	err = copyrightBoilerplate(*logger, osFiles{}, globs, ignores, *fDryrun)
+	err = copyrightBoilerplate(*logger, osFiles{}, globs, ignores, licenseHeader, *fDryrun)
 	if err != nil {
 		logger.Fatalf("failed: %v", err)
 	}
 }
 
-func copyrightBoilerplate(logger logging.Logger, osf osFiles, globs []string, ignoreRegexps []*regexp.Regexp, dryrun bool) error {
+func copyrightBoilerplate(
+	logger logging.Logger,
+	osf OSFiles,
+	globs []string,
+	ignoreRegexps []*regexp.Regexp,
+	header string,
+	dryrun bool,
+) error {
 	for _, fileglob := range globs {
-		matches, err := osf.Glob(fileglob)
+		filePaths, err := osf.Glob(fileglob)
 		if err != nil {
 			return misc.Wrap(err, "failed to glob files")
 		}
 
-		logger.Debug().Logf("glob: '%s', count %d, files: %s", fileglob, len(matches), matches)
+		logger.Debug().Logf("glob: '%s', count %d, files: %s", fileglob, len(filePaths), filePaths)
 
-		if len(matches) == 0 {
+		if len(filePaths) == 0 {
 			logger.Warn().Logf("no files matched: %s", fileglob)
 
 			continue
@@ -158,38 +171,40 @@ func copyrightBoilerplate(logger logging.Logger, osf osFiles, globs []string, ig
 
 		headerWithComments := ""
 		errChan := make(chan error)
+		//nolint:govet // intentional
 		ctx, cancel := context.WithCancel(context.Background())
 
 	matchesLoop:
-		for _, match := range matches {
+		for _, filePath := range filePaths {
 			for _, regexp := range ignoreRegexps {
-				if regexp.MatchString(match) {
-					logger.Debug().Logf("skipping %s because ignore '%s' matches", match, regexp.String())
+				if regexp.MatchString(filePath) {
+					logger.Debug().Logf("skipping %s because ignore '%s' matches", filePath, regexp.String())
 
 					continue matchesLoop
 				}
 			}
 
 			if headerWithComments == "" {
-				headerWithComments = addComments(licenseHeader, glob(fileglob))
+				headerWithComments = addComments(header, glob(fileglob))
 			}
 
 			go func() {
 				//nolint:govet // scope
-				err, processed := processFile(ctx, logger, osf, match, fileglob, headerWithComments, dryrun)
+				err, processed := processFile(ctx, logger, osf, filePath, fileglob, headerWithComments, dryrun)
 				if !errors.Is(err, context.Canceled) {
-					errChan <- misc.Wrapf(err, "failed: %s", match)
+					errChan <- misc.Wrapf(err, "failed: %s", filePath)
 					cancel()
 				}
 
 				if processed {
-					logger.Log(match)
+					logger.Log(filePath)
 				}
 			}()
 		}
 
 		err = <-errChan
 		if err != nil {
+			//nolint:govet // intentional
 			return misc.Wrap(err, "failed to process file")
 		}
 	}
@@ -200,7 +215,7 @@ func copyrightBoilerplate(logger logging.Logger, osf osFiles, globs []string, ig
 func processFile(
 	ctx context.Context,
 	logger logging.Logger,
-	osf osFiles,
+	osf OSFiles,
 	path,
 	fileGlob,
 	header string,
@@ -231,7 +246,7 @@ func processFile(
 	return nil, true
 }
 
-func checkForHeader(osf osFiles, path, header string) (hasHeader bool, content string, err error) {
+func checkForHeader(osf OSFiles, path, header string) (hasHeader bool, content string, err error) {
 	file, err := osf.Open(path)
 	if err != nil {
 		return false, "", misc.Wrap(err, "failed to open file")
@@ -239,7 +254,7 @@ func checkForHeader(osf osFiles, path, header string) (hasHeader bool, content s
 
 	defer file.Close()
 
-	b, err := io.ReadAll(file)
+	b, err := osf.ReadAll(file)
 	if err != nil {
 		return false, "", misc.Wrap(err, "failed to read file")
 	}
@@ -257,7 +272,7 @@ func addComments(license string, fileGlob glob) (commentedLicense string) {
 	return commentedLicense
 }
 
-func applyHeader(osf osFiles, header, path, content string, glob glob) error {
+func applyHeader(osf OSFiles, header, path, content string, glob glob) error {
 	file, err := osf.OpenFile(path, os.O_RDWR|os.O_TRUNC, 0)
 	if err != nil {
 		return misc.Wrap(err, "unable to open file")
