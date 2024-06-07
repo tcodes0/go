@@ -30,6 +30,12 @@ formattedMods=""
 regexpPathHasSlash="(.*[[:alnum:]])\/([[:alnum:]].*)"
 
 for mod in $mods; do
+  if [ "${IGNORE:-}"  ]; then
+    if [[ $mod =~ $IGNORE ]]; then
+      continue
+    fi
+  fi
+
   if [[ $mod =~ $regexpPathHasSlash ]]; then
     # use base module name
     # if deeply nested this check can be used recursively until no more slashes are found

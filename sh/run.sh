@@ -19,7 +19,7 @@ read -rd "$(printf \\r)" -a modules < <(
 )
 
 declare -ra commands=(
-  "name:build               type:mod  argCount:1"
+  "name:build               type:mod  argCount:2"
   "name:format              type:mod  argCount:1"
   "name:lint                type:mod  argCount:1"
   "name:lintFix             type:mod  argCount:1"
@@ -165,7 +165,14 @@ tests() {
 
 # shellcheck disable=SC2317 # dynamic call
 build() {
+  install=""
+
+  if [ "${inputArgs[1]}" == -install ]; then
+    install=true
+  fi
+
   MOD_PATH="$1" \
+    INSTALL="$install" \
     ./sh/workflows/module-pr/build.sh
 }
 
@@ -209,7 +216,8 @@ coverage() {
 
 # shellcheck disable=SC2317 # dynamic call
 generateGoWork() {
-  ./sh/generate-go-work.sh
+  IGNORE=".local" \
+    ./sh/generate-go-work.sh
 }
 
 # shellcheck disable=SC2317 # dynamic call
@@ -265,9 +273,9 @@ for info in "${commands[@]}"; do
     exit 1
   fi
 
-  if [ "${#inputArgs[@]}" != "${command[2]/argCount:/}" ]; then
-    usageExit "${command[0]/name:/} wants ${command[2]/argCount:/} arguments; received ${#inputArgs[@]} (${inputArgs[*]})"
-  fi
+  # if [ "${#inputArgs[@]}" != "${command[2]/argCount:/}" ]; then
+  #   usageExit "${command[0]/name:/} wants ${command[2]/argCount:/} arguments; received ${#inputArgs[@]} (${inputArgs[*]})"
+  # fi
 
   if [ "${command[1]/type:/}" == mod ]; then
     if ! [[ " all ${modules[*]} " =~ ${inputArgs[0]} ]]; then

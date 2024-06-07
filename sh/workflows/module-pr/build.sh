@@ -5,8 +5,10 @@ shopt -s globstar
 # shellcheck disable=SC1091
 source "$PWD/sh/lib.sh"
 
-# cd to build/
-flags+=(-C .build)
+buildDir=".build"
+
+# cd to $buildDir/
+flags+=(-C "$buildDir")
 # fail if any dependencies are missing
 flags+=(-mod=readonly)
 # verbose
@@ -19,7 +21,14 @@ if requestedHelp "$*"; then
   exit 1
 fi
 
+command=build
+
+if [ "${INSTALL:-}" ]; then
+  command=install
+fi
+
 # building tests without regular .go files will fail
 if ! [[ "$MOD_PATH" =~ test$ ]]; then
-  go build "${flags[@]}" "../$MOD_PATH"
+  mkdir -p "$buildDir"
+  go $command "${flags[@]}" "../$MOD_PATH"
 fi
