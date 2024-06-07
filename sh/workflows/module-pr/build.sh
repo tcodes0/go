@@ -6,7 +6,7 @@ shopt -s globstar
 source "$PWD/sh/lib.sh"
 
 # cd to build/
-flags+=(-C build)
+flags+=(-C .build)
 # fail if any dependencies are missing
 flags+=(-mod=readonly)
 # verbose

@@ -5,6 +5,14 @@ shopt -s globstar
 # shellcheck disable=SC1091
 source "$PWD/sh/lib.sh"
 
+# mod path may have a -h
+if requestedHelp "$MOD_PATH"; then
+  msgln "Usage:"
+  msgln "$0 <module>"
+  msgln "$0 <module> -cover"
+  exit 1
+fi
+
 # extract test package name from path
 testPkg=$(basename "$MOD_PATH")_test
 testDir="./$MOD_PATH/$testPkg"
@@ -25,7 +33,7 @@ flags+=(-mod=readonly)
 # output test results in json format for processing
 flags+=(-json)
 # detect race conditions
-# flags+=(-race)
+flags+=(-race)
 # go vet linter is handled by lint step
 flags+=(-vet=off)
 # output coverage profile to file
@@ -49,3 +57,26 @@ _sed --in-place -e "/$regExpPrefixGo/d" "$testOutputJson"
 
 echo "testOutputJson=$testOutputJson"
 echo "testOutputJson=$testOutputJson" >>"$GITHUB_OUTPUT"
+
+if ! [ "${DISPLAY_COVERAGE:-}" ]; then
+  exit
+fi
+
+if [ ! -f "$COVERAGE_FILE" ]; then
+  msgln "$COVERAGE_FILE not found"
+  exit 1
+fi
+
+cover -html="$COVERAGE_FILE" -o coverage.html
+
+opener=xdg-open
+
+if macos; then
+  opener=open
+fi
+
+if $opener "$PWD/coverage.html" >/dev/null 2>&1; then
+  msgln see your browser
+else
+  msgln "open $PWD/coverage.html.out in your browser"
+fi

@@ -24,7 +24,7 @@ declare -ra commands=(
   "name:lint                type:mod  argCount:1"
   "name:lintFix             type:mod  argCount:1"
   # do not name "test"; shadowed by builtin test command
-  "name:tests               type:mod  argCount:1"
+  "name:tests               type:mod  argCount:2"
   "name:ci                  type:repo argCount:0"
   "name:ciPush              type:repo argCount:0"
   "name:coverage            type:repo argCount:0"
@@ -49,7 +49,7 @@ usageExit() {
       printf \\t
 
       for ((i = 1; i <= argCount; i++)); do
-        if [ "$type" == mod ]; then
+        if [ "$type" == mod ] && [ "$i" == 1 ]; then
           printf "<module>\t"
         else
           printf "<arg%s>\t" $i
@@ -150,8 +150,15 @@ formatConfigs() {
 
 # shellcheck disable=SC2317 # dynamic call
 tests() {
+  displayCoverage=""
+
+  if [ "${inputArgs[1]}" == -cover ]; then
+    displayCoverage=true
+  fi
+
   MOD_PATH="$1" \
     CACHE="true" \
+    DISPLAY_COVERAGE="$displayCoverage" \
     GITHUB_OUTPUT="/dev/null" \
     ./sh/workflows/module-pr/test-pretty.sh
 }
