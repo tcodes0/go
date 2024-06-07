@@ -97,19 +97,21 @@ func (osf osFiles) ReadAll(r io.Reader) (b []byte, err error) {
 
 func main() {
 	flagset := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	fLogLevel := flagset.Int("log-level", int(logging.LInfo), "control logging output; 1 is debug, 5 is fatal")
+	fLogLevel := flagset.Int("log-level", int(logging.LInfo), "control logging output; 1 is debug, the higher the less logs")
 	fColor := flagset.Bool("color", false, "colored logging output. default false")
-	fGlobs := flagset.String("globs", "", "comma-space separated list of globs to search for files. Default empty. required")
+	fGlobs := flagset.String("globs", "", "comma-space separated list of globs to search for files. Required")
 	fIgnore := flagset.String("ignore", "", "comma-space separated list of regexes to exclude files by path match. Default empty")
-	fDryrun := flagset.Bool("dryrun", false, "do not modify files, only log what would be done. Default false")
+	fDryrun := flagset.Bool("dryrun", false, "do not modify files, just log. Default false")
 
 	err := flagset.Parse(os.Args[1:])
 	if err != nil {
-		fmt.Printf("ERR: failed to parse flags: %v", err)
+		fmt.Printf("%s applies a copyright boilerplate header to files\n", os.Args[0])
+		fmt.Printf("ERROR: failed to parse flags: %v", err)
 		os.Exit(1)
 	}
 
 	if *fGlobs == "" {
+		fmt.Printf("%s applies a copyright boilerplate header to files\n", os.Args[0])
 		flagset.Usage()
 		os.Exit(1)
 	}
