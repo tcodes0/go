@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	_ "embed"
-	"io"
 	"io/fs"
 	"os"
 	"regexp"
@@ -13,95 +12,147 @@ import (
 	"github.com/tcodes0/go/logging"
 )
 
-//go:embed testdata/header.txt
-var header string
+var (
+	header = "Copyright Mr. Tester Golang 2021"
+	goFile = `package main
+
+func main() {}
+`
+	goFileWithHeader = `// Copyright Mr. Tester Golang 2021
+
+package main
+
+func main() {}
+`
+	shFile = `#! /bin/bash
+
+echo "hello"
+`
+	shFileWithHeader = `#! /bin/bash
+# Copyright Mr. Tester Golang 2021
+
+echo "hello"
+`
+	goTestWithHeader = `// Copyright Mr. Tester Golang 2021
+package main
+
+func TestMain() {}
+`
+)
 
 //nolint:funlen // test
 func TestBoilerplate(t *testing.T) {
 	t.Parallel()
 	assert := require.New(t)
 
-	type testFile struct {
-		name    string
-		expect  string
-		glob    string
-		globbed bool
-		opened  bool
-		written bool
-	}
-
-	useCases := []struct {
-		assertErr func(err error, args ...any)
-		name      string
-		globs     []string
-		ignores   []*regexp.Regexp
-		files     []*testFile
-		logs      bytes.Buffer
-		dryrun    bool
-	}{
-		{
-			logs:      bytes.Buffer{},
-			globs:     []string{"*.go", "*.sh"},
-			ignores:   []*regexp.Regexp{regexp.MustCompile(`.*ignored.*`)},
-			dryrun:    false,
-			assertErr: assert.NoError,
-			files: []*testFile{
-				{
-					name: "main.go", globbed: true, opened: true, written: true, glob: "*.go",
-					expect: `// Copyright MR. Tester Golang 2021
-
-package main
-
-func main() {}
-`,
-				},
-				{
-					name: "hello.sh", globbed: true, opened: true, written: true, glob: "*.sh",
-					expect: `#! /bin/bash
-# Copyright MR. Tester Golang 2021
-
-echo "hello"
-`,
-				},
-			},
-		},
-	}
-
-	for _, useCase := range useCases {
+	t.Run("two files without header", func(t *testing.T) {
+		t.Parallel()
 		osf := NewMockOSFiles(t)
+		buf := &bytes.Buffer{}
+		logger := logging.Create(logging.OptWriter(buf), logging.OptExit(func(int) {}))
 
-		//nolint:gosec // test
-		logger := logging.Create(logging.OptWriter(&useCase.logs), logging.OptExit(func(int) {}))
-
-		for _, file := range useCase.files {
+		for _, args := range [][]string{
+			{"*.go", "main.go", goFile, goFileWithHeader},
+			{"*.sh", "hello.sh", shFile, shFileWithHeader},
+		} {
 			mockFile := NewMockFile(t)
 
-			f, err := os.Open("testdata/" + file.name)
-			assert.NoError(err)
+			osf.Expect().Glob(args[0]).Return([]string{args[1]}, nil).Once()
+			osf.Expect().Open(args[1]).Return(mockFile, nil).Once()
+			mockFile.Expect().Close().Return(nil).Once()
+			osf.Expect().ReadAll(mockFile).Return([]byte(args[2]), nil)
 
-			b, err := io.ReadAll(f)
-			assert.NoError(err)
-
-			content := string(b)
-
-			if file.globbed {
-				osf.Expect().Glob(file.glob).Return([]string{file.name}, nil).Once()
-			}
-
-			if file.opened {
-				osf.Expect().Open(file.name).Return(mockFile, nil).Once()
-				mockFile.Expect().Close().Return(nil).Once()
-				osf.Expect().ReadAll(mockFile).Return([]byte(content), nil)
-			}
-
-			if file.written {
-				osf.Expect().OpenFile(file.name, os.O_RDWR|os.O_TRUNC, fs.FileMode(0)).Return(mockFile, nil).Once()
-				mockFile.Expect().Close().Return(nil).Once()
-				mockFile.Expect().WriteString(file.expect).Return(0, nil).Once()
-			}
+			osf.Expect().OpenFile(args[1], os.O_RDWR|os.O_TRUNC, fs.FileMode(0)).Return(mockFile, nil).Once()
+			mockFile.Expect().Close().Return(nil).Once()
+			mockFile.Expect().WriteString(args[3]).Return(0, nil).Once()
 		}
 
-		err := boilerplate(*logger, osf, useCase.globs, useCase.ignores, header, useCase.dryrun)
-		useCase.assertErr(err)
-	}
+		err := boilerplate(*logger, osf, []string{"*.go", "*.sh"}, nil, header, false)
+		assert.NoError(err)
+	})
+
+	t.Run("ignores sh file", func(t *testing.T) {
+		t.Parallel()
+		osf := NewMockOSFiles(t)
+		buf := &bytes.Buffer{}
+		logger := logging.Create(logging.OptWriter(buf), logging.OptExit(func(int) {}))
+
+		for _, args := range [][]string{
+			{"*.go", "main.go", goFile, goFileWithHeader},
+			{"*.sh", "hello.sh", shFile, shFileWithHeader},
+		} {
+			mockFile := NewMockFile(t)
+
+			osf.Expect().Glob(args[0]).Return([]string{args[1]}, nil).Once()
+
+			if args[1] == "hello.sh" {
+				continue
+			}
+
+			osf.Expect().Open(args[1]).Return(mockFile, nil).Once()
+			mockFile.Expect().Close().Return(nil).Once()
+			osf.Expect().ReadAll(mockFile).Return([]byte(args[2]), nil)
+
+			osf.Expect().OpenFile(args[1], os.O_RDWR|os.O_TRUNC, fs.FileMode(0)).Return(mockFile, nil).Once()
+			mockFile.Expect().Close().Return(nil).Once()
+			mockFile.Expect().WriteString(args[3]).Return(0, nil).Once()
+		}
+
+		err := boilerplate(*logger, osf, []string{"*.go", "*.sh"}, []*regexp.Regexp{regexp.MustCompile("hello*")}, header, false)
+		assert.NoError(err)
+	})
+
+	t.Run("already has header", func(t *testing.T) {
+		t.Parallel()
+		osf := NewMockOSFiles(t)
+		buf := &bytes.Buffer{}
+		logger := logging.Create(logging.OptWriter(buf), logging.OptExit(func(int) {}))
+
+		args := []string{"*.go", "main_test.go", goTestWithHeader, goTestWithHeader}
+
+		mockFile := NewMockFile(t)
+
+		osf.Expect().Glob(args[0]).Return([]string{args[1]}, nil).Once()
+
+		osf.Expect().Open(args[1]).Return(mockFile, nil).Once()
+		mockFile.Expect().Close().Return(nil).Once()
+		osf.Expect().ReadAll(mockFile).Return([]byte(args[2]), nil)
+
+		err := boilerplate(*logger, osf, []string{"*.go"}, nil, header, false)
+		assert.NoError(err)
+	})
+
+	t.Run("invalid glob", func(t *testing.T) {
+		t.Parallel()
+		osf := NewMockOSFiles(t)
+		buf := &bytes.Buffer{}
+		logger := logging.Create(logging.OptWriter(buf), logging.OptExit(func(int) {}))
+
+		args := []string{"*.foobar"}
+
+		osf.Expect().Glob(args[0]).Return(nil, nil).Once()
+
+		err := boilerplate(*logger, osf, []string{"*.foobar"}, nil, header, false)
+		assert.NoError(err)
+	})
+
+	t.Run("dry run", func(t *testing.T) {
+		t.Parallel()
+		osf := NewMockOSFiles(t)
+		buf := &bytes.Buffer{}
+		logger := logging.Create(logging.OptWriter(buf), logging.OptExit(func(int) {}))
+
+		args := []string{"*.go", "main.go", goFile}
+
+		mockFile := NewMockFile(t)
+
+		osf.Expect().Glob(args[0]).Return([]string{args[1]}, nil).Once()
+
+		osf.Expect().Open(args[1]).Return(mockFile, nil).Once()
+		mockFile.Expect().Close().Return(nil).Once()
+		osf.Expect().ReadAll(mockFile).Return([]byte(args[2]), nil)
+
+		err := boilerplate(*logger, osf, []string{"*.go"}, nil, header, true)
+		assert.NoError(err)
+	})
 }

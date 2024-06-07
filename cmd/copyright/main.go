@@ -275,7 +275,7 @@ func applyHeader(osf OSFiles, header, path, content string, glob glob) error {
 	case shell:
 		shebang, rest, found := strings.Cut(content, "\n")
 		if !found {
-			_, err = file.WriteString(header + "\n" + shebang + "\n" + rest)
+			return misc.Wrapf(err, "unable to parse %s", path)
 		} else {
 			_, err = file.WriteString(shebang + "\n" + header + rest)
 		}

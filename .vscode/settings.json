@@ -12,7 +12,6 @@
     "debugAdapter": "dlv-dap"
   },
   "go.testFlags": ["-race", "-timeout", "10s"],
-  // "go.testFlags": ["-timeout", "10s"],
   "go.lintTool": "golangci-lint",
   "go.lintFlags": ["--print-issued-lines=false"],
   "go.formatTool": "gofumpt",
