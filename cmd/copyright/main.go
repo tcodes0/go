@@ -175,9 +175,6 @@ func boilerplate(
 		}
 
 		headerWithComments := ""
-		errChan := make(chan error)
-		//nolint:govet // intentional
-		ctx, cancel := context.WithCancel(context.Background())
 
 	matchesLoop:
 		for _, filePath := range filePaths {
@@ -193,24 +190,14 @@ func boilerplate(
 				headerWithComments = addComments(header, glob(fileglob))
 			}
 
-			go func() {
-				//nolint:govet // scope
-				err, processed := processFile(ctx, logger, osf, filePath, fileglob, headerWithComments, dryrun)
-				if !errors.Is(err, context.Canceled) {
-					errChan <- misc.Wrapf(err, "failed: %s", filePath)
-					cancel()
-				}
+			err, processed := processFile(logger, osf, filePath, fileglob, headerWithComments, dryrun)
+			if err != nil && !errors.Is(err, context.Canceled) {
+				return misc.Wrapf(err, "failed: %s", filePath)
+			}
 
-				if processed {
-					logger.Log(filePath)
-				}
-			}()
-		}
-
-		err = <-errChan
-		if err != nil {
-			//nolint:govet // intentional
-			return misc.Wrap(err, "failed to process file")
+			if processed {
+				logger.Log(filePath)
+			}
 		}
 	}
 
@@ -218,7 +205,6 @@ func boilerplate(
 }
 
 func processFile(
-	ctx context.Context,
 	logger logging.Logger,
 	osf OSFiles,
 	path,
@@ -226,10 +212,6 @@ func processFile(
 	header string,
 	dryrun bool,
 ) (err error, processed bool) {
-	if ctx.Err() != nil {
-		return misc.Wrap(ctx.Err(), "context cancelled"), false
-	}
-
 	hasHeader, content, err := checkForHeader(osf, path, header)
 	if err != nil {
 		return misc.Wrap(err, "failed to check for header"), false
