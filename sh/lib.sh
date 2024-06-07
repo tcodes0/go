@@ -23,7 +23,7 @@ msgln() {
 
 # example: msg hello world
 msg() {
-  echo -ne "> $*"
+  echo -ne "♦︎ $*"
 }
 
 # example: msgExit could not find the file
