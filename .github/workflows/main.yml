@@ -219,11 +219,10 @@ jobs:
         with:
           go-version: 1.22
 
-      - name: Build
-        run: "! [ command -v copyright ] && ./run build cmd/copyright -install"
-
       - name: Copyright
-        run: copyright -globs "**/*.go, **/*/*.go, **/*/*/*.go, **/*.sh, **/*/*.sh, **/*/*.sh," -ignore "mock_.*, .local/.*" -ci
+        env:
+          REPORT: true
+        run: go run cmd/copyright -globs "**/*.go, **/*/*.go, **/*/*/*.go, **/*.sh, **/*/*.sh, **/*/*.sh," -ignore "mock_.*, .local/.*"
 
   ###########
   # modules #
