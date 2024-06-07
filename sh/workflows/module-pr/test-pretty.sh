@@ -53,7 +53,7 @@ go test "${flags[@]}" "$testDir" 2>&1 | tee "$testOutputJson" | gotestfmt
 
 # delete lines not parseable as json output from 'go test'
 regExpPrefixGo="^go:"
-_sed --in-place -e "/$regExpPrefixGo/d" "$testOutputJson"
+_sed --in-place --regexp-extended -e "/$regExpPrefixGo/d" "$testOutputJson"
 
 echo "testOutputJson=$testOutputJson"
 echo "testOutputJson=$testOutputJson" >>"$GITHUB_OUTPUT"
