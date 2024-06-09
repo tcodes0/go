@@ -32,7 +32,7 @@ fi
 
 ### script ###
 
-module="$ROOT_MODULE/$name"
+module="$LIB_ROOT_MODULE/$name"
 
 mkdir -p "$name/${name}_test"
 cd "$name"

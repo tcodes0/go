@@ -10,11 +10,11 @@ shopt -s globstar
 source "$PWD/sh/lib.sh"
 
 pass() {
-  printf "$COLOR_PASS$FORMAT_DIM %b$VISUAL_END\n" "$1"
+  printf "$LIB_COLOR_PASS$LIB_FORMAT_DIM %b$LIB_VISUAL_END\n" "$1"
 }
 
 fail() {
-  printf "$COLOR_FAIL %b$VISUAL_END\n" "$1"
+  printf "$LIB_COLOR_FAIL %b$LIB_VISUAL_END\n" "$1"
 }
 
 fixProblems=()

@@ -12,9 +12,8 @@
 set -euo pipefail
 shopt -s globstar
 
-export COLOR_PASS="\e[7;38;05;242m PASS \e[0m" COLOR_FAIL="\e[2;7;38;05;197;47m FAIL \e[0m" FORMAT_DIM="\e[2m"
-export VISUAL_END="\e[0m" COVERAGE_FILE="coverage.out" ROOT_MODULE="github.com/tcodes0/go"
-export REGEXP_DOT_SLASH="\.\/"
+export LIB_COLOR_PASS="\e[7;38;05;242m PASS \e[0m" LIB_COLOR_FAIL="\e[2;7;38;05;197;47m FAIL \e[0m" LIB_FORMAT_DIM="\e[2m"
+export LIB_VISUAL_END="\e[0m" LIB_COVERAGE_FILE="coverage.out" LIB_ROOT_MODULE="github.com/tcodes0/go"
 
 # example: msgln hello world
 msgln() {
@@ -64,20 +63,20 @@ testCase() {
 
   # shellcheck disable=SC2086 # let the command expand
   if ! result=$($TESTEE $input); then
-    printf "%b\n" "$COLOR_FAIL $description"
+    printf "%b\n" "$LIB_COLOR_FAIL $description"
     printf "%b\n" "non zero exit"
     exit 1
   fi
 
   if [ "$result" != "$expected" ]; then
-    printf "%b\n" "$COLOR_FAIL $description"
+    printf "%b\n" "$LIB_COLOR_FAIL $description"
     printf "%b\n" "expectation not met:"
     printf "%b\n" "< expected"
     diff <(printf %b "$expected") <(printf %b "$result")
     exit 1
   fi
 
-  printf "%b\n" "$COLOR_PASS $description"
+  printf "%b\n" "$LIB_COLOR_PASS $description"
 }
 
 # wait for all processes to finish
@@ -119,7 +118,8 @@ findModules() {
 # find folders directly under . that have at least one *.go file and prettify output
 # outputs space separated modules without ./
 findModulesPretty() {
-  findModules | _sed --regexp-extended -e "s/$REGEXP_DOT_SLASH//" | tr '\n' ' '
+  regExpDotSlash="\.\/"
+  findModules | _sed --regexp-extended -e "s/$regExpDotSlash//" | tr '\n' ' '
 }
 
 # example: joinBy , a b c. output: a, b, c

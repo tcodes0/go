@@ -20,7 +20,6 @@ jobs:
       modJsonutil: ${{ steps.list-changed-files.outputs.jsonutil_all_changed_files }}
       modLogging: ${{ steps.list-changed-files.outputs.logging_all_changed_files }}
       modMisc: ${{ steps.list-changed-files.outputs.misc_all_changed_files }}
-      modCmdCopyright: ${{ steps.list-changed-files.outputs.cmd_copyright_all_changed_files }}
       # others
       anyGoMod: ${{ steps.list-changed-files.outputs.any_go_mod_all_changed_files }}
       rootGoMod: ${{ steps.list-changed-files.outputs.root_go_mod_all_changed_files }}
@@ -36,7 +35,6 @@ jobs:
         || steps.list-changed-files.outputs.jsonutil_all_changed_files
         || steps.list-changed-files.outputs.logging_all_changed_files
         || steps.list-changed-files.outputs.misc_all_changed_files
-        || steps.list-changed-files.outputs.cmd_copyright_all_changed_files
         }}
     steps:
       - name: Checkout
