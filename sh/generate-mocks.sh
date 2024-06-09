@@ -26,7 +26,7 @@ stripVersion() {
 }
 
 renameExpect() {
-  _sed --in-place  --regexp-extended -e "s/EXPECT/Expect/" ./**/mock*.go
+  _sed --in-place --regexp-extended -e "s/EXPECT/Expect/" ./**/mock*.go
 }
 
 ### validation, input handling ###

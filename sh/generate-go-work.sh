@@ -30,7 +30,7 @@ formattedMods=""
 regexpPathHasSlash="(.*[[:alnum:]])\/([[:alnum:]].*)"
 
 for mod in $mods; do
-  if [ "${IGNORE:-}"  ]; then
+  if [ "${IGNORE:-}" ]; then
     if [[ $mod =~ $IGNORE ]]; then
       continue
     fi

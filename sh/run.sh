@@ -36,7 +36,7 @@ declare -ra commands=(
   "name:testScripts         type:repo"
   "name:generateGoWork      type:repo"
   "name:newModule           type:repo"
-  "name:updateVscodeConfigs type:repo"
+  "name:generateVscodeTasks type:repo"
   "name:copyright           type:repo"
 )
 
@@ -214,7 +214,7 @@ newModule() {
 }
 
 # shellcheck disable=SC2317 # dynamic call
-updateVscodeConfigs() {
+generateVscodeTasks() {
   local mods=() repo=()
 
   for info in "${commands[@]}"; do

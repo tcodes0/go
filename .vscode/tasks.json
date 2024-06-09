@@ -44,7 +44,7 @@
       "type": "pickString",
       "id": "module",
       "description": "Module",
-      "options": ["all", "clock", "cmd/copyrightboilerplate", "httpmisc", "hue", "identifier", "jsonutil", "logging", "misc"],
+      "options": ["all", "clock", "httpmisc", "hue", "identifier", "jsonutil", "logging", "misc"],
       "default": ""
     },
     {
@@ -60,6 +60,7 @@
       "description": "Repo Commands",
       "options": [
         "ci",
+        "ciPush",
         "coverage",
         "formatConfigs",
         "generateMocks",
@@ -69,7 +70,8 @@
         "testScripts",
         "generateGoWork",
         "newModule",
-        "updateVscodeConfigs"
+        "generateVscodeTasks",
+        "copyright"
       ],
       "default": ""
     }

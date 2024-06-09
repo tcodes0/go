@@ -40,9 +40,6 @@ misc:
   - misc/**.go
   - misc/go.mod
   - misc/go.sum
-cmd_copyright:
-  - cmd/copyright/**.go
-  - cmd/copyright/**.txt
 any_code:
   - "**/*.go"
   - "**/*.sh"

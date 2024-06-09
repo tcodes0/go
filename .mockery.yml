@@ -8,4 +8,3 @@ include-regex: ".*"
 packages:
   github.com/tcodes0/go/httpmisc:
   github.com/tcodes0/go/misc:
-  github.com/tcodes0/go/cmd/copyright:
