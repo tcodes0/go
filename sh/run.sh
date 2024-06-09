@@ -1,4 +1,8 @@
 #! /usr/bin/env bash
+# Copyright 2024 Raphael Thomazella. All rights reserved.
+# Use of this source code is governed by the BSD-3-Clause
+# license that can be found in the LICENSE file and online
+# at https://opensource.org/license/BSD-3-clause.
 
 ### options, imports, mocks ###
 
@@ -15,47 +19,28 @@ read -rd "$(printf \\r)" -a modules < <(
 )
 
 declare -ra commands=(
-  "name:build               type:mod  argCount:1"
-  "name:format              type:mod  argCount:1"
-  "name:lint                type:mod  argCount:1"
-  "name:lintFix             type:mod  argCount:1"
+  "name:build               type:mod"
+  "name:format              type:mod"
+  "name:lint                type:mod"
+  "name:lintFix             type:mod"
   # do not name "test"; shadowed by builtin test command
-  "name:tests               type:mod  argCount:1"
-  "name:ci                  type:repo argCount:0"
-  "name:ciPush              type:repo argCount:0"
-  "name:coverage            type:repo argCount:0"
-  "name:formatConfigs       type:repo argCount:0"
-  "name:generateMocks       type:repo argCount:0"
-  "name:spellcheckDocs      type:repo argCount:0"
-  "name:setup               type:repo argCount:0"
-  "name:tag                 type:repo argCount:2"
-  "name:testScripts         type:repo argCount:0"
-  "name:generateGoWork      type:repo argCount:0"
-  "name:newModule           type:repo argCount:1"
-  "name:updateVscodeConfigs type:repo argCount:0"
+  "name:tests               type:mod"
+  "name:ci                  type:repo"
+  "name:ciPush              type:repo"
+  "name:coverage            type:repo"
+  "name:formatConfigs       type:repo"
+  "name:generateMocks       type:repo"
+  "name:spellcheckDocs      type:repo"
+  "name:setup               type:repo"
+  "name:tag                 type:repo"
+  "name:testScripts         type:repo"
+  "name:generateGoWork      type:repo"
+  "name:newModule           type:repo"
+  "name:generateVscodeTasks type:repo"
+  "name:copyright           type:repo"
 )
 
 usageExit() {
-  cmdUsage() {
-    local name=$1 type=$2 argCount=$3
-
-    msg "$0" "$name"
-
-    if [ "$argCount" != 0 ]; then
-      printf \\t
-
-      for ((i = 1; i <= argCount; i++)); do
-        if [ "$type" == mod ]; then
-          printf "<module>\t"
-        else
-          printf "<arg%s>\t" $i
-        fi
-      done
-    fi
-
-    printf \\n
-  }
-
   local regExpInvalidCapture='.nvalid\ [^:]+:\ ([[:alpha:]]*)' cmdNames=()
 
   msgln "$*"
@@ -66,12 +51,19 @@ usageExit() {
 
     cmdNames+=("${command[0]/name:/}")
 
-    cmdUsage "${command[0]/name:/}" "${command[1]/type:/}" "${command[2]/argCount:/}"
+    msg "$0" "${command[0]/name:/}"
+
+    if [ "${command[1]/type:/}" == mod ]; then
+      printf "\t<module>"
+    fi
+
+    printf \\n
   done
 
   printf \\n
   msgln "modules: $(joinBy ', ' "${modules[@]}")"
   msgln use \'all\' as module to iterate all modules
+  msgln pass -h to commands to see further options
 
   if [[ "$*" =~ $regExpInvalidCapture ]]; then
     didYouMean "${BASH_REMATCH[1]}" "${modules[@]}" "${cmdNames[@]}"
@@ -146,15 +138,29 @@ formatConfigs() {
 
 # shellcheck disable=SC2317 # dynamic call
 tests() {
+  displayCoverage=""
+
+  if [ "${inputArgs[1]:-}" == -cover ]; then
+    displayCoverage=true
+  fi
+
   MOD_PATH="$1" \
     CACHE="true" \
+    DISPLAY_COVERAGE="$displayCoverage" \
     GITHUB_OUTPUT="/dev/null" \
     ./sh/workflows/module-pr/test-pretty.sh
 }
 
 # shellcheck disable=SC2317 # dynamic call
 build() {
+  install=""
+
+  if [ "${inputArgs[1]:-}" == -install ]; then
+    install=true
+  fi
+
   MOD_PATH="$1" \
+    INSTALL="$install" \
     ./sh/workflows/module-pr/build.sh
 }
 
@@ -198,7 +204,8 @@ coverage() {
 
 # shellcheck disable=SC2317 # dynamic call
 generateGoWork() {
-  ./sh/generate-go-work.sh
+  IGNORE=".local" \
+    ./sh/generate-go-work.sh
 }
 
 # shellcheck disable=SC2317 # dynamic call
@@ -207,7 +214,7 @@ newModule() {
 }
 
 # shellcheck disable=SC2317 # dynamic call
-updateVscodeConfigs() {
+generateVscodeTasks() {
   local mods=() repo=()
 
   for info in "${commands[@]}"; do
@@ -228,6 +235,11 @@ ciPush() {
   requireGitClean
   requireInternet Internet required to pull docker images
   ./sh/ci.sh push
+}
+
+# shellcheck disable=SC2317 # dynamic call
+copyright() {
+  ./sh/copyright.sh "$@"
 }
 
 ### validation, input handling ###
@@ -252,10 +264,6 @@ for info in "${commands[@]}"; do
     # forward -h to the command
     "${command[0]/name:/}" "${inputArgs[@]}"
     exit 1
-  fi
-
-  if [ "${#inputArgs[@]}" != "${command[2]/argCount:/}" ]; then
-    usageExit "${command[0]/name:/} wants ${command[2]/argCount:/} arguments; received ${#inputArgs[@]} (${inputArgs[*]})"
   fi
 
   if [ "${command[1]/type:/}" == mod ]; then

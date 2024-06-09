@@ -1,3 +1,8 @@
+// Copyright 2024 Raphael Thomazella. All rights reserved.
+// Use of this source code is governed by the BSD-3-Clause
+// license that can be found in the LICENSE file and online
+// at https://opensource.org/license/BSD-3-clause.
+
 package logging
 
 import (
@@ -5,6 +10,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"sync"
 
 	"github.com/tcodes0/go/hue"
 )
@@ -17,12 +23,12 @@ const (
 	// lowest level.
 	LDebug Level = iota + 1
 	// default level.
-	LInfo  Level = iota + 1
-	LWarn  Level = iota + 1
-	LError Level = iota + 1
-	LFatal Level = iota + 1
+	LInfo
+	LWarn
+	LError
+	LFatal
 	// highest level.
-	LNone Level = iota + 1
+	LNone
 
 	debug string = "DEBG "
 	info  string = "INFO "
@@ -70,9 +76,9 @@ func OptFlags(flags int) CreateOptions {
 }
 
 // option to enable color output.
-func OptColor(color bool) CreateOptions {
+func OptColor() CreateOptions {
 	return func(c *createOpts) {
-		c.color = color
+		c.color = true
 	}
 }
 
@@ -119,6 +125,7 @@ func Create(options ...CreateOptions) *Logger {
 
 	return &Logger{
 		l:         log.New(opts.writer, prefix, opts.flags),
+		mu:        &sync.Mutex{},
 		level:     opts.level,
 		color:     opts.color,
 		msgLevel:  LInfo,

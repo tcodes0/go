@@ -1,4 +1,8 @@
 #! /usr/bin/env bash
+# Copyright 2024 Raphael Thomazella. All rights reserved.
+# Use of this source code is governed by the BSD-3-Clause
+# license that can be found in the LICENSE file and online
+# at https://opensource.org/license/BSD-3-clause.
 
 ### options, imports, mocks ###
 
@@ -10,7 +14,7 @@ source "$PWD/sh/lib.sh"
 ### vars and functions ###
 
 usageExit() {
-  msgln "Usage: $0 <name>"
+  msgln "Usage: $0 <name>  initializes a new go module called <name>"
   exit 1
 }
 
@@ -28,7 +32,7 @@ fi
 
 ### script ###
 
-module="$ROOT_MODULE/$name"
+module="$LIB_ROOT_MODULE/$name"
 
 mkdir -p "$name/${name}_test"
 cd "$name"

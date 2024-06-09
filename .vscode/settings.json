@@ -11,10 +11,18 @@
   "go.delveConfig": {
     "debugAdapter": "dlv-dap"
   },
-  "go.testFlags": ["-race"],
+  "go.testFlags": ["-race", "-timeout", "10s"],
   "go.lintTool": "golangci-lint",
   "go.lintFlags": ["--print-issued-lines=false"],
   "go.formatTool": "gofumpt",
+  "gopls": {
+    // https://github.com/golang/tools/commit/01018ba9edc26f327f5c78d72e7596b6bf23c480
+    "ui.semanticTokens": true,
+    // conflicts with golanci-lint 1.58
+    "ui.diagnostic.analyses": {
+      "lostcancel": false
+    }
+  },
   // - - - - - - - - BASH - - - - - - - - -
   "shellformat.flag": "-i 2 -ln bash",
   "[shellscript]": {

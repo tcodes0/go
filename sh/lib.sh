@@ -1,4 +1,8 @@
 #! /usr/bin/env bash
+# Copyright 2024 Raphael Thomazella. All rights reserved.
+# Use of this source code is governed by the BSD-3-Clause
+# license that can be found in the LICENSE file and online
+# at https://opensource.org/license/BSD-3-clause.
 
 ########################################################
 ## this script is sourced by path from other scripts, ##
@@ -8,9 +12,8 @@
 set -euo pipefail
 shopt -s globstar
 
-export COLOR_PASS="\e[7;38;05;242m PASS \e[0m" COLOR_FAIL="\e[2;7;38;05;197;47m FAIL \e[0m" FORMAT_DIM="\e[2m"
-export VISUAL_END="\e[0m" COVERAGE_FILE="coverage.out" ROOT_MODULE="github.com/tcodes0/go"
-export REGEXP_DOT_SLASH="\.\/"
+export LIB_COLOR_PASS="\e[7;38;05;242m PASS \e[0m" LIB_COLOR_FAIL="\e[2;7;38;05;197;47m FAIL \e[0m" LIB_FORMAT_DIM="\e[2m"
+export LIB_VISUAL_END="\e[0m" LIB_COVERAGE_FILE="coverage.out" LIB_ROOT_MODULE="github.com/tcodes0/go"
 
 # example: msgln hello world
 msgln() {
@@ -19,7 +22,7 @@ msgln() {
 
 # example: msg hello world
 msg() {
-  echo -ne "> $*"
+  echo -ne "♦︎ $*"
 }
 
 # example: msgExit could not find the file
@@ -56,24 +59,24 @@ requireInternet() {
 
 # run a test case and print the result
 testCase() {
-  local description=$1 input=$2 expected=$3 result
+  description=$1 input=$2 expected=$3 result=""
 
   # shellcheck disable=SC2086 # let the command expand
   if ! result=$($TESTEE $input); then
-    printf "%b\n" "$COLOR_FAIL $description"
+    printf "%b\n" "$LIB_COLOR_FAIL $description"
     printf "%b\n" "non zero exit"
     exit 1
   fi
 
   if [ "$result" != "$expected" ]; then
-    printf "%b\n" "$COLOR_FAIL $description"
+    printf "%b\n" "$LIB_COLOR_FAIL $description"
     printf "%b\n" "expectation not met:"
     printf "%b\n" "< expected"
     diff <(printf %b "$expected") <(printf %b "$result")
     exit 1
   fi
 
-  printf "%b\n" "$COLOR_PASS $description"
+  printf "%b\n" "$LIB_COLOR_PASS $description"
 }
 
 # wait for all processes to finish
@@ -107,18 +110,21 @@ requireGitBranch() {
 # find folders directly under . that have at least one *.go file and prettify output
 # outputs one module per line
 findModules() {
-  find . -mindepth 2 -maxdepth 2 -type f -name '*.go' -exec dirname {} \; | sort --stable | uniq
+  regExpTestSuffix="test$"
+  regExpLocalSuffix=".local$"
+  find . -mindepth 2 -maxdepth 3 -type f -name '*.go' -exec dirname {} \; | _sed --regexp-extended -e "/$regExpTestSuffix/d" -e "/$regExpLocalSuffix/d" | sort --stable | uniq
 }
 
 # find folders directly under . that have at least one *.go file and prettify output
 # outputs space separated modules without ./
 findModulesPretty() {
-  findModules | sed -Ee "s/\.\///" | tr '\n' ' '
+  regExpDotSlash="\.\/"
+  findModules | _sed --regexp-extended -e "s/$regExpDotSlash//" | tr '\n' ' '
 }
 
 # example: joinBy , a b c. output: a, b, c
 joinBy() {
-  local delim=${1:-} first=${2:-}
+  delim=${1:-} first=${2:-}
 
   if shift 2; then
     printf %s "$first" "${@/#/$delim}"
@@ -134,7 +140,7 @@ requestedHelp() {
 
 # example: didYouMean "helo" "hello" "world" output "Did you mean: hello"
 didYouMean() {
-  local input=$1 idx=0 len=${#1}
+  input=$1 idx=0 len=${#1}
   declare -a options=("${@:2}") candidates=()
 
   if [ "$len" -gt 2 ]; then
@@ -155,4 +161,26 @@ didYouMean() {
   printf \\n
   msgln "instead of '$input' did you mean..."
   msg "$(joinBy ", " "${candidates[@]}")" ...?
+}
+
+# example: if macos;
+macos() {
+  ([ "$(uname)" == "Darwin" ] && true) || false
+}
+
+# wrapper to avoid macos sed incompatibilities
+_sed() {
+  if macos; then
+    gsed "$@"
+    return
+  fi
+
+  sed "$@"
+}
+
+# example: debug did something to $variable
+debugMsg() {
+  if [ "${DEBUG:-}" ]; then
+    echo -e 🐛 "$*" >&2
+  fi
 }

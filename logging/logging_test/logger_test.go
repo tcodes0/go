@@ -1,3 +1,8 @@
+// Copyright 2024 Raphael Thomazella. All rights reserved.
+// Use of this source code is governed by the BSD-3-Clause
+// license that can be found in the LICENSE file and online
+// at https://opensource.org/license/BSD-3-clause.
+
 package logging_test
 
 import (
@@ -106,35 +111,35 @@ func TestLogger(t *testing.T) {
 			calls:    [][]string{{"Log", "testing"}},
 			retType:  [][]string{{}},
 			outMatch: []*regexp.Regexp{regexp.MustCompile(ctrlSeqs + "INFO " + fullRegExp + ": " + ctrlSeqs + "testing\n")},
-			opts:     []logging.CreateOptions{logging.OptColor(true)},
+			opts:     []logging.CreateOptions{logging.OptColor()},
 		},
 		{
 			name:     "color warn log",
 			calls:    [][]string{{"Warn"}, {"Log", "testing"}},
 			retType:  [][]string{{"*logging.Logger"}, {}},
 			outMatch: []*regexp.Regexp{regexp.MustCompile(ctrlSeqs + "WARN " + ctrlSeqs + fullRegExp + ": " + ctrlSeqs + "testing\n")},
-			opts:     []logging.CreateOptions{logging.OptColor(true)},
+			opts:     []logging.CreateOptions{logging.OptColor()},
 		},
 		{
 			name:     "color error logf",
 			calls:    [][]string{{"Error"}, {"Logf", "test%s", "ing"}},
 			retType:  [][]string{{"*logging.Logger"}, {}},
 			outMatch: []*regexp.Regexp{regexp.MustCompile(ctrlSeqs + "ERRO " + ctrlSeqs + fullRegExp + ": " + ctrlSeqs + "testing\n")},
-			opts:     []logging.CreateOptions{logging.OptColor(true)},
+			opts:     []logging.CreateOptions{logging.OptColor()},
 		},
 		{
 			name:     "color debug logf",
 			calls:    [][]string{{"Debug"}, {"Logf", "test%s", "ing"}},
 			retType:  [][]string{{"*logging.Logger"}, {}},
 			outMatch: []*regexp.Regexp{regexp.MustCompile(ctrlSeqs + "DEBG " + ctrlSeqs + fullRegExp + ": " + ctrlSeqs + "testing\n")},
-			opts:     []logging.CreateOptions{logging.OptLevel(logging.LDebug), logging.OptColor(true)},
+			opts:     []logging.CreateOptions{logging.OptLevel(logging.LDebug), logging.OptColor()},
 		},
 		{
 			name:     "color fatalf",
 			calls:    [][]string{{"Fatalf", "test%s", "ing"}},
 			retType:  [][]string{{}},
 			outMatch: []*regexp.Regexp{regexp.MustCompile(ctrlSeqs + "FATL " + ctrlSeqs + fullRegExp + ": " + ctrlSeqs + "testing\n")},
-			opts:     []logging.CreateOptions{logging.OptLevel(logging.LDebug), logging.OptColor(true)},
+			opts:     []logging.CreateOptions{logging.OptLevel(logging.LDebug), logging.OptColor()},
 		},
 		{
 			name: "one metadata",
@@ -200,7 +205,7 @@ func TestLogger(t *testing.T) {
 				ctrlSeqs + "ERRO " + ctrlSeqs + fullRegExp + ": " + ctrlSeqs + "hello" + ctrlSeqs + "=" + ctrlSeqs + "world" + ctrlSeqs + ", " +
 					ctrlSeqs + "foo" + ctrlSeqs + "=" + ctrlSeqs + "bar" + ctrlSeqs + " testing",
 			)},
-			opts: []logging.CreateOptions{logging.OptColor(true)},
+			opts: []logging.CreateOptions{logging.OptColor()},
 		},
 		{
 			name:    "debug level",

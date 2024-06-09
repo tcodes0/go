@@ -40,3 +40,6 @@ misc:
   - misc/**.go
   - misc/go.mod
   - misc/go.sum
+any_code:
+  - "**/*.go"
+  - "**/*.sh"

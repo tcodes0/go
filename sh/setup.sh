@@ -1,4 +1,8 @@
 #! /usr/bin/env bash
+# Copyright 2024 Raphael Thomazella. All rights reserved.
+# Use of this source code is governed by the BSD-3-Clause
+# license that can be found in the LICENSE file and online
+# at https://opensource.org/license/BSD-3-clause.
 
 set -euo pipefail
 shopt -s globstar
@@ -6,11 +10,11 @@ shopt -s globstar
 source "$PWD/sh/lib.sh"
 
 pass() {
-  printf "$COLOR_PASS$FORMAT_DIM %b$VISUAL_END\n" "$1"
+  printf "$LIB_COLOR_PASS$LIB_FORMAT_DIM %b$LIB_VISUAL_END\n" "$1"
 }
 
 fail() {
-  printf "$COLOR_FAIL %b$VISUAL_END\n" "$1"
+  printf "$LIB_COLOR_FAIL %b$LIB_VISUAL_END\n" "$1"
 }
 
 fixProblems=()
@@ -22,7 +26,7 @@ setup() {
   comments="${*:4}"
   declare -A installCommandsByLang=(
     ["go"]="go install"
-    ["js"]="npm install -g"
+    ["js"]="npm install --global"
     ["manual"]="-"
   )
 
@@ -55,7 +59,6 @@ exitShowProblems() {
 
 setup manual 'missing git' git a version control system
 setup manual 'missing bash' bash popular shell
-setup manual 'missing sed' sed stream editor
 setup manual 'missing mktemp' mktemp create temporary files and directories
 setup manual 'missing tput' tput terminal control
 setup manual 'missing find' find search for files in a directory hierarchy
@@ -69,6 +72,12 @@ setup manual 'missing ps' ps view running programs
 setup manual 'missing grep' grep search files for matches
 setup manual 'missing sleep' sleep block a script for some time
 setup manual 'missing head' head read a number of lines from a file
+
+if macos; then
+  setup manual 'missing gsed' gsed gnu sed stream editor, available on brew as 'gnu-sed'
+else
+  setup manual 'missing sed' sed stream editor
+fi
 
 exitShowProblems "missing basic gnu/linux binaries; please install for your platform; seek help and good luck!"
 
@@ -89,7 +98,6 @@ setup go github.com/uudashr/gopkgs/v2/cmd/gopkgs@latest gopkgs a faster go list 
 setup go golang.org/x/tools/gopls@latest gopls go language server
 setup go golang.org/x/tools/cmd/cover@latest cover go coverage tool
 setup go github.com/cweill/gotests/gotests@latest gotests a test generator
-setup go github.com/vektra/mockery/v2@latest mockery a mock interface generator
 setup go github.com/ramya-rao-a/go-outline@latest go-outline utility to extract a json representation of a go source file
 setup go github.com/haya14busa/goplay/cmd/goplay@latest goplay playground client of https://play.golang.org
 setup go github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt@latest gotestfmt go test output formatter
@@ -117,6 +125,7 @@ setup go github.com/4meepo/tagalign/cmd/tagalign@latest tagalign
 
 setup js cspell@latest cspell a spellchecker for source code
 setup js prettier@latest prettier a code formatter for several languages
+setup js @commitlint/cli@latest commitlint a linter for commit messages
 
 # others
 
@@ -155,5 +164,9 @@ fi
 # notes
 
 msgln note: \'act\' requires first time setup
+
+if [ "$(nvm_version || true)" ]; then
+  msgln note: when using nvm and upgrading node, global packages need to be reinstalled
+fi
 
 exitShowProblems "fix configuration issues"

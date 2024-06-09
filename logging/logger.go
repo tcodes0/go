@@ -1,3 +1,8 @@
+// Copyright 2024 Raphael Thomazella. All rights reserved.
+// Use of this source code is governed by the BSD-3-Clause
+// license that can be found in the LICENSE file and online
+// at https://opensource.org/license/BSD-3-clause.
+
 package logging
 
 import (
@@ -5,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 
 	"github.com/tcodes0/go/hue"
 )
@@ -17,6 +23,7 @@ const (
 // Logger has no public fields; wraps log.Logger with additional functionality.
 type Logger struct {
 	l         *log.Logger
+	mu        *sync.Mutex    // use Logger wrapper methods to avoid panic
 	exit      func(code int) // proxy to os.Exit(1)
 	metadata  string         // added to all messages
 	level     Level          // only log if message level is >= to this
@@ -57,24 +64,39 @@ func (logger *Logger) WithContext(ctx context.Context) context.Context {
 
 // set Level of the next message to warning.
 func (logger *Logger) Warn() *Logger {
+	ok := logger.lock()
+	if ok {
+		defer logger.unlock()
+	}
+
 	logger.setPrefix(warn)
-	logger.msgLevel = LWarn
+	logger.setMsgLevel(LWarn)
 
 	return logger
 }
 
 // set Level of the next message to error.
 func (logger *Logger) Error() *Logger {
+	ok := logger.lock()
+	if ok {
+		defer logger.unlock()
+	}
+
 	logger.setPrefix(erro)
-	logger.msgLevel = LError
+	logger.setMsgLevel(LError)
 
 	return logger
 }
 
 // set Level of the next message to debug.
 func (logger *Logger) Debug() *Logger {
+	ok := logger.lock()
+	if ok {
+		defer logger.unlock()
+	}
+
 	logger.setPrefix(debug)
-	logger.msgLevel = LDebug
+	logger.setMsgLevel(LDebug)
 
 	return logger
 }
@@ -83,9 +105,14 @@ func (logger *Logger) Debug() *Logger {
 func (logger *Logger) Log(msg ...any) {
 	defer func() {
 		logger.setPrefix(info)
-		logger.calldepth = defaultCalldepth
-		logger.msgLevel = LInfo
+		logger.resetCallDepth()
+		logger.setMsgLevel(LInfo)
 	}()
+
+	ok := logger.lock()
+	if ok {
+		defer logger.unlock()
+	}
 
 	if logger.l == nil || logger.msgLevel < logger.level {
 		return
@@ -118,20 +145,28 @@ func (logger *Logger) Log(msg ...any) {
 }
 
 // send a formatted message.
-func (logger *Logger) Logf(format string, v ...any) {
-	out := fmt.Sprintf(format, v...)
+func (logger *Logger) Logf(format string, args ...any) {
+	ok := logger.lock()
+	if ok {
+		defer logger.unlock()
+	}
 
-	logger.calldepth++
+	out := fmt.Sprintf(format, args...)
+
+	logger.incrCallDepth()
 
 	logger.Log(out)
 }
 
 // sends a message and then calls Logger.exit().
 func (logger *Logger) Fatal(msg ...any) {
+	// doesn't matter since we exit(1)
+	_ = logger.lock()
+
 	logger.setPrefix(fatal)
 
-	logger.calldepth++
-	logger.msgLevel = LFatal
+	logger.incrCallDepth()
+	logger.setMsgLevel(LFatal)
 
 	logger.Log(msg...)
 
@@ -142,9 +177,14 @@ func (logger *Logger) Fatal(msg ...any) {
 
 // sends a formatted message and then calls Logger.exit().
 func (logger *Logger) Fatalf(format string, msg ...any) {
+	ok := logger.lock()
+	if ok {
+		defer logger.unlock()
+	}
+
 	out := fmt.Sprintf(format, msg...)
 
-	logger.calldepth++
+	logger.incrCallDepth()
 
 	logger.Fatal(out)
 }
@@ -153,6 +193,11 @@ func (logger *Logger) Fatalf(format string, msg ...any) {
 // metadata is formated in key value pairs;
 // see Wipe.
 func (logger *Logger) Metadata(key string, val any) *Logger {
+	ok := logger.lock()
+	if ok {
+		defer logger.unlock()
+	}
+
 	formatVal := fmt.Sprintf("%v", val)
 
 	if logger.color {
@@ -168,17 +213,75 @@ func (logger *Logger) Metadata(key string, val any) *Logger {
 // remove all metadata from future messages,
 // see Metadata.
 func (logger *Logger) Wipe() *Logger {
+	ok := logger.lock()
+	if ok {
+		defer logger.unlock()
+	}
+
 	logger.metadata = ""
 
 	return logger
 }
 
 // sets the function to call from Logger.Fatal methods.
-func (logger *Logger) SetExit(f func(int)) {
-	logger.exit = f
+func (logger *Logger) SetExit(exitFunc func(int)) {
+	ok := logger.lock()
+	if ok {
+		defer logger.unlock()
+	}
+
+	logger.exit = exitFunc
 }
 
 // set the level of the logger, messages < Logger.level will be ignored.
 func (logger *Logger) SetLevel(level Level) {
+	ok := logger.lock()
+	if ok {
+		defer logger.unlock()
+	}
+
 	logger.level = level
+}
+
+func (logger *Logger) lock() bool {
+	if logger.mu == nil {
+		return false
+	}
+
+	return logger.mu.TryLock()
+}
+
+func (logger *Logger) unlock() {
+	if logger.mu == nil {
+		return
+	}
+
+	logger.mu.Unlock()
+}
+
+func (logger *Logger) setMsgLevel(level Level) {
+	ok := logger.lock()
+	if ok {
+		defer logger.unlock()
+	}
+
+	logger.msgLevel = level
+}
+
+func (logger *Logger) resetCallDepth() {
+	ok := logger.lock()
+	if ok {
+		defer logger.unlock()
+	}
+
+	logger.calldepth = defaultCalldepth
+}
+
+func (logger *Logger) incrCallDepth() {
+	ok := logger.lock()
+	if ok {
+		defer logger.unlock()
+	}
+
+	logger.calldepth++
 }

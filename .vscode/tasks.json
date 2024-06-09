@@ -60,6 +60,7 @@
       "description": "Repo Commands",
       "options": [
         "ci",
+        "ciPush",
         "coverage",
         "formatConfigs",
         "generateMocks",
@@ -69,7 +70,8 @@
         "testScripts",
         "generateGoWork",
         "newModule",
-        "updateVscodeConfigs"
+        "generateVscodeTasks",
+        "copyright"
       ],
       "default": ""
     }
