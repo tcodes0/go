@@ -24,26 +24,22 @@ import (
 
 //go:embed header.txt
 var licenseHeader string
+var flagset = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 
 func main() {
-	flagset := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	fLogLevel := flagset.Int("log-level", int(logging.LInfo), "control logging output; 1 is debug, the higher the less logs")
-	fColor := flagset.Bool("color", false, "colored logging output. default false")
-	fReport := flagset.Bool("report", false, "do not modify files, error on files missing copyright. Suppress other output. Default false")
-	fGlobs := flagset.String("globs", "", "comma-space separated list of globs to search for files. Required")
-	fIgnore := flagset.String("ignore", "", "comma-space separated list of regexes to exclude files by path match. Default empty")
+	fLogLevel := flagset.Int("log-level", int(logging.LInfo), "control logging output; 1 is debug, the higher the less logs.")
+	fColor := flagset.Bool("color", false, "colored logging output. (default false)")
+	fFix := flagset.Bool("fix", false, "applies header to files. (default false)")
+	fGlobs := flagset.String("globs", "", "comma-space separated list of globs to search for files. (required)")
+	fIgnore := flagset.String("ignore", "", "comma-space separated list of regexes to exclude files by path match. (default empty)")
 
 	err := flagset.Parse(os.Args[1:])
 	if err != nil {
-		fmt.Printf("%s applies a copyright boilerplate header to files\n", os.Args[0])
-		fmt.Printf("ERROR: failed to parse flags: %v", err)
-		os.Exit(1)
+		usageExit(err)
 	}
 
 	if *fGlobs == "" {
-		fmt.Printf("%s applies a copyright boilerplate header to files\n", os.Args[0])
-		flagset.Usage()
-		os.Exit(1)
+		usageExit(errors.New("globs required"))
 	}
 
 	opts := []logging.CreateOptions{logging.OptFlags(log.Lshortfile), logging.OptLevel(logging.Level(*fLogLevel))}
@@ -55,7 +51,7 @@ func main() {
 	globs := strings.Split(*fGlobs, ", ")
 	rawRegexps := strings.Split(*fIgnore, ", ")
 
-	if *fReport {
+	if !*fFix {
 		logger.SetLevel(logging.LError)
 	}
 
@@ -76,14 +72,27 @@ func main() {
 		ignores = append(ignores, reg)
 	}
 
-	err = boilerplate(*logger, globs, ignores, licenseHeader, *fReport)
+	err = boilerplate(*logger, globs, ignores, licenseHeader, *fFix)
 	if err != nil {
 		logger.Fatalf("fatal: %v", err)
 	}
 }
 
-func boilerplate(logger logging.Logger, globs []string, ignoreRegexps []*regexp.Regexp, header string, report bool) error {
-	filesReported := 0
+func usageExit(err error) {
+	fmt.Println("Check and fix missing boilerplate header in files")
+	fmt.Println("Without -fix fails if files are missing copyright header and prints files")
+	fmt.Println()
+	flagset.Usage()
+
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+	}
+
+	os.Exit(1)
+}
+
+func boilerplate(logger logging.Logger, globs []string, ignoreRegexps []*regexp.Regexp, header string, fix bool) error {
+	problems := 0
 
 	for _, fileglob := range globs {
 		filePaths, err := filepath.Glob(fileglob)
@@ -115,17 +124,17 @@ func boilerplate(logger logging.Logger, globs []string, ignoreRegexps []*regexp.
 				headerWithComments = addComments(header, fileglob)
 			}
 
-			reported, err := processFile(logger, filePath, headerWithComments, report)
+			problem, err := processFile(logger, filePath, headerWithComments, fix)
 			if err != nil && !errors.Is(err, context.Canceled) {
 				return misc.Wrapf(err, "failed: %s", filePath)
 			}
 
-			filesReported += reported
+			problems += problem
 		}
 	}
 
-	if filesReported > 0 {
-		return fmt.Errorf("files missing copyright header: %d", filesReported)
+	if problems > 0 {
+		return fmt.Errorf("files missing copyright header: %d", problems)
 	}
 
 	return nil
@@ -145,7 +154,7 @@ func addComments(license, fileGlob string) (commentedLicense string) {
 	return commentedLicense
 }
 
-func processFile(logger logging.Logger, path, header string, report bool) (reported int, err error) {
+func processFile(logger logging.Logger, path, header string, fix bool) (problems int, err error) {
 	hasHeader, content, err := detectHeader(path, header)
 	if err != nil {
 		return 0, misc.Wrap(err, "detecting header")
@@ -157,7 +166,7 @@ func processFile(logger logging.Logger, path, header string, report bool) (repor
 		return 0, nil
 	}
 
-	if report {
+	if !fix {
 		logger.Error().Log(path)
 
 		return 1, nil
