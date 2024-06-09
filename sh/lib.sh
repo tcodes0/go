@@ -177,3 +177,10 @@ _sed() {
 
   sed "$@"
 }
+
+# example: debug did something to $variable
+debugMsg() {
+  if [ "${DEBUG:-}" ]; then
+    echo -e 🐛 "$*" >&2
+  fi
+}
