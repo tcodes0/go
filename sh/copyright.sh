@@ -75,13 +75,13 @@ for glob in "${globs[@]}"; do
   filesMissingBoilerplate "$glob"
 done
 
-for path in "${missing[@]}"; do
-  msgln "$path"
-done
-
 if [ ${#missing[@]} == 0 ]; then
   exit
 fi
+
+for path in "${missing[@]}"; do
+  msgln "$path"
+done
 
 if [ "${1:-}" == -fix ]; then
   for path in "${missing[@]}"; do

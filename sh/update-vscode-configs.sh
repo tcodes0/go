@@ -41,14 +41,6 @@ setArray() {
 
 ### validation, input handling ###
 
-if ! [ -d "$vscodeRoot" ]; then
-  msgExit "vscode root not found: $vscodeRoot"
-fi
-
-if ! [ -f "$vscodeRoot/$tasksFile" ]; then
-  msgExit "file not found: $tasksFile"
-fi
-
 if [ -z "$inputModCmds" ]; then
   usageExit "missing module commands"
 fi

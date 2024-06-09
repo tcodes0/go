@@ -14,7 +14,7 @@ source "$PWD/sh/lib.sh"
 ### vars and functions ###
 
 usageExit() {
-  msgln "Usage: $0 <name>"
+  msgln "Usage: $0 <name>  initializes a new go module called <name>"
   exit 1
 }
 
