@@ -25,76 +25,6 @@ import (
 //go:embed header.txt
 var licenseHeader string
 
-const (
-	golang int = iota + 1
-	shell
-)
-
-type glob string
-
-func (glob glob) String() string {
-	return string(glob)
-}
-
-func (glob glob) CommentToken() string {
-	switch glob.Kind() {
-	default:
-		return ""
-	case golang:
-		return "// "
-	case shell:
-		return "# "
-	}
-}
-
-func (glob glob) Kind() int {
-	if strings.HasSuffix(glob.String(), ".go") {
-		return golang
-	}
-
-	if strings.HasSuffix(glob.String(), ".sh") {
-		return shell
-	}
-
-	return 0
-}
-
-type File interface {
-	io.ReadCloser
-	WriteString(s string) (n int, err error)
-}
-
-type OSFiles interface {
-	Glob(pattern string) (matches []string, err error)
-	OpenFile(name string, flag int, perm os.FileMode) (file File, err error)
-	Open(name string) (file File, err error)
-	ReadAll(r io.Reader) (b []byte, err error)
-}
-
-type osFiles struct{}
-
-var _ OSFiles = (*osFiles)(nil)
-
-func (osf osFiles) Glob(pattern string) (matches []string, err error) {
-	//nolint:wrapcheck // test
-	return filepath.Glob(pattern)
-}
-
-func (osf osFiles) OpenFile(name string, flags int, perm os.FileMode) (file File, err error) {
-	//nolint:wrapcheck // test
-	return os.OpenFile(name, flags, perm)
-}
-
-func (osf osFiles) Open(name string) (file File, err error) {
-	//nolint:wrapcheck // test
-	return os.Open(name)
-}
-
-func (osf osFiles) ReadAll(r io.Reader) (b []byte, err error) {
-	//nolint:wrapcheck // test
-	return io.ReadAll(r)
-}
-
 func main() {
 	flagset := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 	fLogLevel := flagset.Int("log-level", int(logging.LInfo), "control logging output; 1 is debug, the higher the less logs")
@@ -146,24 +76,17 @@ func main() {
 		ignores = append(ignores, reg)
 	}
 
-	err = boilerplate(*logger, osFiles{}, globs, ignores, licenseHeader, *fReport)
+	err = boilerplate(*logger, globs, ignores, licenseHeader, *fReport)
 	if err != nil {
 		logger.Fatalf("fatal: %v", err)
 	}
 }
 
-func boilerplate(
-	logger logging.Logger,
-	osf OSFiles,
-	globs []string,
-	ignoreRegexps []*regexp.Regexp,
-	header string,
-	report bool,
-) error {
+func boilerplate(logger logging.Logger, globs []string, ignoreRegexps []*regexp.Regexp, header string, report bool) error {
 	filesReported := 0
 
 	for _, fileglob := range globs {
-		filePaths, err := osf.Glob(fileglob)
+		filePaths, err := filepath.Glob(fileglob)
 		if err != nil {
 			return misc.Wrap(err, "failed to glob files")
 		}
@@ -189,10 +112,10 @@ func boilerplate(
 			}
 
 			if headerWithComments == "" {
-				headerWithComments = addComments(header, glob(fileglob))
+				headerWithComments = addComments(header, fileglob)
 			}
 
-			reported, err := processFile(logger, osf, filePath, fileglob, headerWithComments, report)
+			reported, err := processFile(logger, filePath, headerWithComments, report)
 			if err != nil && !errors.Is(err, context.Canceled) {
 				return misc.Wrapf(err, "failed: %s", filePath)
 			}
@@ -208,15 +131,22 @@ func boilerplate(
 	return nil
 }
 
-func processFile(
-	logger logging.Logger,
-	osf OSFiles,
-	path,
-	fileGlob,
-	header string,
-	report bool,
-) (reported int, err error) {
-	hasHeader, content, err := detectHeader(osf, path, header)
+func addComments(license, fileGlob string) (commentedLicense string) {
+	for _, licenseLine := range strings.Split(license, "\n") {
+		if strings.Contains(fileGlob, ".go") {
+			commentedLicense += "// " + licenseLine + "\n"
+		} else if strings.Contains(fileGlob, ".sh") {
+			commentedLicense += "# " + licenseLine + "\n"
+		} else {
+			panic(fmt.Errorf("unknown file type: %s", fileGlob))
+		}
+	}
+
+	return commentedLicense
+}
+
+func processFile(logger logging.Logger, path, header string, report bool) (reported int, err error) {
+	hasHeader, content, err := detectHeader(path, header)
 	if err != nil {
 		return 0, misc.Wrap(err, "detecting header")
 	}
@@ -233,7 +163,7 @@ func processFile(
 		return 1, nil
 	}
 
-	err = applyHeader(osf, header, path, content, glob(fileGlob))
+	err = applyHeader(header, path, content)
 	if err != nil {
 		return 0, misc.Wrap(err, "appling header")
 	}
@@ -243,15 +173,15 @@ func processFile(
 	return 0, nil
 }
 
-func detectHeader(osf OSFiles, path, header string) (hasHeader bool, content string, err error) {
-	file, err := osf.Open(path)
+func detectHeader(path, header string) (hasHeader bool, content string, err error) {
+	file, err := os.Open(path)
 	if err != nil {
 		return false, "", misc.Wrap(err, "opening file")
 	}
 
 	defer file.Close()
 
-	b, err := osf.ReadAll(file)
+	b, err := io.ReadAll(file)
 	if err != nil {
 		return false, "", misc.Wrap(err, "reading file")
 	}
@@ -261,34 +191,25 @@ func detectHeader(osf OSFiles, path, header string) (hasHeader bool, content str
 	return strings.Contains(content, header), content, nil
 }
 
-func addComments(license string, fileGlob glob) (commentedLicense string) {
-	for _, licenseLine := range strings.Split(license, "\n") {
-		commentedLicense += fileGlob.CommentToken() + licenseLine + "\n"
-	}
-
-	return commentedLicense
-}
-
-func applyHeader(osf OSFiles, header, path, content string, glob glob) error {
-	file, err := osf.OpenFile(path, os.O_RDWR|os.O_TRUNC, 0)
+func applyHeader(header, path, content string) error {
+	file, err := os.OpenFile(path, os.O_RDWR|os.O_TRUNC, 0)
 	if err != nil {
 		return misc.Wrap(err, "opening file for write")
 	}
 
 	defer file.Close()
 
-	switch glob.Kind() {
-	default:
-		return fmt.Errorf("unknown kind %d", glob.Kind())
-	case golang:
+	if strings.Contains(path, ".go") {
 		_, err = file.WriteString(header + "\n" + content)
-	case shell:
+	} else if strings.Contains(path, ".sh") {
 		shebang, rest, found := strings.Cut(content, "\n")
 		if !found {
 			return misc.Wrapf(err, "parsing %s", path)
 		} else {
 			_, err = file.WriteString(shebang + "\n" + header + rest)
 		}
+	} else {
+		return fmt.Errorf("unknown file type: %s", path)
 	}
 
 	if err != nil {
