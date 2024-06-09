@@ -28,7 +28,7 @@ declare -ra commands=(
   "name:ci                  type:repo"
   "name:ciPush              type:repo"
   "name:coverage            type:repo"
-  "name:formatConfigs        type:repo"
+  "name:formatConfigs       type:repo"
   "name:generateMocks       type:repo"
   "name:spellcheckDocs      type:repo"
   "name:setup               type:repo"
@@ -36,8 +36,8 @@ declare -ra commands=(
   "name:testScripts         type:repo"
   "name:generateGoWork      type:repo"
   "name:newModule           type:repo"
-  "name:updateVscodeConfigs  type:repo"
-  "name:cmd/copyright       type:repo"
+  "name:updateVscodeConfigs type:repo"
+  "name:copyright           type:repo"
 )
 
 usageExit() {
@@ -238,8 +238,8 @@ ciPush() {
 }
 
 # shellcheck disable=SC2317 # dynamic call
-cmd/copyright() {
-  ./sh/workflows/main/run-copyright.sh "$@"
+copyright() {
+  ./sh/copyright.sh "$@"
 }
 
 ### validation, input handling ###

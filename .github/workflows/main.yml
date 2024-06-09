@@ -205,8 +205,8 @@ jobs:
           incremental_files_only: true
           config: ./cspell.config.yml
 
-  run-copyright:
-    name: Run Copyright
+  copyright:
+    name: Copyright
     runs-on: ubuntu-latest
     needs: changed-files
     if: needs.changed-files.outputs.anyCodeAdded
@@ -214,15 +214,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: 1.22
-
-      - name: Copyright
-        env:
-          REPORT: true
-        run: go run cmd/copyright -globs "**/*.go, **/*/*.go, **/*/*/*.go, **/*.sh, **/*/*.sh, **/*/*.sh," -ignore "mock_.*, .local/.*"
+      - name: Run Copyright
+        run: ./sh/copyright.sh
 
   ###########
   # modules #
@@ -290,12 +283,3 @@ jobs:
     with:
       goVersion: 1.22
       modulePath: misc
-
-  copyright:
-    name: copyright
-    needs: changed-files
-    if: needs.changed-files.outputs.anyCodeAdded
-    uses: ./.github/workflows/module-pr.yml
-    with:
-      goVersion: 1.22
-      modulePath: cmd/copyright

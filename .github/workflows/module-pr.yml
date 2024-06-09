@@ -87,6 +87,7 @@ jobs:
   go-mod:
     name: Go.mod up to date
     runs-on: ubuntu-latest
+    if: false # https://github.com/tcodes0/go/issues/26
     steps:
       - name: Checkout
         uses: actions/checkout@v4
