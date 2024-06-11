@@ -1,0 +1,64 @@
+# unmarshaled into cmd/run/main.go task type
+- name: build
+  kind: 1 # module
+  inputs: 1
+
+- name: lint
+  kind: 1
+  inputs: 1
+
+- name: format
+  kind: 1
+  inputs: 1
+
+- name: lintFix
+  kind: 1
+  inputs: 1
+
+- name: test
+  kind: 1
+  inputs: 1
+
+- name: ci
+  kind: 2 # repo
+  inputs: 0
+
+- name: ciPush
+  kind: 2
+  inputs: 0
+
+- name: coverage
+  kind: 2
+  inputs: 0
+
+- name: formatConfigs
+  kind: 2
+  inputs: 0
+
+- name: generateMocks
+  kind: 2
+  inputs: 0
+
+- name: spellcheckDocs
+  kind: 2
+  inputs: 0
+
+- name: setup
+  kind: 2
+  inputs: 0
+
+- name: generateGoWork
+  kind: 2
+  inputs: 0
+
+- name: newModule
+  kind: 2
+  inputs: 0
+
+- name: generateVscodeTasks
+  kind: 2
+  inputs: 0
+
+- name: copyright
+  kind: 2
+  inputs: 0
