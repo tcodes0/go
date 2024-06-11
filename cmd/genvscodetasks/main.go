@@ -7,6 +7,7 @@ package main
 
 import (
 	"bytes"
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -22,13 +23,20 @@ import (
 	"github.com/tcodes0/go/jsonutil"
 	"github.com/tcodes0/go/logging"
 	"github.com/tcodes0/go/misc"
+	"gopkg.in/yaml.v3"
 )
 
+type config struct {
+	VscodeRoot   string `yaml:"vscodeRoot"`
+	TasksFile    string `yaml:"tasksFile"`
+	ExtraModules string `yaml:"extraModules"`
+}
+
 var (
-	flagset      = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	vscoderoot   = ".vscode"
-	tasksFile    = "tasks.json"
-	extraModules = []string{"all"}
+	//go:embed config.yml
+	raw     string
+	configs config
+	flagset = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 )
 
 func main() {
@@ -40,6 +48,11 @@ func main() {
 	fRepoCmds := flagset.String("repo-commands", "", "repo commands to be added to the tasks.json file. Comma separated list, trimmed. Required.")
 
 	err := flagset.Parse(os.Args[1:])
+	if err != nil {
+		usageExit(err)
+	}
+
+	err = yaml.Unmarshal([]byte(raw), &configs)
 	if err != nil {
 		usageExit(err)
 	}
@@ -88,12 +101,12 @@ func generateVscodeTasks(logger logging.Logger, modInput, repoInput string) erro
 		return misc.Wrap(err, "findModules")
 	}
 
-	modules = slices.Concat(extraModules, modules)
+	modules = slices.Concat(strings.Split(configs.ExtraModules, ","), modules)
 
 	slices.Sort(modCmds)
 	slices.Sort(repoCmds)
 
-	filePath := vscoderoot + "/" + tasksFile
+	filePath := configs.VscodeRoot + "/" + configs.TasksFile
 
 	taskFile, err := readFile(filePath)
 	if err != nil {

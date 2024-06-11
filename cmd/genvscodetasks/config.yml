@@ -1,0 +1,3 @@
+vscodeRoot: .vscode
+tasksFile: tasks.json
+extraModules: all

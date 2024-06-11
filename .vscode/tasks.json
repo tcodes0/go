@@ -33,7 +33,20 @@
       "id": "module",
       "description": "Module",
       "default": "",
-      "options": ["all", "clock", "cmd/copyright", "cmd/genvscodetasks", "httpmisc", "hue", "identifier", "jsonutil", "logging", "misc"]
+      "options": [
+        "all",
+        "clock",
+        "cmd/copyright",
+        "cmd/gengowork",
+        "cmd/genvscodetasks",
+        "cmd/run",
+        "httpmisc",
+        "hue",
+        "identifier",
+        "jsonutil",
+        "logging",
+        "misc"
+      ]
     },
     {
       "type": "pickString",

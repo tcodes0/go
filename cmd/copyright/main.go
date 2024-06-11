@@ -19,18 +19,25 @@ import (
 
 	"github.com/tcodes0/go/logging"
 	"github.com/tcodes0/go/misc"
+	"gopkg.in/yaml.v3"
 )
 
+type config struct {
+	Ignore    *regexp.Regexp
+	Header    string `yaml:"header"`
+	HeaderGo  string
+	HeaderSh  string
+	CommentGo string `yaml:"commentGo"`
+	CommentSh string `yaml:"commentSh"`
+	IgnoreRaw string `yaml:"ignoreRaw"`
+	FindNames string `yaml:"findNames"`
+}
+
 var (
-	//go:embed header.txt
-	header    string
-	headerGo  string
-	headerSh  string
-	commentGo = "// "
-	commentSh = "# "
-	flagset   = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	findNames = []string{"*.go", "*.sh"}
-	ignore    = regexp.MustCompile("/?mock_.*|.local/.*")
+	//go:embed config.yml
+	raw     string
+	configs config
+	flagset = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 )
 
 func main() {
@@ -39,6 +46,11 @@ func main() {
 	fFix := flagset.Bool("fix", false, "applies header to files. (default false)")
 
 	err := flagset.Parse(os.Args[1:])
+	if err != nil {
+		usageExit(err)
+	}
+
+	err = yaml.Unmarshal([]byte(raw), &configs)
 	if err != nil {
 		usageExit(err)
 	}
@@ -55,12 +67,14 @@ func main() {
 		logger.SetLevel(logging.LError)
 	}
 
-	headerLines := strings.Split(header, "\n")
+	headerLines := strings.Split(configs.Header, "\n")
 
 	for _, line := range headerLines {
-		headerGo += commentGo + line + "\n"
-		headerSh += commentSh + line + "\n"
+		configs.HeaderGo += configs.CommentGo + line + "\n"
+		configs.HeaderSh += configs.CommentSh + line + "\n"
 	}
+
+	configs.Ignore = regexp.MustCompile(configs.IgnoreRaw)
 
 	err = boilerplate(*logger, *fFix)
 	if err != nil {
@@ -110,7 +124,7 @@ func boilerplate(logger logging.Logger, fix bool) error {
 }
 
 func filesWithoutHeader(logger logging.Logger) (paths []string, err error) {
-	for _, findName := range findNames {
+	for _, findName := range strings.Split(configs.FindNames, ",") {
 		cmd := exec.Command("find", ".", "-name", findName, "-type", "f")
 
 		findOut, err := cmd.CombinedOutput()
@@ -132,7 +146,7 @@ func filesWithoutHeader(logger logging.Logger) (paths []string, err error) {
 				continue
 			}
 
-			if ignore.MatchString(filePath) {
+			if configs.Ignore.MatchString(filePath) {
 				logger.Debug().Logf("ignored %s", filePath)
 
 				continue
@@ -173,14 +187,14 @@ func fixFile(path string) error {
 	var newFile string
 
 	if strings.Contains(path, ".go") {
-		newFile = headerGo + "\n" + string(content)
+		newFile = configs.HeaderGo + "\n" + string(content)
 	} else if strings.Contains(path, ".sh") {
 		shebang, rest, found := strings.Cut(string(content), "\n")
 		if !found {
 			return fmt.Errorf("detecting shebang: %s", path)
 		}
 
-		newFile = shebang + "\n" + headerSh + rest
+		newFile = shebang + "\n" + configs.HeaderSh + rest
 	} else {
 		return fmt.Errorf("unknown file type: %s", path)
 	}
