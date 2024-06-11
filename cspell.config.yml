@@ -22,6 +22,7 @@ words:
   - DEBG
   - erro
   - FATL
+  - gocritic
   - godotenv
   - gofmt
   - gofumpt
@@ -44,6 +45,7 @@ words:
   - maintidx
   - msgln
   - nocasematch
+  - nolintlint
   - scandir
   - Seqs
   - SHELLCHECK

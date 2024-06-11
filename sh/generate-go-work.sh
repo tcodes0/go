@@ -45,11 +45,13 @@ for mod in $mods; do
   formattedMods=${formattedMods}$(printf %s "	$mod\\n")
 done
 
-printf %b "// generated do not edit.
+goWork="// generated do not edit.
 $goVersion
 
 use (
 	.
 $formattedMods
 )
-" >go.work
+"
+
+printf %b "$goWork" >go.work
