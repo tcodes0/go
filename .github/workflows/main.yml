@@ -21,6 +21,8 @@ jobs:
       modLogging: ${{ steps.list-changed-files.outputs.logging_all_changed_files }}
       modMisc: ${{ steps.list-changed-files.outputs.misc_all_changed_files }}
       modCmdCopyright: ${{ steps.list-changed-files.outputs.cmd_copyright_all_changed_files }}
+      modCmdGenGoWork: ${{ steps.list-changed-files.outputs.cmd_gen_go_work_all_changed_files }}
+      modCmdGenVscodeTasks: ${{ steps.list-changed-files.outputs.cmd_gen_vscode_tasks_all_changed_files }}
       # others
       anyGoMod: ${{ steps.list-changed-files.outputs.any_go_mod_all_changed_files }}
       rootGoMod: ${{ steps.list-changed-files.outputs.root_go_mod_all_changed_files }}
@@ -37,6 +39,9 @@ jobs:
         || steps.list-changed-files.outputs.jsonutil_all_changed_files
         || steps.list-changed-files.outputs.logging_all_changed_files
         || steps.list-changed-files.outputs.misc_all_changed_files
+        || steps.list-changed-files.outputs.cmd_copyright_all_changed_files
+        || steps.list-changed-files.outputs.cmd_gen_go_work_all_changed_files
+        || steps.list-changed-files.outputs.cmd_gen_vscode_tasks_all_changed_files
         }}
     steps:
       - name: Checkout
@@ -138,9 +143,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Generate go work
-        env:
-          IGNORE: ".local"
-        run: ./sh/generate-go-work.sh
+        run: go run cmd/gengowork/main.go
 
       - name: Diff
         run: ./sh/workflows/main/diff.sh
@@ -169,7 +172,7 @@ jobs:
         run: ./sh/workflows/main/diff.sh
 
   shell:
-    name: Lint format and test shell
+    name: Lint format shell
     runs-on: ubuntu-latest
     needs: changed-files
     if: needs.changed-files.outputs.shell
@@ -187,9 +190,6 @@ jobs:
           sh_checker_only_diff: true
           # needs write access https://github.com/luizm/action-sh-checker/pull/57
           # sh_checker_comment: true
-
-      - name: Test
-        run: find sh/sh_test -name "*-test.sh" -exec ./{} \;
 
   config:
     name: Format config
@@ -316,3 +316,21 @@ jobs:
     with:
       goVersion: 1.22
       modulePath: cmd/copyright
+
+  generate-go-work:
+    name: cmd/gengowork
+    needs: changed-files
+    if: needs.changed-files.outputs.modCmdGenGoWork
+    uses: ./.github/workflows/module-pr.yml
+    with:
+      goVersion: 1.22
+      modulePath: cmd/gengowork
+
+  generate-vscode-tasks:
+    name: cmd/genvscodetasks
+    needs: changed-files
+    if: needs.changed-files.outputs.modCmdGenVscodeTasks
+    uses: ./.github/workflows/module-pr.yml
+    with:
+      goVersion: 1.22
+      modulePath: cmd/genvscodetasks

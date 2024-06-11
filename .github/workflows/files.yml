@@ -45,8 +45,10 @@ misc:
   - misc/go.sum
 cmd_copyright:
   - cmd/copyright/**.go
-  - cmd/copyright/go.mod
-  - cmd/copyright/go.sum
+cmd_gen_go_work:
+  - cmd/gengowork/**.go
+cmd_gen_vscode_tasks:
+  - cmd/genvscodetasks/**.go
 any_code:
   - "**/*.go"
   - "**/*.sh"

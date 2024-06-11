@@ -14,7 +14,7 @@ shopt -s globstar
 CONVENTIONAL_COMMITS_URL="See https://www.conventionalcommits.org/en/v1.0.0/"
 
 lintCommits() {
-  local log="$1" problems=()
+  log="$1" problems=()
 
   while read -r commit; do
     out="$(commitlint --config="$CONFIG_PATH" <<<"$commit" || true)"

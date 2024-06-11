@@ -204,8 +204,7 @@ coverage() {
 
 # shellcheck disable=SC2317 # dynamic call
 generateGoWork() {
-  IGNORE=".local" \
-    ./sh/generate-go-work.sh
+  go run cmd/gengowork/main.go
 }
 
 # shellcheck disable=SC2317 # dynamic call
@@ -215,19 +214,7 @@ newModule() {
 
 # shellcheck disable=SC2317 # dynamic call
 generateVscodeTasks() {
-  local mods=() repo=()
-
-  for info in "${commands[@]}"; do
-    read -ra command <<<"$info"
-
-    if [ "${command[1]/type:/}" == mod ]; then
-      mods+=("${command[0]/name:/}")
-    else
-      repo+=("${command[0]/name:/}")
-    fi
-  done
-
-  ./sh/update-vscode-configs.sh "${mods[*]}" "${repo[*]}"
+  go run cmd/genvscodetasks/main.go
 }
 
 # shellcheck disable=SC2317 # dynamic call

@@ -22,6 +22,8 @@ words:
   - DEBG
   - erro
   - FATL
+  - gengowork
+  - genvscodetasks
   - gocritic
   - godotenv
   - gofmt
