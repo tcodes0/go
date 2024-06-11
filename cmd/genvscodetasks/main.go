@@ -14,11 +14,11 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"regexp"
 	"slices"
 	"strings"
 
 	"github.com/samber/lo"
+	"github.com/tcodes0/go/cmd"
 	"github.com/tcodes0/go/jsonutil"
 	"github.com/tcodes0/go/logging"
 	"github.com/tcodes0/go/misc"
@@ -29,15 +29,14 @@ var (
 	vscoderoot   = ".vscode"
 	tasksFile    = "tasks.json"
 	extraModules = []string{"all"}
-	ignore       = regexp.MustCompile(`test$|\.local.*|cmd/template`)
 )
 
 func main() {
 	fLogLevel := flagset.Int("log-level", int(logging.LInfo), "control logging output; 1 is debug, the higher the less logs.")
 	fColor := flagset.Bool("color", false, "colored logging output. (default false)")
-	//nolint:lll // long string
+	//nolint:lll // help string
 	fModCmds := flagset.String("module-commands", "", "module commands to be added to the tasks.json file. Comma separated list, trimmed. Required.")
-	//nolint:lll // long string
+	//nolint:lll // help string
 	fRepoCmds := flagset.String("repo-commands", "", "repo commands to be added to the tasks.json file. Comma separated list, trimmed. Required.")
 
 	err := flagset.Parse(os.Args[1:])
@@ -84,10 +83,12 @@ func generateVscodeTasks(logger logging.Logger, modInput, repoInput string) erro
 		return strings.TrimSpace(s)
 	})
 
-	modules, err := findModules(logger)
+	modules, err := cmd.FindModules(logger)
 	if err != nil {
 		return misc.Wrap(err, "findModules")
 	}
+
+	modules = slices.Concat(extraModules, modules)
 
 	slices.Sort(modCmds)
 	slices.Sort(repoCmds)
@@ -108,49 +109,14 @@ func generateVscodeTasks(logger logging.Logger, modInput, repoInput string) erro
 		return misc.Wrap(err, "writeFile")
 	}
 
-	cmd := exec.Command("prettier", "--write", filePath)
+	command := exec.Command("prettier", "--write", filePath)
 
-	err = cmd.Run()
+	err = command.Run()
 	if err != nil {
-		return misc.Wrapf(err, "formatting %s", cmd.Stderr)
+		return misc.Wrapf(err, "formatting %s", command.Stderr)
 	}
 
 	return nil
-}
-
-func findModules(logger logging.Logger) ([]string, error) {
-	cmd := exec.Command("find", ".", "-mindepth", "2", "-maxdepth", "3", "-type", "f", "-name", "*.go", "-exec", "dirname", "{}", ";")
-
-	findOut, err := cmd.CombinedOutput()
-	if err != nil {
-		return nil, misc.Wrapf(err, "finding, %s", findOut)
-	}
-
-	logger.Debug().Logf("find output: %s", findOut)
-
-	modules := strings.Split(string(findOut), "\n")
-	modules = slices.Concat(modules, extraModules)
-	modules = lo.Uniq(modules)
-
-	out := make([]string, 0, len(modules))
-
-	for _, module := range modules {
-		if ignore.MatchString(module) {
-			logger.Debug().Logf("ignored %s", module)
-
-			continue
-		}
-
-		if module == "" {
-			continue
-		}
-
-		out = append(out, strings.Replace(module, "./", "", 1))
-	}
-
-	slices.Sort(out)
-
-	return out, nil
 }
 
 type taskFile struct {
