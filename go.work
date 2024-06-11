@@ -4,6 +4,7 @@ go 1.22
 use (
 	.
 	./clock
+	./cmd
 	./httpmisc
 	./hue
 	./identifier

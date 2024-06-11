@@ -1,6 +1,9 @@
 root_go_mod:
   - go.mod
   - go.sum
+cmd_go_mod:
+  - go.mod
+  - go.sum
 any_go_mod:
   - "**/go.mod"
   - "**/go.sum"
@@ -40,6 +43,10 @@ misc:
   - misc/**.go
   - misc/go.mod
   - misc/go.sum
+cmd_copyright:
+  - cmd/copyright/**.go
+  - cmd/copyright/go.mod
+  - cmd/copyright/go.sum
 any_code:
   - "**/*.go"
   - "**/*.sh"
