@@ -239,7 +239,7 @@ ciPush() {
 
 # shellcheck disable=SC2317 # dynamic call
 copyright() {
-  ./sh/copyright.sh "$@"
+  go run cmd/copyright/main.go "$@"
 }
 
 ### validation, input handling ###
