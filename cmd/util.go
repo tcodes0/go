@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"os"
 	"os/exec"
 	"regexp"
 	"slices"
@@ -47,4 +48,33 @@ func FindModules(logger logging.Logger) ([]string, error) {
 	slices.Sort(out)
 
 	return out, nil
+}
+
+func WriteFile(path string, data []byte) error {
+	file, err := os.OpenFile(path, os.O_RDWR, 0)
+	if err != nil {
+		return misc.Wrap(err, "opening")
+	}
+
+	defer file.Close()
+
+	stat, err := file.Stat()
+	if err != nil {
+		return misc.Wrap(err, "stat")
+	}
+
+	if int64(len(data)) < stat.Size() {
+		// new file is smaller, truncate to new size
+		err = file.Truncate(int64(len(data)))
+		if err != nil {
+			return misc.Wrap(err, "truncating")
+		}
+	}
+
+	_, err = file.Write(data)
+	if err != nil {
+		return misc.Wrap(err, "writing")
+	}
+
+	return nil
 }

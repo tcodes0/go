@@ -6,13 +6,19 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"os"
+	"regexp"
+	"strings"
 
+	"github.com/samber/lo"
+	"github.com/tcodes0/go/cmd"
 	"github.com/tcodes0/go/logging"
+	"github.com/tcodes0/go/misc"
 )
 
 var flagset = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
@@ -51,6 +57,78 @@ func usageExit(err error) {
 	os.Exit(1)
 }
 
-func genGoWork(_ logging.Logger) error {
+func genGoWork(logger logging.Logger) error {
+	version, err := parseGoVersion()
+	if err != nil {
+		return misc.Wrap(err, "parseGoVersion")
+	}
+
+	mods, err := findModules(logger)
+	if err != nil {
+		return misc.Wrap(err, "FindModules")
+	}
+
+	format := `// generated do not edit.
+go %s
+
+use (
+	.
+	%s
+)`
+	prettyMods := strings.Join(mods, "\n\t")
+	newFile := fmt.Sprintf(format, version, prettyMods)
+
+	err = cmd.WriteFile("go.work", []byte(newFile))
+	if err != nil {
+		return misc.Wrap(err, "WriteFile")
+	}
+
 	return nil
+}
+
+func parseGoVersion() (string, error) {
+	file, err := os.Open("go.mod")
+	if err != nil {
+		return "", misc.Wrap(err, "opening")
+	}
+
+	scanner := bufio.NewScanner(file)
+	goVersion := regexp.MustCompile(`go (\d+\.\d+)`)
+
+	for scanner.Scan() {
+		err := scanner.Err()
+		if err != nil {
+			return "", misc.Wrap(err, "scanning")
+		}
+
+		line := scanner.Text()
+
+		if goVersion.MatchString(line) {
+			return goVersion.FindStringSubmatch(line)[1], nil
+		}
+	}
+
+	return "", errors.New("parsing")
+}
+
+func findModules(logger logging.Logger) ([]string, error) {
+	modules, err := cmd.FindModules(logger)
+	if err != nil {
+		return nil, misc.Wrap(err, "FindModules")
+	}
+
+	out := make([]string, 0, len(modules))
+	regexpPathHasSlash := regexp.MustCompile(`(.*\w)/.*`)
+
+	for _, mod := range modules {
+		if regexpPathHasSlash.MatchString(mod) {
+			out = append(out, regexpPathHasSlash.FindStringSubmatch(mod)[1])
+		} else {
+			out = append(out, mod)
+		}
+	}
+
+	out = lo.Uniq(out)
+
+	return out, nil
 }

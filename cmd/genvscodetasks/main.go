@@ -104,7 +104,16 @@ func generateVscodeTasks(logger logging.Logger, modInput, repoInput string) erro
 	taskFile.Inputs[1].Options = modCmds
 	taskFile.Inputs[2].Options = repoCmds
 
-	err = writeFile(filePath, taskFile)
+	data := &bytes.Buffer{}
+	encoder := json.NewEncoder(data)
+	encoder.SetEscapeHTML(false)
+
+	err = encoder.Encode(taskFile)
+	if err != nil {
+		return misc.Wrap(err, "encoding")
+	}
+
+	err = cmd.WriteFile(filePath, data.Bytes())
 	if err != nil {
 		return misc.Wrap(err, "writeFile")
 	}
@@ -156,42 +165,4 @@ func readFile(path string) (*taskFile, error) {
 	defer file.Close()
 
 	return jsonutil.UnmarshalReader[taskFile](file)
-}
-
-func writeFile(path string, taskFile *taskFile) error {
-	data := &bytes.Buffer{}
-	encoder := json.NewEncoder(data)
-	encoder.SetEscapeHTML(false)
-
-	err := encoder.Encode(taskFile)
-	if err != nil {
-		return misc.Wrap(err, "encoding")
-	}
-
-	file, err := os.OpenFile(path, os.O_RDWR, 0)
-	if err != nil {
-		return misc.Wrap(err, "opening")
-	}
-
-	defer file.Close()
-
-	stat, err := file.Stat()
-	if err != nil {
-		return misc.Wrap(err, "stat")
-	}
-
-	if int64(data.Len()) < stat.Size() {
-		// new file is smaller, truncate to new size
-		err = file.Truncate(int64(data.Len()))
-		if err != nil {
-			return misc.Wrap(err, "truncating")
-		}
-	}
-
-	_, err = file.Write(data.Bytes())
-	if err != nil {
-		return misc.Wrap(err, "writing")
-	}
-
-	return nil
 }
