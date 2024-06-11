@@ -6,36 +6,24 @@
       "label": "Module tasks",
       "command": "./run",
       "args": ["${input:commandModule}", "${input:module}"],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "presentation": {
-        "panel": "shared"
-      },
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "panel": "shared" },
       "problemMatcher": []
     },
     {
       "type": "shell",
       "label": "Repo tasks",
       "command": "./run ${input:commandRepo}",
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "presentation": {
-        "panel": "shared"
-      },
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "panel": "shared" },
       "problemMatcher": []
     },
     {
       "type": "shell",
       "label": "Module: format, lintfix, test",
-      "command": "./run format ${input:module} && ./run lintfix ${input:module} && ./run test ${input:module}",
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "presentation": {
-        "panel": "shared"
-      },
+      "command": "./run format ${input:module} && ./run lintFix ${input:module} && ./run test ${input:module}",
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "panel": "shared" },
       "problemMatcher": []
     }
   ],
@@ -44,36 +32,36 @@
       "type": "pickString",
       "id": "module",
       "description": "Module",
-      "options": ["all", "clock", "httpmisc", "hue", "identifier", "jsonutil", "logging", "misc"],
-      "default": ""
+      "default": "",
+      "options": ["all", "clock", "cmd/copyright", "cmd/genvscodetasks", "httpmisc", "hue", "identifier", "jsonutil", "logging", "misc"]
     },
     {
       "type": "pickString",
       "id": "commandModule",
       "description": "Module Commands",
-      "options": ["build", "format", "lint", "lintFix", "tests"],
-      "default": ""
+      "default": "",
+      "options": ["build", "format", "lint", "lintFix", "tests"]
     },
     {
       "type": "pickString",
       "id": "commandRepo",
       "description": "Repo Commands",
+      "default": "",
       "options": [
         "ci",
         "ciPush",
+        "copyright",
         "coverage",
         "formatConfigs",
-        "generateMocks",
-        "spellcheckDocs",
-        "setup",
-        "tag",
-        "testScripts",
         "generateGoWork",
-        "newModule",
+        "generateMocks",
         "generateVscodeTasks",
-        "copyright"
-      ],
-      "default": ""
+        "newModule",
+        "setup",
+        "spellcheckDocs",
+        "tag",
+        "testScripts"
+      ]
     }
   ]
 }

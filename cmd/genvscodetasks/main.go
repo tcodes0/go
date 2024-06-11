@@ -6,6 +6,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -14,7 +15,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/samber/lo"
@@ -24,11 +25,11 @@ import (
 )
 
 var (
-	flagset    = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	vscoderoot = ".vscode"
-	tasksFile  = "tasks.json"
-	allModule  = "all"
-	ignore     = regexp.MustCompile("test$|.local$")
+	flagset      = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	vscoderoot   = ".vscode"
+	tasksFile    = "tasks.json"
+	extraModules = []string{"all"}
+	ignore       = regexp.MustCompile(`test$|\.local.*|cmd/template`)
 )
 
 func main() {
@@ -67,6 +68,7 @@ func usageExit(err error) {
 	fmt.Println()
 
 	if err != nil && !errors.Is(err, flag.ErrHelp) {
+		flagset.Usage()
 		fmt.Printf("error: %v\n", err)
 	}
 
@@ -87,6 +89,9 @@ func generateVscodeTasks(logger logging.Logger, modInput, repoInput string) erro
 		return misc.Wrap(err, "findModules")
 	}
 
+	slices.Sort(modCmds)
+	slices.Sort(repoCmds)
+
 	filePath := vscoderoot + "/" + tasksFile
 
 	taskFile, err := readFile(filePath)
@@ -103,23 +108,29 @@ func generateVscodeTasks(logger logging.Logger, modInput, repoInput string) erro
 		return misc.Wrap(err, "writeFile")
 	}
 
+	cmd := exec.Command("prettier", "--write", filePath)
+
+	err = cmd.Run()
+	if err != nil {
+		return misc.Wrapf(err, "formatting %s", cmd.Stderr)
+	}
+
 	return nil
 }
 
 func findModules(logger logging.Logger) ([]string, error) {
-	cmd := exec.Command("find", ".", "-mindepth", "2", "-maxdepth", "3", "-type", "f", "-name", "'*.go'", "-exec", "dirname", "{}", ";")
+	cmd := exec.Command("find", ".", "-mindepth", "2", "-maxdepth", "3", "-type", "f", "-name", "*.go", "-exec", "dirname", "{}", ";")
 
 	findOut, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, misc.Wrapf(err, "finding")
+		return nil, misc.Wrapf(err, "finding, %s", findOut)
 	}
 
+	logger.Debug().Logf("find output: %s", findOut)
+
 	modules := strings.Split(string(findOut), "\n")
-	modules = append(modules, allModule)
+	modules = slices.Concat(modules, extraModules)
 	modules = lo.Uniq(modules)
-	sort.Slice(modules, func(i, j int) bool {
-		return modules[i] < modules[j]
-	})
 
 	out := make([]string, 0, len(modules))
 
@@ -130,8 +141,14 @@ func findModules(logger logging.Logger) ([]string, error) {
 			continue
 		}
 
-		out = append(out, module)
+		if module == "" {
+			continue
+		}
+
+		out = append(out, strings.Replace(module, "./", "", 1))
 	}
+
+	slices.Sort(out)
 
 	return out, nil
 }
@@ -176,9 +193,13 @@ func readFile(path string) (*taskFile, error) {
 }
 
 func writeFile(path string, taskFile *taskFile) error {
-	data, err := json.Marshal(taskFile)
+	data := &bytes.Buffer{}
+	encoder := json.NewEncoder(data)
+	encoder.SetEscapeHTML(false)
+
+	err := encoder.Encode(taskFile)
 	if err != nil {
-		return misc.Wrap(err, "marshalling")
+		return misc.Wrap(err, "encoding")
 	}
 
 	file, err := os.OpenFile(path, os.O_RDWR, 0)
@@ -193,15 +214,15 @@ func writeFile(path string, taskFile *taskFile) error {
 		return misc.Wrap(err, "stat")
 	}
 
-	if int64(len(data)) < stat.Size() {
+	if int64(data.Len()) < stat.Size() {
 		// new file is smaller, truncate to new size
-		err = file.Truncate(int64(len(data)))
+		err = file.Truncate(int64(data.Len()))
 		if err != nil {
 			return misc.Wrap(err, "truncating")
 		}
 	}
 
-	_, err = file.Write(data)
+	_, err = file.Write(data.Bytes())
 	if err != nil {
 		return misc.Wrap(err, "writing")
 	}
