@@ -11,12 +11,16 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
+	"os/exec"
+	"slices"
 	"strings"
 
 	"github.com/samber/lo"
 	"github.com/tcodes0/go/cmd"
 	"github.com/tcodes0/go/logging"
+	"github.com/tcodes0/go/misc"
 	"gopkg.in/yaml.v3"
 )
 
@@ -28,6 +32,8 @@ const (
 	needOnline   = "online"
 )
 
+var errUsage = errors.New("see usage")
+
 type task struct {
 	Env    map[string]string `yaml:"env"`
 	Name   string            `yaml:"name"`
@@ -35,6 +41,33 @@ type task struct {
 	Exec   []string          `yaml:"exec"`
 	Kind   int               `yaml:"kind"`
 	Inputs int               `yaml:"inputs"`
+}
+
+func (task *task) validate(args ...string) (err error) {
+	if task.Inputs != len(args) {
+		return fmt.Errorf("%s: expected %d arguments got: %v", task.Name, task.Inputs, args)
+	}
+
+	for _, need := range strings.Split(task.Needs, ",") {
+		need = strings.TrimSpace(need)
+
+		switch need {
+		default:
+			err = fmt.Errorf("unknown need: %s", need)
+		case "":
+			continue
+		case needGitClean:
+			err = checkGitClean()
+		case needOnline:
+			err = checkOnline()
+		}
+
+		if err != nil {
+			break
+		}
+	}
+
+	return err
 }
 
 var (
@@ -45,8 +78,8 @@ var (
 )
 
 func main() {
-	fLogLevel := flagset.Int("log-level", int(logging.LInfo), "control logging output; 1 is debug, the higher the less logs.")
-	fColor := flagset.Bool("color", false, "colored logging output. (default false)")
+	fLogLevel := flagset.Int("log-level", int(logging.LDebug), "control logging output; 1 is debug, the higher the less logs.")
+	fColor := flagset.Bool("color", true, "colored logging output. (default false)")
 
 	err := flagset.Parse(os.Args[1:])
 	if err != nil {
@@ -69,7 +102,11 @@ func main() {
 
 	err = run(*logger, os.Args[1:]...)
 	if err != nil {
-		logger.Fatalf("fatal: %v", err)
+		if errors.Is(err, errUsage) {
+			usage(err)
+		}
+
+		logger.Fatalf(err.Error())
 	}
 }
 
@@ -79,7 +116,7 @@ func usage(err error) {
 	}
 
 	fmt.Println("miscellaneous automation tool")
-	fmt.Println("./run <task> \ttask args if any...")
+	fmt.Println("usage: ./run <task> \ttask args if any...")
 	fmt.Println()
 	fmt.Println("tasks available:")
 
@@ -114,51 +151,100 @@ func usage(err error) {
 	}
 }
 
-func didYouMean(input string) {}
-
 // run <task> <module or arg1> ...args.
 func run(logger logging.Logger, args ...string) error {
 	if len(args) == 0 {
-		usage(nil)
-		logger.Fatal(errors.New("task is required"))
+		return misc.Wrap(errUsage, "task is required")
 	}
 
 	task, found := lo.Find(tasks, func(t *task) bool { return t.Name == args[0] })
 	if !found {
-		usage(nil)
 		didYouMean(args[0])
-		logger.Fatal(fmt.Errorf("%s: unknown task", args[0]))
+
+		return misc.Wrapf(errUsage, "%s: unknown task", args[0])
 	}
 
 	if task.Kind == taskModule {
-		//nolint:mnd // len check
-		if len(args) < 2 {
-			usage(nil)
-			logger.Fatal(fmt.Errorf("%s: module is required", task.Name))
-		}
-
-		mods, err := cmd.FindModules(logger)
-		if err != nil {
-			logger.Fatalf("FindModules: %v", err)
-		}
-
-		_, found := lo.Find(mods, func(m string) bool { return m == args[1] })
-		if !found {
-			usage(nil)
-			didYouMean(args[1])
-			logger.Fatal(fmt.Errorf("%s: invalid module", args[1]))
-		}
-
-		return moduleTask(logger, task, args[1], args[2:]...)
+		return moduleTask(logger, task, args[1:]...)
 	}
 
-	return repoTask(logger, task, args[1:]...)
+	return simpleTask(logger, task, args[1:]...)
 }
 
-func moduleTask(logger logging.Logger, task *task, module string, args ...string) error {
+func didYouMean(input string) {}
+
+func moduleTask(logger logging.Logger, task *task, args ...string) error {
+	if len(args) < 1 {
+		return misc.Wrapf(errUsage, "%s: module is required", task.Name)
+	}
+
+	mods, err := cmd.FindModules(logger)
+	if err != nil {
+		return misc.Wrap(err, "FindModules")
+	}
+
+	_, found := lo.Find(mods, func(m string) bool { return m == args[0] })
+	if !found {
+		didYouMean(args[0])
+
+		return misc.Wrapf(errUsage, "%s: unknown module", args[0])
+	}
+
+	err = task.validate(args...)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func repoTask(logger logging.Logger, task *task, args ...string) error {
+func simpleTask(logger logging.Logger, task *task, args ...string) error {
+	err := task.validate(args...)
+	if err != nil {
+		return err
+	}
+
+	for _, line := range task.Exec {
+		cmdInput := slices.Concat(strings.Split(line, " "), args)
+		//nolint:gosec // has validation
+		command := exec.Command(cmdInput[0], cmdInput[1:]...)
+		logger.Debug().Log(strings.Join(cmdInput, " "))
+
+		out, err := command.Output()
+		if err != nil {
+			exitErr, ok := (err).(*exec.ExitError)
+			if ok {
+				logger.Error().Log(string(exitErr.Stderr))
+			}
+
+			return misc.Wrapf(err, "command '%s'", strings.Join(cmdInput, " "))
+		}
+
+		if len(out) > 0 {
+			logger.Log("\n" + string(out))
+		}
+	}
+
+	return nil
+}
+
+func checkGitClean() error {
+	err := exec.Command("git", "diff", "--exit-code").Run()
+	if err != nil {
+		return misc.Wrap(err, "please commit or stash all changes")
+	}
+
+	return nil
+}
+
+func checkOnline() error {
+	//nolint:noctx // simple internet test
+	res, err := http.Get("1.1.1.1" /*cloudflare*/)
+	if err != nil {
+		return misc.Wrap(err, "please check your internet connection")
+	}
+
+	defer res.Body.Close()
+
 	return nil
 }

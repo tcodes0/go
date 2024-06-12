@@ -16,9 +16,9 @@
   inputs: 1
   exec:
     - "gofumpt -l -w"
-    - 'prettier --write "./**/*{.yml,.yaml,.json}" 2>/dev/null'
+    - "prettier --write ./**/*{.yml,.yaml,.json}"
 
-- name: lintFix
+- name: lint-fix
   kind: 1
   inputs: 1
   exec:
@@ -40,7 +40,7 @@
   exec:
     - ./sh/ci.sh
 
-- name: ciPush
+- name: ci-push
   kind: 2
   needs: "git-clean, online"
   exec:
@@ -51,39 +51,40 @@
   exec:
     - ./sh/coverage.sh
 
-- name: formatConfigs
+- name: format-configs
   kind: 2
   exec:
-    - 'prettier --write "./**/*{.yml,.yaml,.json}" 2>/dev/null'
+    - "prettier --write ./**/*{.yml,.yaml,.json}"
 
-- name: generateMocks
+- name: generate-mocks
   kind: 2
   exec:
     - ./sh/generate-mocks.sh
 
-- name: spellcheckDocs
+- name: spellcheck-docs
   kind: 2
   exec:
-    - 'cspell "**/*.md" --gitignore'
+    - "cspell --gitignore ./**/*.md"
 
 - name: setup
   kind: 2
   exec:
     - ./sh/setup.sh
 
-- name: generateGoWork
+- name: generate-go-work
   kind: 2
   exec:
     - go run cmd/gengowork/main.go
 
-- name: newModule
+- name: new-module
   kind: 2
   inputs: 1
   exec:
     - ./sh/new-module.sh
 
-- name: generateVscodeTasks
+- name: generate-vscode-tasks
   kind: 2
+  works: no
   exec:
     - "go run cmd/genvscodetasks/main.go"
 

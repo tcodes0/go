@@ -47,6 +47,7 @@ words:
   - maintidx
   - msgln
   - nocasematch
+  - noctx
   - nolintlint
   - scandir
   - Seqs
