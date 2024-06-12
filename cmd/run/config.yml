@@ -2,63 +2,92 @@
 - name: build
   kind: 1 # module
   inputs: 1
+  exec:
+    - ./sh/workflows/module-pr/build.sh
 
 - name: lint
   kind: 1
   inputs: 1
+  exec:
+    - "golangci-lint run --timeout 10s --print-issued-lines=false"
 
 - name: format
   kind: 1
   inputs: 1
+  exec:
+    - "gofumpt -l -w"
+    - 'prettier --write "./**/*{.yml,.yaml,.json}" 2>/dev/null'
 
 - name: lintFix
   kind: 1
   inputs: 1
+  exec:
+    - ./sh/lint-fix.sh
+    - "golangci-lint run --timeout 10s --print-issued-lines=false --fix"
 
 - name: test
   kind: 1
   inputs: 1
+  exec:
+    - ./sh/workflows/module-pr/test-pretty.sh
+  env:
+    CACHE: true
+    GITHUB_OUTPUT: /dev/null
 
 - name: ci
   kind: 2 # repo
-  inputs: 0
+  needs: "git-clean, online"
+  exec:
+    - ./sh/ci.sh
 
 - name: ciPush
   kind: 2
-  inputs: 0
+  needs: "git-clean, online"
+  exec:
+    - "./sh/ci.sh push"
 
 - name: coverage
   kind: 2
-  inputs: 0
+  exec:
+    - ./sh/coverage.sh
 
 - name: formatConfigs
   kind: 2
-  inputs: 0
+  exec:
+    - 'prettier --write "./**/*{.yml,.yaml,.json}" 2>/dev/null'
 
 - name: generateMocks
   kind: 2
-  inputs: 0
+  exec:
+    - ./sh/generate-mocks.sh
 
 - name: spellcheckDocs
   kind: 2
-  inputs: 0
+  exec:
+    - 'cspell "**/*.md" --gitignore'
 
 - name: setup
   kind: 2
-  inputs: 0
+  exec:
+    - ./sh/setup.sh
 
 - name: generateGoWork
   kind: 2
-  inputs: 0
+  exec:
+    - go run cmd/gengowork/main.go
 
 - name: newModule
   kind: 2
-  inputs: 0
+  inputs: 1
+  exec:
+    - ./sh/new-module.sh
 
 - name: generateVscodeTasks
   kind: 2
-  inputs: 0
+  exec:
+    - "go run cmd/genvscodetasks/main.go"
 
 - name: copyright
   kind: 2
-  inputs: 0
+  exec:
+    - "go run cmd/copyright/main.go"

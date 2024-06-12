@@ -20,25 +20,28 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type taskType int
-
 const (
-	taskTypeModule taskType = iota + 1
-	taskTypeRepo
+	taskModule int = iota + 1
+	taskRepo
+
+	needGitClean = "git-clean"
+	needOnline   = "online"
 )
 
 type task struct {
-	Name   string   `yaml:"name"`
-	Kind   taskType `yaml:"kind"`
-	Inputs int      `yaml:"inputs"`
+	Env    map[string]string `yaml:"env"`
+	Name   string            `yaml:"name"`
+	Needs  string            `yaml:"needs"`
+	Exec   []string          `yaml:"exec"`
+	Kind   int               `yaml:"kind"`
+	Inputs int               `yaml:"inputs"`
 }
 
 var (
 	//go:embed config.yml
-	config         string
-	flagset        = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	errUnknownTask = errors.New("unknown task")
-	tasks          []*task
+	config  string
+	flagset = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	tasks   []*task
 )
 
 func main() {
@@ -47,18 +50,14 @@ func main() {
 
 	err := flagset.Parse(os.Args[1:])
 	if err != nil {
-		usageExit(err)
+		usage(err)
+		os.Exit(1)
 	}
 
 	err = yaml.Unmarshal([]byte(config), &tasks)
 	if err != nil {
-		usageExit(err)
-	}
-
-	var fTask string
-
-	if len(os.Args) > 1 {
-		fTask = os.Args[1]
+		usage(err)
+		os.Exit(1)
 	}
 
 	opts := []logging.CreateOptions{logging.OptFlags(log.Lshortfile), logging.OptLevel(logging.Level(*fLogLevel))}
@@ -68,23 +67,17 @@ func main() {
 
 	logger := logging.Create(opts...)
 
-	if fTask == "" {
-		usageExit(errors.New("task is required"))
-	}
-
-	task, found := lo.Find(tasks, func(t *task) bool { return t.Name == fTask })
-	if !found {
-		usageExit(errUnknownTask)
-	}
-
-	err = run(*logger, task)
+	err = run(*logger, os.Args[1:]...)
 	if err != nil {
 		logger.Fatalf("fatal: %v", err)
 	}
 }
 
-func usageExit(err error) {
-	fmt.Println()
+func usage(err error) {
+	if errors.Is(err, flag.ErrHelp) {
+		fmt.Println()
+	}
+
 	fmt.Println("miscellaneous automation tool")
 	fmt.Println("./run <task> \ttask args if any...")
 	fmt.Println()
@@ -94,11 +87,11 @@ func usageExit(err error) {
 		line := "./run "
 		line += task.Name + "\t"
 
-		if task.Kind == taskTypeModule {
+		if task.Kind == taskModule {
 			line += "<module>"
 		} else {
-			for i := range task.Inputs {
-				line += fmt.Sprintf("<arg %d> ", i+1)
+			for range task.Inputs {
+				line += "<arg>\t"
 			}
 		}
 
@@ -119,16 +112,53 @@ func usageExit(err error) {
 	if err != nil && !errors.Is(err, flag.ErrHelp) {
 		fmt.Printf("error: %v\n", err)
 	}
-
-	if errors.Is(err, errUnknownTask) {
-		didYouMean(os.Args[1])
-	}
-
-	os.Exit(1)
 }
 
 func didYouMean(input string) {}
 
-func run(_ logging.Logger, task *task) error {
+// run <task> <module or arg1> ...args.
+func run(logger logging.Logger, args ...string) error {
+	if len(args) == 0 {
+		usage(nil)
+		logger.Fatal(errors.New("task is required"))
+	}
+
+	task, found := lo.Find(tasks, func(t *task) bool { return t.Name == args[0] })
+	if !found {
+		usage(nil)
+		didYouMean(args[0])
+		logger.Fatal(fmt.Errorf("%s: unknown task", args[0]))
+	}
+
+	if task.Kind == taskModule {
+		//nolint:mnd // len check
+		if len(args) < 2 {
+			usage(nil)
+			logger.Fatal(fmt.Errorf("%s: module is required", task.Name))
+		}
+
+		mods, err := cmd.FindModules(logger)
+		if err != nil {
+			logger.Fatalf("FindModules: %v", err)
+		}
+
+		_, found := lo.Find(mods, func(m string) bool { return m == args[1] })
+		if !found {
+			usage(nil)
+			didYouMean(args[1])
+			logger.Fatal(fmt.Errorf("%s: invalid module", args[1]))
+		}
+
+		return moduleTask(logger, task, args[1], args[2:]...)
+	}
+
+	return repoTask(logger, task, args[1:]...)
+}
+
+func moduleTask(logger logging.Logger, task *task, module string, args ...string) error {
+	return nil
+}
+
+func repoTask(logger logging.Logger, task *task, args ...string) error {
 	return nil
 }
