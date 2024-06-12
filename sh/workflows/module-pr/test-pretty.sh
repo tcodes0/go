@@ -4,7 +4,7 @@
 # license that can be found in the LICENSE file and online
 # at https://opensource.org/license/BSD-3-clause.
 
-set -euo pipefail
+set -euox pipefail
 shopt -s globstar
 # shellcheck disable=SC1091
 source "$PWD/sh/lib.sh"
@@ -53,11 +53,13 @@ fi
 testOutputJson=$(mktemp /tmp/go-test-json-XXXXXX)
 
 # tee a copy of output for further processing
-go test "${flags[@]}" "$testDir" 2>&1 | tee "$testOutputJson" | gotestfmt
+go test "${flags[@]}" "$testDir" >"$testOutputJson" 2>&1
 
 # delete lines not parseable as json output from 'go test'
 regExpPrefixGo="^go:"
 _sed --in-place --regexp-extended -e "/$regExpPrefixGo/d" "$testOutputJson"
+
+gotestfmt -input "$testOutputJson"
 
 echo "testOutputJson=$testOutputJson"
 echo "testOutputJson=$testOutputJson" >>"$GITHUB_OUTPUT"

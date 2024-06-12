@@ -25,26 +25,31 @@ import (
 )
 
 const (
-	taskModule int = iota + 1
-	taskRepo
-
-	needGitClean = "git-clean"
-	needOnline   = "online"
+	needGitClean = "<git-clean>"
+	needOnline   = "<online>"
+	varModule    = "<module>"
+	varCopy      = "<inherit>"
 )
 
 var errUsage = errors.New("see usage")
 
 type task struct {
-	Env    map[string]string `yaml:"env"`
-	Name   string            `yaml:"name"`
-	Needs  string            `yaml:"needs"`
-	Exec   []string          `yaml:"exec"`
-	Kind   int               `yaml:"kind"`
-	Inputs int               `yaml:"inputs"`
+	Env    []string `yaml:"env"`
+	Name   string   `yaml:"name"`
+	Needs  string   `yaml:"needs"`
+	Exec   []string `yaml:"exec"`
+	Module bool     `yaml:"module"`
+	Inputs int      `yaml:"inputs"`
 }
 
-func (task *task) validate(args ...string) (err error) {
-	if task.Inputs != len(args) {
+// validate <module or arg1> ...args.
+func (task *task) validate(logger logging.Logger, args ...string) error {
+	err := task.validateModule(logger, args...)
+	if err != nil {
+		return err
+	}
+
+	if task.Inputs != 0 && task.Inputs != len(args) {
 		return fmt.Errorf("%s: expected %d arguments got: %v", task.Name, task.Inputs, args)
 	}
 
@@ -68,6 +73,30 @@ func (task *task) validate(args ...string) (err error) {
 	}
 
 	return err
+}
+
+func (task *task) validateModule(logger logging.Logger, args ...string) error {
+	if !task.Module {
+		return nil
+	}
+
+	if len(args) < 1 {
+		return misc.Wrapf(errUsage, "%s: module is required", task.Name)
+	}
+
+	mods, err := cmd.FindModules(logger)
+	if err != nil {
+		return misc.Wrap(err, "FindModules")
+	}
+
+	_, found := lo.Find(mods, func(m string) bool { return m == args[0] })
+	if !found {
+		didYouMean(args[0])
+
+		return misc.Wrapf(errUsage, "%s: unknown module", args[0])
+	}
+
+	return nil
 }
 
 var (
@@ -124,7 +153,7 @@ func usage(err error) {
 		line := "./run "
 		line += task.Name + "\t"
 
-		if task.Kind == taskModule {
+		if task.Module {
 			line += "<module>"
 		} else {
 			for range task.Inputs {
@@ -164,57 +193,45 @@ func run(logger logging.Logger, args ...string) error {
 		return misc.Wrapf(errUsage, "%s: unknown task", args[0])
 	}
 
-	if task.Kind == taskModule {
-		return moduleTask(logger, task, args[1:]...)
-	}
-
-	return simpleTask(logger, task, args[1:]...)
-}
-
-func didYouMean(input string) {}
-
-func moduleTask(logger logging.Logger, task *task, args ...string) error {
-	if len(args) < 1 {
-		return misc.Wrapf(errUsage, "%s: module is required", task.Name)
-	}
-
-	mods, err := cmd.FindModules(logger)
-	if err != nil {
-		return misc.Wrap(err, "FindModules")
-	}
-
-	_, found := lo.Find(mods, func(m string) bool { return m == args[0] })
-	if !found {
-		didYouMean(args[0])
-
-		return misc.Wrapf(errUsage, "%s: unknown module", args[0])
-	}
-
-	err = task.validate(args...)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func simpleTask(logger logging.Logger, task *task, args ...string) error {
-	err := task.validate(args...)
+	err := task.validate(logger, args[1:]...)
 	if err != nil {
 		return err
 	}
 
 	for _, line := range task.Exec {
-		cmdInput := slices.Concat(strings.Split(line, " "), args)
+		cmdInput := slices.Concat(strings.Split(line, " "), args[1:])
 		//nolint:gosec // has validation
 		command := exec.Command(cmdInput[0], cmdInput[1:]...)
 		logger.Debug().Log(strings.Join(cmdInput, " "))
+
+		if len(task.Env) > 0 {
+			envs := lo.Map(task.Env, func(pair string, _ int) string {
+				out := strings.Replace(pair, varModule, args[1], 1)
+
+				if strings.Contains(out, varCopy) {
+					key := strings.Split(out, "=")[0]
+
+					val, ok := os.LookupEnv(key)
+					if !ok {
+						logger.Warn().Logf("env value inherited is empty: " + key)
+					}
+
+					out = strings.Replace(out, varCopy, val, 1)
+				}
+
+				return out
+			})
+
+			command.Env = append(command.Env, envs...)
+		}
+
+		logger.Debug().Log("env: " + strings.Join(command.Env, " "))
 
 		out, err := command.Output()
 		if err != nil {
 			exitErr, ok := (err).(*exec.ExitError)
 			if ok {
-				logger.Error().Log(string(exitErr.Stderr))
+				logger.Error().Log("stderr: " + string(exitErr.Stderr))
 			}
 
 			return misc.Wrapf(err, "command '%s'", strings.Join(cmdInput, " "))
@@ -227,6 +244,8 @@ func simpleTask(logger logging.Logger, task *task, args ...string) error {
 
 	return nil
 }
+
+func didYouMean(input string) {}
 
 func checkGitClean() error {
 	err := exec.Command("git", "diff", "--exit-code").Run()
