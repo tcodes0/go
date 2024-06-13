@@ -27,12 +27,12 @@
 
 - name: test
   module: true
-  works: no
   env:
     - CACHE=true
     - GITHUB_OUTPUT=/dev/null
     - MOD_PATH=<module>
     - PATH=<inherit>
+    - HOME=<inherit>
   exec:
     - ./sh/workflows/module-pr/test-pretty.sh
 

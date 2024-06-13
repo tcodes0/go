@@ -107,8 +107,8 @@ var (
 )
 
 func main() {
-	fLogLevel := flagset.Int("log-level", int(logging.LDebug), "control logging output; 1 is debug, the higher the less logs.")
-	fColor := flagset.Bool("color", true, "colored logging output. (default false)")
+	fLogLevel := flagset.Int("log-level", int(logging.LInfo), "control logging output; 1 is debug, the higher the less logs.")
+	fColor := flagset.Bool("color", false, "colored logging output. (default false)")
 
 	err := flagset.Parse(os.Args[1:])
 	if err != nil {
