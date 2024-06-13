@@ -51,7 +51,7 @@
     - ./sh/workflows/module-pr/test-pretty.sh
 
 - name: ci
-  needs: "git-clean, online"
+  needs: "<git-clean>, <online>"
   exec:
     - ./sh/ci.sh
 
@@ -90,9 +90,8 @@
     - ./sh/new-module.sh
 
 - name: generate-vscode-tasks
-  works: no
   exec:
-    - "go run cmd/genvscodetasks/main.go"
+    - "go run cmd/genvscodetasks/main.go -module-commands <task-module-names> -repo-commands <task-not-module-names>"
 
 - name: copyright
   exec:

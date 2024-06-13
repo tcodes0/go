@@ -53,7 +53,7 @@
       "id": "commandModule",
       "description": "Module Commands",
       "default": "",
-      "options": ["build", "format", "lint", "lintFix", "tests"]
+      "options": ["build", "format", "lint", "lint-fix", "test", "test-cover"]
     },
     {
       "type": "pickString",
@@ -62,18 +62,16 @@
       "default": "",
       "options": [
         "ci",
-        "ciPush",
+        "ci-push",
         "copyright",
         "coverage",
-        "formatConfigs",
-        "generateGoWork",
-        "generateMocks",
-        "generateVscodeTasks",
-        "newModule",
+        "format-configs",
+        "generate-go-work",
+        "generate-mocks",
+        "generate-vscode-tasks",
+        "new-module",
         "setup",
-        "spellcheckDocs",
-        "tag",
-        "testScripts"
+        "spellcheck-docs"
       ]
     }
   ]

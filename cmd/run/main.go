@@ -27,13 +27,22 @@ import (
 const (
 	needGitClean = "<git-clean>"
 	needOnline   = "<online>"
+
 	varModule    = "<module>"
 	varCopy      = "<inherit>"
-	envColor     = "CMD_COLOR"
-	envLogLevel  = "CMD_LOGLEVEL"
+	varTasksModT = "<task-module-names>"
+	varTasksModF = "<task-not-module-names>"
+
+	envColor    = "CMD_COLOR"
+	envLogLevel = "CMD_LOGLEVEL"
 )
 
-var errUsage = errors.New("see usage")
+var (
+	//go:embed config.yml
+	config   string
+	tasks    []*task
+	errUsage = errors.New("see usage")
+)
 
 type task struct {
 	Env    []string `yaml:"env"`
@@ -101,12 +110,6 @@ func (task *task) validateModule(logger logging.Logger, args ...string) error {
 	return nil
 }
 
-var (
-	//go:embed config.yml
-	config string
-	tasks  []*task
-)
-
 func main() {
 	err := yaml.Unmarshal([]byte(config), &tasks)
 	if err != nil {
@@ -169,10 +172,6 @@ func usage(err error) {
 	fmt.Println("use 'all' as module to iterate all modules")
 	fmt.Println("pass -h to commands to see further options")
 	fmt.Println()
-
-	if err != nil && !errors.Is(err, flag.ErrHelp) {
-		fmt.Printf("error: %v\n", err)
-	}
 }
 
 // run <task> <module or arg1> ...args.
@@ -181,42 +180,28 @@ func run(logger logging.Logger, args ...string) error {
 		return misc.Wrap(errUsage, "task is required")
 	}
 
-	task, found := lo.Find(tasks, func(t *task) bool { return t.Name == args[0] })
+	theTask, found := lo.Find(tasks, func(t *task) bool { return t.Name == args[0] })
 	if !found {
 		didYouMean(args[0])
 
 		return misc.Wrapf(errUsage, "%s: unknown task", args[0])
 	}
 
-	err := task.validate(logger, args[1:]...)
+	err := theTask.validate(logger, args[1:]...)
 	if err != nil {
 		return err
 	}
 
-	for _, line := range task.Exec {
+	for _, line := range theTask.Exec {
 		cmdInput := slices.Concat(strings.Split(line, " "), args[1:])
+		cmdInput = lo.Map(cmdInput, inputVarMapper)
+
 		//nolint:gosec // has validation
 		command := exec.Command(cmdInput[0], cmdInput[1:]...)
 		logger.Debug().Log(strings.Join(cmdInput, " "))
 
-		if len(task.Env) > 0 {
-			envs := lo.Map(task.Env, func(pair string, _ int) string {
-				out := strings.Replace(pair, varModule, args[1], 1)
-
-				if strings.Contains(out, varCopy) {
-					key := strings.Split(out, "=")[0]
-
-					val, ok := os.LookupEnv(key)
-					if !ok {
-						logger.Warn().Logf("env value inherited is empty: " + key)
-					}
-
-					out = strings.Replace(out, varCopy, val, 1)
-				}
-
-				return out
-			})
-
+		if len(theTask.Env) > 0 {
+			envs := lo.Map(theTask.Env, envVarMapper(logger, args))
 			command.Env = append(command.Env, envs...)
 		}
 
@@ -261,4 +246,43 @@ func checkOnline() error {
 	defer res.Body.Close()
 
 	return nil
+}
+
+func envVarMapper(logger logging.Logger, args []string) func(pair string, _ int) string {
+	return func(pair string, _ int) string {
+		out := strings.Replace(pair, varModule, args[1], 1)
+
+		if strings.Contains(out, varCopy) {
+			key := strings.Split(out, "=")[0]
+
+			val, ok := os.LookupEnv(key)
+			if !ok {
+				logger.Warn().Logf("env value inherited is empty: " + key)
+			}
+
+			out = strings.Replace(out, varCopy, val, 1)
+		}
+
+		return out
+	}
+}
+
+func inputVarMapper(input string, _ int) string {
+	switch input {
+	default:
+		return input
+	case varTasksModT:
+		return taskNameFilterJoin(tasks, func(t *task, _ int) bool { return t.Module })
+	case varTasksModF:
+		return taskNameFilterJoin(tasks, func(t *task, _ int) bool { return !t.Module })
+	}
+}
+
+func taskNameFilterJoin(tasks []*task, filterFunc func(t *task, _ int) bool) string {
+	modTasks := lo.Filter(tasks, filterFunc)
+	names := lo.Reduce(modTasks, func(agg []string, t *task, _ int) []string {
+		return append(agg, t.Name)
+	}, make([]string, 0, len(modTasks)))
+
+	return strings.Join(names, ",")
 }
