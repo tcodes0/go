@@ -29,6 +29,8 @@ const (
 	needOnline   = "<online>"
 	varModule    = "<module>"
 	varCopy      = "<inherit>"
+	envColor     = "CMD_COLOR"
+	envLogLevel  = "CMD_LOGLEVEL"
 )
 
 var errUsage = errors.New("see usage")
@@ -101,29 +103,22 @@ func (task *task) validateModule(logger logging.Logger, args ...string) error {
 
 var (
 	//go:embed config.yml
-	config  string
-	flagset = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	tasks   []*task
+	config string
+	tasks  []*task
 )
 
 func main() {
-	fLogLevel := flagset.Int("log-level", int(logging.LInfo), "control logging output; 1 is debug, the higher the less logs.")
-	fColor := flagset.Bool("color", false, "colored logging output. (default false)")
-
-	err := flagset.Parse(os.Args[1:])
+	err := yaml.Unmarshal([]byte(config), &tasks)
 	if err != nil {
 		usage(err)
 		os.Exit(1)
 	}
 
-	err = yaml.Unmarshal([]byte(config), &tasks)
-	if err != nil {
-		usage(err)
-		os.Exit(1)
-	}
+	fColor := misc.LookupEnv(envColor, false)
+	fLogLevel := misc.LookupEnv(envLogLevel, int(logging.LInfo))
 
-	opts := []logging.CreateOptions{logging.OptFlags(log.Lshortfile), logging.OptLevel(logging.Level(*fLogLevel))}
-	if *fColor {
+	opts := []logging.CreateOptions{logging.OptFlags(log.Lshortfile), logging.OptLevel(logging.Level(fLogLevel))}
+	if fColor {
 		opts = append(opts, logging.OptColor())
 	}
 
