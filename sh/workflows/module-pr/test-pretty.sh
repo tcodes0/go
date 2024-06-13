@@ -64,13 +64,9 @@ gotestfmt -input "$testOutputJson"
 echo "testOutputJson=$testOutputJson"
 echo "testOutputJson=$testOutputJson" >>"$GITHUB_OUTPUT"
 
-if ! [ "${DISPLAY_COVERAGE:-}" ]; then
-  exit
-fi
-
 if [ ! -f "$COVERAGE_FILE" ]; then
-  msgln "$COVERAGE_FILE not found"
-  exit 1
+  msgln "$COVERAGE_FILE not found, did you run tests with -coverprofile=?"
+  exit
 fi
 
 cover -html="$COVERAGE_FILE" -o coverage.html
@@ -81,8 +77,4 @@ if macos; then
   opener=open
 fi
 
-if $opener "$PWD/coverage.html" >/dev/null 2>&1; then
-  msgln see your browser
-else
-  msgln "open $PWD/coverage.html.out in your browser"
-fi
+msgln view coverage html: \'$opener "$PWD/coverage.html"\'

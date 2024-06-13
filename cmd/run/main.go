@@ -170,7 +170,7 @@ func usage(err error) {
 	fmt.Println()
 	fmt.Println("modules:", strings.Join(modules, ", "))
 	fmt.Println("use 'all' as module to iterate all modules")
-	fmt.Println("pass -h to commands to see further options")
+	fmt.Println("pass -h to tasks for documentation")
 	fmt.Println()
 }
 
