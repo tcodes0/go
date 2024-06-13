@@ -41,7 +41,7 @@ flags+=(-race)
 # go vet linter is handled by lint step
 flags+=(-vet=off)
 # output coverage profile to file
-flags+=(-coverprofile="$LIB_COVERAGE_FILE")
+flags+=(-coverprofile="$COVERAGE_FILE")
 # package to scan coverage, necessary for blackbox testing
 flags+=(-coverpkg="./$MOD_PATH")
 
@@ -68,12 +68,12 @@ if ! [ "${DISPLAY_COVERAGE:-}" ]; then
   exit
 fi
 
-if [ ! -f "$LIB_COVERAGE_FILE" ]; then
-  msgln "$LIB_COVERAGE_FILE not found"
+if [ ! -f "$COVERAGE_FILE" ]; then
+  msgln "$COVERAGE_FILE not found"
   exit 1
 fi
 
-cover -html="$LIB_COVERAGE_FILE" -o coverage.html
+cover -html="$COVERAGE_FILE" -o coverage.html
 
 opener=xdg-open
 

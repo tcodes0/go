@@ -13,7 +13,7 @@ set -euo pipefail
 shopt -s globstar
 
 export LIB_COLOR_PASS="\e[7;38;05;242m PASS \e[0m" LIB_COLOR_FAIL="\e[2;7;38;05;197;47m FAIL \e[0m" LIB_FORMAT_DIM="\e[2m"
-export LIB_VISUAL_END="\e[0m" LIB_COVERAGE_FILE="coverage.out" LIB_ROOT_MODULE="github.com/tcodes0/go"
+export LIB_VISUAL_END="\e[0m" LIB_ROOT_MODULE="github.com/tcodes0/go"
 
 # example: msgln hello world
 msgln() {

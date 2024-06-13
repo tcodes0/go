@@ -52,6 +52,7 @@ jobs:
         env:
           MOD_PATH: ${{ inputs.modulePath }}
           CACHE: true
+          COVERAGE_FILE: coverage.out
         shell: bash
         run: ./sh/workflows/module-pr/test-pretty.sh
 
