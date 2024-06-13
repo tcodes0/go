@@ -138,6 +138,7 @@ requestedHelp() {
   fi
 }
 
+# spell-checker: disable-next
 # example: didYouMean "helo" "hello" "world" output "Did you mean: hello"
 didYouMean() {
   input=$1 idx=0 len=${#1}

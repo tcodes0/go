@@ -55,9 +55,9 @@
   exec:
     - ./sh/generate-mocks.sh
 
-- name: spellcheck-docs
+- name: spellcheck
   exec:
-    - "cspell --gitignore ./**/*.md"
+    - "cspell --gitignore ."
 
 - name: setup
   exec:

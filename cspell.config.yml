@@ -17,11 +17,11 @@ dictionaries:
 words:
   - alnum
   - bellynha
-  - Cmds
+  - cmds
   - commitlintrc
-  - DEBG
+  - debg
   - erro
-  - FATL
+  - fatl
   - gengowork
   - genvscodetasks
   - gocritic
@@ -50,14 +50,42 @@ words:
   - noctx
   - nolintlint
   - scandir
-  - Seqs
-  - SHELLCHECK
-  - SHFMT
+  - seqs
+  - shellcheck
+  - shfmt
   - stretchr
   - tcodes
   - tcodes0
-  - Thomazella
+  - thomazella
   - tparallel
-  - Unappend
+  - unappend
   - unmarshalling
   - unmarshals
+  - nower
+  - wrapf
+  - samber
+  - nolint
+  - unmarshaled
+  - menlo
+  - ogger
+  - gger
+  - logg
+  - xerrors
+  - davecgh
+  - pmezard
+  - objx
+  - thom
+  - ribeiro
+  - cipush
+  - gorun
+  - generatevscodetasks
+  - mvdan
+  - joho
+  - fatih
+  - uudashr
+  - cweill
+  - ramya
+  - haya
+  - busa
+  - honnef
+  - meepo

@@ -41,6 +41,7 @@ declare -ra commands=(
 )
 
 usageExit() {
+  # spell-checker: disable-next
   local regExpInvalidCapture='.nvalid\ [^:]+:\ ([[:alpha:]]*)' cmdNames=()
 
   msgln "$*"
