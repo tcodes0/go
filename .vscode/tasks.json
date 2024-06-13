@@ -53,7 +53,7 @@
       "id": "commandModule",
       "description": "Module Commands",
       "default": "",
-      "options": ["build", "format", "lint", "lint-fix", "test", "test-cover"]
+      "options": ["build", "format", "lint", "lint-fix", "test"]
     },
     {
       "type": "pickString",
@@ -64,7 +64,6 @@
         "ci",
         "ci-push",
         "copyright",
-        "coverage",
         "format-configs",
         "generate-go-work",
         "generate-mocks",

@@ -47,10 +47,6 @@
   exec:
     - "./sh/ci.sh push"
 
-- name: coverage
-  exec:
-    - ./sh/coverage.sh
-
 - name: format-configs
   exec:
     - "prettier --write ./**/*{.yml,.yaml,.json}"
