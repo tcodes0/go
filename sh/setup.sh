@@ -161,6 +161,13 @@ else
   pass 'docker running'
 fi
 
+if ! MOD_PATH=cmd/run ./sh/workflows/module-pr/build.sh; then
+  fail 'build cmd/run' 'build failed'
+  fixProblems+=("cmd/run build failed, ./run symlink wont work")
+else
+  pass 'build cmd/run'
+fi
+
 # notes
 
 msgln note: \'act\' requires first time setup
