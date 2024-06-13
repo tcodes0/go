@@ -6,6 +6,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"regexp"
@@ -17,7 +18,11 @@ import (
 	"github.com/tcodes0/go/misc"
 )
 
-var ignore = regexp.MustCompile(`test$|\.local.*|cmd/template|^cmd$`)
+var (
+	ignore      = regexp.MustCompile(`test$|\.local.*|cmd/template|^cmd$`)
+	EnvColor    = "CMD_COLOR"
+	EnvLogLevel = "CMD_LOGLEVEL"
+)
 
 func FindModules(logger logging.Logger) ([]string, error) {
 	cmd := exec.Command("find", ".", "-mindepth", "2", "-maxdepth", "3", "-type", "f", "-name", "*.go", "-exec", "dirname", "{}", ";")
@@ -82,4 +87,12 @@ func WriteFile(path string, data []byte) error {
 	}
 
 	return nil
+}
+
+func EnvVarUsage() string {
+	format := "environment variables:\n"
+	format += "%s\t toggle logger colored output (default: false)\n"
+	format += "%s\t set log level, 1 - 5, 1 is debug. The higher the less logs (default: 2)"
+
+	return fmt.Sprintf(format, EnvColor, EnvLogLevel)
 }

@@ -64,6 +64,11 @@
     - ./sh/setup.sh
 
 - name: generate-go-work
+  env:
+    - PATH=<inherit>
+    - HOME=<inherit>
+    - CMD_COLOR=<inherit>
+    - CMD_LOGLEVEL=<inherit>
   exec:
     - go run cmd/gengowork/main.go
 
@@ -73,9 +78,19 @@
     - ./sh/new-module.sh
 
 - name: generate-vscode-tasks
+  env:
+    - PATH=<inherit>
+    - HOME=<inherit>
+    - CMD_COLOR=<inherit>
+    - CMD_LOGLEVEL=<inherit>
   exec:
     - "go run cmd/genvscodetasks/main.go -module-commands <task-module-names> -repo-commands <task-not-module-names>"
 
 - name: copyright
+  env:
+    - PATH=<inherit>
+    - HOME=<inherit>
+    - CMD_COLOR=<inherit>
+    - CMD_LOGLEVEL=<inherit>
   exec:
     - "go run cmd/copyright/main.go"

@@ -40,8 +40,6 @@ var (
 )
 
 func main() {
-	fLogLevel := flagset.Int("log-level", int(logging.LInfo), "control logging output; 1 is debug, the higher the less logs.")
-	fColor := flagset.Bool("color", false, "colored logging output. (default false)")
 	//nolint:lll // help string
 	fModCmds := flagset.String("module-commands", "", "module commands to be added to the tasks.json file. Comma separated list, trimmed. Required.")
 	//nolint:lll // help string
@@ -57,8 +55,11 @@ func main() {
 		usageExit(err)
 	}
 
-	opts := []logging.CreateOptions{logging.OptFlags(log.Lshortfile), logging.OptLevel(logging.Level(*fLogLevel))}
-	if *fColor {
+	fColor := misc.LookupEnv(cmd.EnvColor, false)
+	fLogLevel := misc.LookupEnv(cmd.EnvLogLevel, int(logging.LInfo))
+
+	opts := []logging.CreateOptions{logging.OptFlags(log.Lshortfile), logging.OptLevel(logging.Level(fLogLevel))}
+	if fColor {
 		opts = append(opts, logging.OptColor())
 	}
 
@@ -78,6 +79,7 @@ func usageExit(err error) {
 	fmt.Println()
 	fmt.Println("generates vscode tasks.json file")
 	fmt.Println()
+	fmt.Println(cmd.EnvVarUsage())
 
 	if err != nil && !errors.Is(err, flag.ErrHelp) {
 		flagset.Usage()

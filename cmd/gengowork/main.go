@@ -24,16 +24,16 @@ import (
 var flagset = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 
 func main() {
-	fLogLevel := flagset.Int("log-level", int(logging.LInfo), "control logging output; 1 is debug, the higher the less logs.")
-	fColor := flagset.Bool("color", false, "colored logging output. (default false)")
-
 	err := flagset.Parse(os.Args[1:])
 	if err != nil {
 		usageExit(err)
 	}
 
-	opts := []logging.CreateOptions{logging.OptFlags(log.Lshortfile), logging.OptLevel(logging.Level(*fLogLevel))}
-	if *fColor {
+	fColor := misc.LookupEnv(cmd.EnvColor, false)
+	fLogLevel := misc.LookupEnv(cmd.EnvLogLevel, int(logging.LInfo))
+
+	opts := []logging.CreateOptions{logging.OptFlags(log.Lshortfile), logging.OptLevel(logging.Level(fLogLevel))}
+	if fColor {
 		opts = append(opts, logging.OptColor())
 	}
 
@@ -49,6 +49,7 @@ func usageExit(err error) {
 	fmt.Println()
 	fmt.Println("generates go.work file")
 	fmt.Println()
+	fmt.Println(cmd.EnvVarUsage())
 
 	if err != nil && !errors.Is(err, flag.ErrHelp) {
 		fmt.Printf("error: %v\n", err)

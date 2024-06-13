@@ -17,6 +17,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/tcodes0/go/cmd"
 	"github.com/tcodes0/go/logging"
 	"github.com/tcodes0/go/misc"
 	"gopkg.in/yaml.v3"
@@ -41,8 +42,6 @@ var (
 )
 
 func main() {
-	fLogLevel := flagset.Int("log-level", int(logging.LInfo), "control logging output; 1 is debug, the higher the less logs.")
-	fColor := flagset.Bool("color", false, "colored logging output. (default false)")
 	fFix := flagset.Bool("fix", false, "applies header to files. (default false)")
 
 	err := flagset.Parse(os.Args[1:])
@@ -55,14 +54,17 @@ func main() {
 		usageExit(err)
 	}
 
-	opts := []logging.CreateOptions{logging.OptFlags(log.Lshortfile), logging.OptLevel(logging.Level(*fLogLevel))}
-	if *fColor {
+	fColor := misc.LookupEnv(cmd.EnvColor, false)
+	fLogLevel := misc.LookupEnv(cmd.EnvLogLevel, int(logging.LInfo))
+
+	opts := []logging.CreateOptions{logging.OptFlags(log.Lshortfile), logging.OptLevel(logging.Level(fLogLevel))}
+	if fColor {
 		opts = append(opts, logging.OptColor())
 	}
 
 	logger := logging.Create(opts...)
 
-	if *fLogLevel == 0 && !*fFix {
+	if fLogLevel == 0 && !*fFix {
 		// withut -fix and explicit level only print errors
 		logger.SetLevel(logging.LError)
 	}
@@ -84,9 +86,10 @@ func main() {
 
 func usageExit(err error) {
 	fmt.Println()
-	fmt.Println("Check and fix missing boilerplate header in files")
-	fmt.Println("Without -fix fails if files are missing copyright header and prints files")
+	fmt.Println("check and fix missing boilerplate header in files")
+	fmt.Println("without -fix fails if files are missing copyright header and prints files")
 	fmt.Println()
+	fmt.Println(cmd.EnvVarUsage())
 
 	if err != nil && !errors.Is(err, flag.ErrHelp) {
 		fmt.Printf("error: %v\n", err)
@@ -125,9 +128,9 @@ func boilerplate(logger logging.Logger, fix bool) error {
 
 func filesWithoutHeader(logger logging.Logger) (paths []string, err error) {
 	for _, findName := range strings.Split(configs.FindNames, ",") {
-		cmd := exec.Command("find", ".", "-name", findName, "-type", "f")
+		command := exec.Command("find", ".", "-name", findName, "-type", "f")
 
-		findOut, err := cmd.CombinedOutput()
+		findOut, err := command.CombinedOutput()
 		if err != nil {
 			return nil, misc.Wrapf(err, "find %s", findName)
 		}

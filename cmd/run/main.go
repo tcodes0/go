@@ -29,12 +29,9 @@ const (
 	needOnline   = "<online>"
 
 	varModule    = "<module>"
-	varCopy      = "<inherit>"
+	varInherit   = "<inherit>"
 	varTasksModT = "<task-module-names>"
 	varTasksModF = "<task-not-module-names>"
-
-	envColor    = "CMD_COLOR"
-	envLogLevel = "CMD_LOGLEVEL"
 )
 
 var (
@@ -117,8 +114,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	fColor := misc.LookupEnv(envColor, false)
-	fLogLevel := misc.LookupEnv(envLogLevel, int(logging.LInfo))
+	fColor := misc.LookupEnv(cmd.EnvColor, false)
+	fLogLevel := misc.LookupEnv(cmd.EnvLogLevel, int(logging.LInfo))
 
 	opts := []logging.CreateOptions{logging.OptFlags(log.Lshortfile), logging.OptLevel(logging.Level(fLogLevel))}
 	if fColor {
@@ -168,10 +165,13 @@ func usage(err error) {
 	}
 
 	fmt.Println()
-	fmt.Println("modules:", strings.Join(modules, ", "))
+	fmt.Println("modules:")
+	fmt.Println(strings.Join(modules, "\n"))
+	fmt.Println()
+	fmt.Println(cmd.EnvVarUsage())
+	fmt.Println()
 	fmt.Println("use 'all' as module to iterate all modules")
 	fmt.Println("pass -h to tasks for documentation")
-	fmt.Println()
 }
 
 // run <task> <module or arg1> ...args.
@@ -250,20 +250,22 @@ func checkOnline() error {
 
 func envVarMapper(logger logging.Logger, args []string) func(pair string, _ int) string {
 	return func(pair string, _ int) string {
-		out := strings.Replace(pair, varModule, args[1], 1)
+		if strings.Contains(pair, varModule) {
+			return strings.Replace(pair, varModule, args[1], 1)
+		}
 
-		if strings.Contains(out, varCopy) {
-			key := strings.Split(out, "=")[0]
+		if strings.Contains(pair, varInherit) {
+			key := strings.Split(pair, "=")[0]
 
 			val, ok := os.LookupEnv(key)
 			if !ok {
-				logger.Warn().Logf("env value inherited is empty: " + key)
+				logger.Debug().Logf("env value inherited is empty: " + key)
 			}
 
-			out = strings.Replace(out, varCopy, val, 1)
+			return strings.Replace(pair, varInherit, val, 1)
 		}
 
-		return out
+		return pair
 	}
 }
 
