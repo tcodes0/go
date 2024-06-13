@@ -17,7 +17,7 @@ type lookupEnv interface {
 
 func LookupEnv[T lookupEnv](key string, fallback T) T {
 	val, ok := os.LookupEnv(key)
-	if !ok {
+	if !ok || val == "" {
 		return fallback
 	}
 
