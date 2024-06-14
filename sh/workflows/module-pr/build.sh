@@ -29,7 +29,7 @@ fi
 
 command=build
 
-if [ "${INSTALL:-}" ]; then
+if [[ "$*" =~ install ]]; then
   msgln "build & install"
   command=install
 fi

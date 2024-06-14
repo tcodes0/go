@@ -6,6 +6,7 @@
 package main
 
 import (
+	"bytes"
 	_ "embed"
 	"errors"
 	"flag"
@@ -212,11 +213,15 @@ func run(logger logging.Logger, args ...string) error {
 
 		logger.Debug().Log("env: " + strings.Join(command.Env, " "))
 
+		stderrBuffer := bytes.Buffer{}
+		command.Stderr = &stderrBuffer
+
 		out, err := command.Output()
-		// this is odd but we do want to print output always
 		if len(out) > 0 {
 			logger.Log("\n" + string(out))
 		}
+
+		logger.Debug().Log("\n" + stderrBuffer.String())
 
 		if err != nil {
 			exitErr, ok := (err).(*exec.ExitError)
