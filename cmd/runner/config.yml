@@ -1,6 +1,7 @@
 # unmarshaled into cmd/runner/main.go task type
 - name: build
   module: true
+  inputs: 2
   env:
     - MOD_PATH=<module>
     - HOME=<inherit>
@@ -10,23 +11,20 @@
 
 - name: lint
   module: true
+  inputs: 2
   exec:
     - "golangci-lint run --timeout 10s --print-issued-lines=false"
 
 - name: format
   module: true
+  inputs: 1
   exec:
     - "gofumpt -l -w"
-    - "prettier --write ./**/*{.yml,.yaml,.json}"
-
-- name: lint-fix
-  module: true
-  exec:
-    - ./sh/lint-fix.sh
-    - "golangci-lint run --timeout 10s --print-issued-lines=false --fix"
+    - "prettier --write <module>/**/*{.yml,.yaml,.json}"
 
 - name: test
   module: true
+  inputs: 1
   env:
     - CACHE=true
     - GITHUB_OUTPUT=/dev/null
@@ -39,13 +37,9 @@
 
 - name: ci
   needs: "<git-clean>, <online>"
+  inputs: 1
   exec:
     - ./sh/ci.sh
-
-- name: ci-push
-  needs: "<git-clean>, <online>"
-  exec:
-    - "./sh/ci.sh push"
 
 - name: format-configs
   exec:

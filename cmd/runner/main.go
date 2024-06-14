@@ -155,11 +155,11 @@ func usage(err error) {
 		line += task.Name + "\t"
 
 		if task.Module {
-			line += "<module>"
-		} else {
-			for range task.Inputs {
-				line += "<arg>\t"
-			}
+			line += "<module> "
+		}
+
+		for range task.Inputs {
+			line += "<arg> "
 		}
 
 		fmt.Println(line)
@@ -200,7 +200,7 @@ func run(logger logging.Logger, args ...string) error {
 
 	for _, line := range theTask.Exec {
 		cmdInput := slices.Concat(strings.Split(line, " "), args[1:])
-		cmdInput = lo.Map(cmdInput, inputVarMapper)
+		cmdInput = lo.Map(cmdInput, inputVarMapper(args))
 
 		//nolint:gosec // has validation
 		command := exec.Command(cmdInput[0], cmdInput[1:]...)
@@ -280,14 +280,21 @@ func envVarMapper(logger logging.Logger, args []string) func(pair string, _ int)
 	}
 }
 
-func inputVarMapper(input string, _ int) string {
-	switch input {
-	default:
+func inputVarMapper(args []string) func(input string, _ int) string {
+	return func(input string, _ int) string {
+		if strings.Contains(input, varTasksModT) {
+			return strings.ReplaceAll(input, varTasksModT, taskNameFilterJoin(tasks, func(t *task, _ int) bool { return t.Module }))
+		}
+
+		if strings.Contains(input, varTasksModF) {
+			return strings.ReplaceAll(input, varTasksModF, taskNameFilterJoin(tasks, func(t *task, _ int) bool { return !t.Module }))
+		}
+
+		if strings.Contains(input, varModule) {
+			return strings.ReplaceAll(input, varModule, args[1])
+		}
+
 		return input
-	case varTasksModT:
-		return taskNameFilterJoin(tasks, func(t *task, _ int) bool { return t.Module })
-	case varTasksModF:
-		return taskNameFilterJoin(tasks, func(t *task, _ int) bool { return !t.Module })
 	}
 }
 
