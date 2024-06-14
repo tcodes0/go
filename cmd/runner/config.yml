@@ -1,7 +1,7 @@
 # unmarshaled into cmd/runner/main.go task type
 - name: build
   module: true
-  inputs: 2
+  minInputs: 1
   env:
     - MOD_PATH=<module>
     - HOME=<inherit>
@@ -11,20 +11,20 @@
 
 - name: lint
   module: true
-  inputs: 2
+  minInputs: 1
   exec:
     - "golangci-lint run --timeout 10s --print-issued-lines=false"
 
 - name: format
   module: true
-  inputs: 1
+  minInputs: 1
   exec:
     - "gofumpt -l -w"
     - "prettier --write <module>/**/*{.yml,.yaml,.json}"
 
 - name: test
   module: true
-  inputs: 1
+  minInputs: 1
   env:
     - CACHE=true
     - GITHUB_OUTPUT=/dev/null
@@ -37,7 +37,6 @@
 
 - name: ci
   needs: "<git-clean>, <online>"
-  inputs: 1
   exec:
     - ./sh/ci.sh
 
@@ -67,7 +66,7 @@
     - go run cmd/gengowork/main.go
 
 - name: new-module
-  inputs: 1
+  minInputs: 1
   exec:
     - ./sh/new-module.sh
 

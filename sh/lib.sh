@@ -22,7 +22,7 @@ msgln() {
 
 # example: msg hello world
 msg() {
-  echo -ne "♦︎ $*"
+  echo -ne "$*"
 }
 
 # output example: "23". Lines are terminal Y axis

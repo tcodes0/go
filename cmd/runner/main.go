@@ -43,28 +43,28 @@ var (
 )
 
 type task struct {
-	Env    []string `yaml:"env"`
-	Name   string   `yaml:"name"`
-	Needs  string   `yaml:"needs"`
-	Exec   []string `yaml:"exec"`
-	Module bool     `yaml:"module"`
-	Inputs int      `yaml:"inputs"`
+	Env       []string `yaml:"env"`
+	Name      string   `yaml:"name"`
+	Needs     string   `yaml:"needs"`
+	Exec      []string `yaml:"exec"`
+	Module    bool     `yaml:"module"`
+	MinInputs int      `yaml:"minInputs"`
 }
 
-// validate <module or arg1> ...args.
-func (task *task) validate(logger logging.Logger, args ...string) error {
-	_, help := lo.Find(args, func(arg string) bool { return arg == "-h" || arg == "--help" })
+// validate <module or input1> ...inputs.
+func (task *task) validate(logger logging.Logger, inputs ...string) error {
+	_, help := lo.Find(inputs, func(input string) bool { return input == "-h" || input == "--help" })
 	if help {
 		return nil
 	}
 
-	err := task.validateModule(logger, args...)
+	err := task.validateModule(logger, inputs...)
 	if err != nil {
 		return err
 	}
 
-	if task.Inputs != 0 && task.Inputs != len(args) {
-		return fmt.Errorf("%s: expected %d arguments got: %v", task.Name, task.Inputs, args)
+	if task.MinInputs != 0 && len(inputs) < task.MinInputs {
+		return fmt.Errorf("%s: expected minimum %d inputs got: %v", task.Name, task.MinInputs, inputs)
 	}
 
 	for _, need := range strings.Split(task.Needs, ",") {
@@ -89,12 +89,12 @@ func (task *task) validate(logger logging.Logger, args ...string) error {
 	return err
 }
 
-func (task *task) validateModule(logger logging.Logger, args ...string) error {
+func (task *task) validateModule(logger logging.Logger, inputs ...string) error {
 	if !task.Module {
 		return nil
 	}
 
-	if len(args) < 1 {
+	if len(inputs) < 1 {
 		return misc.Wrapf(errUsage, "%s: module is required", task.Name)
 	}
 
@@ -103,11 +103,11 @@ func (task *task) validateModule(logger logging.Logger, args ...string) error {
 		return misc.Wrap(err, "FindModules")
 	}
 
-	_, found := lo.Find(mods, func(m string) bool { return m == args[0] })
+	_, found := lo.Find(mods, func(m string) bool { return m == inputs[0] })
 	if !found {
-		didYouMean(args[0])
+		didYouMean(inputs[0])
 
-		return misc.Wrapf(errUsage, "%s: unknown module", args[0])
+		return misc.Wrapf(errUsage, "%s: unknown module", inputs[0])
 	}
 
 	return nil
@@ -146,7 +146,7 @@ func usage(err error) {
 	}
 
 	fmt.Println("miscellaneous automation tool")
-	fmt.Println("usage: ./run <task> \ttask args if any...")
+	fmt.Println("usage: ./run <task> \ttask inputs if any...")
 	fmt.Println()
 	fmt.Println("tasks available:")
 
@@ -158,8 +158,8 @@ func usage(err error) {
 			line += "<module> "
 		}
 
-		for range task.Inputs {
-			line += "<arg> "
+		for range task.MinInputs {
+			line += "<input> "
 		}
 
 		fmt.Println(line)
@@ -180,34 +180,34 @@ func usage(err error) {
 	fmt.Println("pass -h to tasks for documentation")
 }
 
-// run <task> <module or arg1> ...args.
-func run(logger logging.Logger, args ...string) error {
-	if len(args) == 0 {
+// run <task> <module or input1> ...inputs.
+func run(logger logging.Logger, inputs ...string) error {
+	if len(inputs) == 0 {
 		return misc.Wrap(errUsage, "task is required")
 	}
 
-	theTask, found := lo.Find(tasks, func(t *task) bool { return t.Name == args[0] })
+	theTask, found := lo.Find(tasks, func(t *task) bool { return t.Name == inputs[0] })
 	if !found {
-		didYouMean(args[0])
+		didYouMean(inputs[0])
 
-		return misc.Wrapf(errUsage, "%s: unknown task", args[0])
+		return misc.Wrapf(errUsage, "%s: unknown task", inputs[0])
 	}
 
-	err := theTask.validate(logger, args[1:]...)
+	err := theTask.validate(logger, inputs[1:]...)
 	if err != nil {
 		return err
 	}
 
 	for _, line := range theTask.Exec {
-		cmdInput := slices.Concat(strings.Split(line, " "), args[1:])
-		cmdInput = lo.Map(cmdInput, inputVarMapper(args))
+		cmdInput := slices.Concat(strings.Split(line, " "), inputs[1:])
+		cmdInput = lo.Map(cmdInput, inputVarMapper(inputs))
 
 		//nolint:gosec // has validation
 		command := exec.Command(cmdInput[0], cmdInput[1:]...)
 		logger.Debug().Log(strings.Join(cmdInput, " "))
 
 		if len(theTask.Env) > 0 {
-			envs := lo.Map(theTask.Env, envVarMapper(logger, args))
+			envs := lo.Map(theTask.Env, envVarMapper(logger, inputs))
 			command.Env = append(command.Env, envs...)
 		}
 
@@ -259,10 +259,10 @@ func checkOnline() error {
 	return nil
 }
 
-func envVarMapper(logger logging.Logger, args []string) func(pair string, _ int) string {
+func envVarMapper(logger logging.Logger, inputs []string) func(pair string, _ int) string {
 	return func(pair string, _ int) string {
 		if strings.Contains(pair, varModule) {
-			return strings.Replace(pair, varModule, args[1], 1)
+			return strings.Replace(pair, varModule, inputs[1], 1)
 		}
 
 		if strings.Contains(pair, varInherit) {
@@ -280,7 +280,7 @@ func envVarMapper(logger logging.Logger, args []string) func(pair string, _ int)
 	}
 }
 
-func inputVarMapper(args []string) func(input string, _ int) string {
+func inputVarMapper(inputs []string) func(input string, _ int) string {
 	return func(input string, _ int) string {
 		if strings.Contains(input, varTasksModT) {
 			return strings.ReplaceAll(input, varTasksModT, taskNameFilterJoin(tasks, func(t *task, _ int) bool { return t.Module }))
@@ -291,7 +291,7 @@ func inputVarMapper(args []string) func(input string, _ int) string {
 		}
 
 		if strings.Contains(input, varModule) {
-			return strings.ReplaceAll(input, varModule, args[1])
+			return strings.ReplaceAll(input, varModule, inputs[1])
 		}
 
 		return input

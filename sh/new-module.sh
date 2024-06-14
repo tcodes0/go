@@ -14,25 +14,7 @@ source "$PWD/sh/lib.sh"
 ### vars and functions ###
 
 name="${1:-}"
-
-### validation, input handling ###
-
-if requestedHelp "$*" || [ -z "$name" ]; then
-  msgln "Inputs:"
-  msgln "<name>\t initializes a new go module called <name>\t (required)"
-  exit 1
-fi
-
-### script ###
-
-module="github.com/tcodes0/go/$name"
-
-mkdir -p "$name/${name}_test"
-cd "$name"
-go mod init "$module"
-printf "package %s\n" "$name" >"$name.go"
-
-printf "
+formatMod="
   %s:
     name: %s
     needs: changed-files
@@ -41,11 +23,53 @@ printf "
     with:
       goVersion: TODO
       modulePath: %s
-" "$name" "$name" "$name" >>.github/workflows/main.yml
+"
+formatCmd="
+  cmd-%s:
+    name: cmd/%s
+    needs: changed-files
+    if: needs.changed-files.outputs.TODO
+    uses: ./.github/workflows/module-pr.yml
+    with:
+      goVersion: TODO
+      modulePath: cmd/%s
+"
+
+### validation, input handling ###
+
+if requestedHelp "$*" || [ -z "$name" ]; then
+  msgln "Inputs:"
+  msgln "<name>\t initializes a new go module called <name>\t (required)"
+  msgln "-cmd\t instead of a module init cmd/<name>"
+  exit 1
+fi
+
+### script ###
+
+module="github.com/tcodes0/go/$name"
+format=""
+
+if [[ "$*" =~ -cmd ]]; then
+  mkdir -p "cmd/$name"
+  cd "cmd/$name"
+  printf "package main\n" >"main.go"
+  touch config.yml
+  format=$formatCmd
+else
+  mkdir -p "$name/${name}_test"
+  cd "$name"
+  go mod init "$module"
+  printf "package %s\n" "$name" >"$name.go"
+  format=$formatMod
+fi
+
+\cd -
+
+# shellcheck disable=SC2059 # format variable
+printf "$format" "$name" "$name" "$name" >>.github/workflows/main.yml
 
 msgln "todo:
   - ./run <generate go work task>
   - ./run <generate vscode task config task>
   - ./run <copyright task>
-  - edit github workflows
-"
+  - edit github workflows"

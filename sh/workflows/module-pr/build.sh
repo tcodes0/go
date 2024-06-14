@@ -23,13 +23,13 @@ flags+=(-race)
 if requestedHelp "$*"; then
   msgln "Inputs:"
   msgln "<module>\t build the module on $buildDir\t (required)"
-  msgln "'install'\t install build output"
+  msgln "-install\t install build output"
   exit 1
 fi
 
 command=build
 
-if [[ "$*" =~ install ]]; then
+if [[ "$*" =~ -install ]]; then
   msgln "build & install"
   command=install
 fi
