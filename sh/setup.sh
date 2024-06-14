@@ -24,7 +24,7 @@ setup() {
   installLink="$2"
   binary="$3"
   comments="${*:4}"
-  declare -A installCommandsByLang=(
+  declare -A installCommandsByType=(
     ["go"]="go install"
     ["js"]="npm install --global"
     ["manual"]="-"
@@ -32,7 +32,7 @@ setup() {
 
   if ! command -v "$binary" >/dev/null; then
     fail "$binary $comments"
-    fixProblems+=("${installCommandsByLang[$type]} $installLink")
+    fixProblems+=("${installCommandsByType[$type]} $installLink")
   else
     pass "$binary"
   fi
@@ -168,7 +168,7 @@ fi
 
 if ! MOD_PATH=cmd/runner ./sh/workflows/module-pr/build.sh; then
   fail 'build cmd/runner' 'build failed'
-  fixProblems+=("cmd/runner build failed, ./run symlink wont work")
+  fixProblems+=("cmd/runner build failed, ./run symlink won't work")
 else
   pass 'build cmd/runner'
 fi

@@ -21,7 +21,7 @@ testDir="./$MOD_PATH/$testPkg"
 regExpPrefixCmd="^cmd/"
 
 if [[ "$MOD_PATH" =~ $regExpPrefixCmd ]]; then
-  # cmds have just a main package
+  # cmds don't follow _test subpackage convention
   testDir="./$MOD_PATH"
 fi
 

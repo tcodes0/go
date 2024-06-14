@@ -249,7 +249,7 @@ func checkGitClean() error {
 
 func checkOnline() error {
 	//nolint:noctx // simple internet test
-	res, err := http.Get("1.1.1.1" /*cloudflare*/)
+	res, err := http.Get("https://1.1.1.1" /*cloudflare*/)
 	if err != nil {
 		return misc.Wrap(err, "please check your internet connection")
 	}

@@ -47,6 +47,9 @@ jobs:
       - name: Install gotestfmt
         run: go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt@latest
 
+      - name: Install cover
+        run: go install golang.org/x/tools/cmd/cover@latest
+
       - name: Test pretty
         id: test-pretty
         env:
