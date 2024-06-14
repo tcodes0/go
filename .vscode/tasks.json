@@ -39,7 +39,7 @@
         "cmd/copyright",
         "cmd/gengowork",
         "cmd/genvscodetasks",
-        "cmd/run",
+        "cmd/runner",
         "httpmisc",
         "hue",
         "identifier",

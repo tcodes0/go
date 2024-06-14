@@ -1,4 +1,4 @@
-# unmarshaled into cmd/run/main.go task type
+# unmarshaled into cmd/runner/main.go task type
 - name: build
   module: true
   env:
