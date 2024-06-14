@@ -36,6 +36,7 @@
       "options": [
         "all",
         "clock",
+        "cmd/ci",
         "cmd/copyright",
         "cmd/gengowork",
         "cmd/genvscodetasks",
@@ -53,7 +54,7 @@
       "id": "commandModule",
       "description": "Module Commands",
       "default": "",
-      "options": ["build", "format", "lint", "lint-fix", "test"]
+      "options": ["build", "format", "lint", "test"]
     },
     {
       "type": "pickString",
@@ -62,7 +63,6 @@
       "default": "",
       "options": [
         "ci",
-        "ci-push",
         "copyright",
         "format-configs",
         "generate-go-work",
@@ -70,7 +70,7 @@
         "generate-vscode-tasks",
         "new-module",
         "setup",
-        "spellcheck-docs"
+        "spellcheck"
       ]
     }
   ]

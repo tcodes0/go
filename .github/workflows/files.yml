@@ -2,8 +2,8 @@ root_go_mod:
   - go.mod
   - go.sum
 cmd_go_mod:
-  - go.mod
-  - go.sum
+  - cmd/go.mod
+  - cmd/go.sum
 any_go_mod:
   - "**/go.mod"
   - "**/go.sum"
@@ -43,12 +43,14 @@ misc:
   - misc/**.go
   - misc/go.mod
   - misc/go.sum
+any_code:
+  - "**/*.go"
+  - "**/*.sh"
 cmd_copyright:
   - cmd/copyright/**.go
 cmd_gen_go_work:
   - cmd/gengowork/**.go
 cmd_gen_vscode_tasks:
   - cmd/genvscodetasks/**.go
-any_code:
-  - "**/*.go"
-  - "**/*.sh"
+cmd_ci:
+  - cmd/ci/**.go

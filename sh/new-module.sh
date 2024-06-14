@@ -32,8 +32,20 @@ cd "$name"
 go mod init "$module"
 printf "package %s\n" "$name" >"$name.go"
 
+printf "
+  %s:
+    name: %s
+    needs: changed-files
+    if: needs.changed-files.outputs.TODO
+    uses: ./.github/workflows/module-pr.yml
+    with:
+      goVersion: TODO
+      modulePath: %s
+" "$name" "$name" "$name" >>.github/workflows/main.yml
+
 msgln "todo:
-  - run script to update go.work
-  - add $module to github workflows
-  - add $module to vscode json config
+  - ./run <generate go work task>
+  - ./run <generate vscode task config task>
+  - ./run <copyright task>
+  - edit github workflows
 "

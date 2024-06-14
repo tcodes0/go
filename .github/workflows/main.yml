@@ -23,6 +23,7 @@ jobs:
       modCmdCopyright: ${{ steps.list-changed-files.outputs.cmd_copyright_all_changed_files }}
       modCmdGenGoWork: ${{ steps.list-changed-files.outputs.cmd_gen_go_work_all_changed_files }}
       modCmdGenVscodeTasks: ${{ steps.list-changed-files.outputs.cmd_gen_vscode_tasks_all_changed_files }}
+      modCmdCi: ${{ steps.list-changed-files.outputs.cmd_ci_all_changed_files }}
       # others
       anyGoMod: ${{ steps.list-changed-files.outputs.any_go_mod_all_changed_files }}
       rootGoMod: ${{ steps.list-changed-files.outputs.root_go_mod_all_changed_files }}
@@ -334,3 +335,12 @@ jobs:
     with:
       goVersion: 1.22
       modulePath: cmd/genvscodetasks
+
+  cmd-ci:
+    name: cmd/ci
+    needs: changed-files
+    if: needs.changed-files.outputs.modCmdCi
+    uses: ./.github/workflows/module-pr.yml
+    with:
+      goVersion: 1.22
+      modulePath: cmd/ci
