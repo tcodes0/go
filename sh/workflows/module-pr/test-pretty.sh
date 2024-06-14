@@ -9,11 +9,9 @@ shopt -s globstar
 # shellcheck disable=SC1091
 source "$PWD/sh/lib.sh"
 
-# mod path may have a -h
-if requestedHelp "$MOD_PATH"; then
-  msgln "Usage:"
-  msgln "$0 <module>"
-  msgln "$0 <module> -cover"
+if requestedHelp "$*"; then
+  msgln "Inputs:"
+  msgln "<module>\t run tests; output coverage files\t (required)"
   exit 1
 fi
 

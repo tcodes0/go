@@ -13,21 +13,14 @@ source "$PWD/sh/lib.sh"
 
 ### vars and functions ###
 
-usageExit() {
-  msgln "Usage: $0 <name>  initializes a new go module called <name>"
-  exit 1
-}
-
 name="${1:-}"
 
 ### validation, input handling ###
 
-if requestedHelp "$*"; then
-  usageExit
-fi
-
-if [ -z "$name" ]; then
-  usageExit
+if requestedHelp "$*" || [ -z "$name" ]; then
+  msgln "Inputs:"
+  msgln "<name>\t initializes a new go module called <name>\t (required)"
+  exit 1
 fi
 
 ### script ###

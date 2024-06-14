@@ -6,6 +6,8 @@
 
 set -euo pipefail
 shopt -s globstar
+# shellcheck disable=SC1091
+source "$PWD/sh/lib.sh"
 
 linters=(
   defers
@@ -21,6 +23,12 @@ linters=(
   unusedresult
   tagalign
 )
+
+if requestedHelp "$*"; then
+  msgln "Inputs:"
+  msgln "<module>\t lint fix the module\t (required)"
+  exit 1
+fi
 
 for linter in "${linters[@]}"; do
   $linter -fix "$PWD/$1"

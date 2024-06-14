@@ -52,6 +52,11 @@ type task struct {
 
 // validate <module or arg1> ...args.
 func (task *task) validate(logger logging.Logger, args ...string) error {
+	_, help := lo.Find(args, func(arg string) bool { return arg == "-h" || arg == "--help" })
+	if help {
+		return nil
+	}
+
 	err := task.validateModule(logger, args...)
 	if err != nil {
 		return err
@@ -208,17 +213,18 @@ func run(logger logging.Logger, args ...string) error {
 		logger.Debug().Log("env: " + strings.Join(command.Env, " "))
 
 		out, err := command.Output()
+		// this is odd but we do want to print output always
+		if len(out) > 0 {
+			logger.Log("\n" + string(out))
+		}
+
 		if err != nil {
 			exitErr, ok := (err).(*exec.ExitError)
-			if ok {
+			if ok && len(exitErr.Stderr) > 0 {
 				logger.Error().Log("stderr: " + string(exitErr.Stderr))
 			}
 
 			return misc.Wrapf(err, "command '%s'", strings.Join(cmdInput, " "))
-		}
-
-		if len(out) > 0 {
-			logger.Log("\n" + string(out))
 		}
 	}
 
