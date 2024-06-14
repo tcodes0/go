@@ -32,7 +32,7 @@ fi
 
 ### script ###
 
-module="$LIB_ROOT_MODULE/$name"
+module="github.com/tcodes0/go/$name"
 
 mkdir -p "$name/${name}_test"
 cd "$name"

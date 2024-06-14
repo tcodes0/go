@@ -12,8 +12,8 @@
 set -euo pipefail
 shopt -s globstar
 
-export LIB_COLOR_PASS="\e[7;38;05;242m PASS \e[0m" LIB_COLOR_FAIL="\e[2;7;38;05;197;47m FAIL \e[0m" LIB_FORMAT_DIM="\e[2m"
-export LIB_VISUAL_END="\e[0m" LIB_ROOT_MODULE="github.com/tcodes0/go"
+export LIB_COLOR_PASS="\e[7;38;05;242m PASS \e[0m" LIB_COLOR_FAIL="\e[2;7;38;05;197;47m FAIL \e[0m"
+export LIB_VISUAL_END="\e[0m" LIB_FORMAT_DIM="\e[2m"
 
 # example: msgln hello world
 msgln() {
@@ -25,21 +25,6 @@ msg() {
   echo -ne "♦︎ $*"
 }
 
-# example: msgExit could not find the file
-msgExit() {
-  msgln "$*"
-  return 1
-}
-
-# example: requireGitClean please commit changes to avoid losing work
-requireGitClean() {
-  message="${*:-There are uncommitted changes, please commit or stash}"
-
-  if [ -n "$(git diff --exit-code)" ]; then
-    msgExit "$message"
-  fi
-}
-
 # output example: "23". Lines are terminal Y axis
 currentTerminalLine() {
   # https://github.com/dylanaraps/pure-bash-bible#get-the-current-cursor-position
@@ -47,121 +32,11 @@ currentTerminalLine() {
   printf "%s" "$currentLine"
 }
 
-# example: requireInternet Internet required to fetch dependencies
-requireInternet() {
-  declare -A pingPals=(["cloudflare"]="1.1.1.1")
-  message="${*:-Internet required}"
-
-  if ! ping -c 1 "${pingPals[cloudflare]}" &>/dev/null; then
-    msgExit "$message"
-  fi
-}
-
-# run a test case and print the result
-testCase() {
-  description=$1 input=$2 expected=$3 result=""
-
-  # shellcheck disable=SC2086 # let the command expand
-  if ! result=$($TESTEE $input); then
-    printf "%b\n" "$LIB_COLOR_FAIL $description"
-    printf "%b\n" "non zero exit"
-    exit 1
-  fi
-
-  if [ "$result" != "$expected" ]; then
-    printf "%b\n" "$LIB_COLOR_FAIL $description"
-    printf "%b\n" "expectation not met:"
-    printf "%b\n" "< expected"
-    diff <(printf %b "$expected") <(printf %b "$result")
-    exit 1
-  fi
-
-  printf "%b\n" "$LIB_COLOR_PASS $description"
-}
-
-# wait for all processes to finish
-# example: wait 123 345 5665 3234
-wait() {
-  while true; do
-    done=$#
-
-    for pid in "${@}"; do
-      if ! ps -p "$pid" >/dev/null; then
-        done=$((done - 1))
-      fi
-    done
-
-    if [ "$done" = 0 ]; then
-      break
-    fi
-  done
-}
-
-# example: requireGitBranch main
-requireGitBranch() {
-  branch="${1}"
-  current=$(git branch --show-current)
-
-  if [ "$branch" != "$current" ]; then
-    msgExit "please checkout $branch; on $current"
-  fi
-}
-
-# find folders directly under . that have at least one *.go file and prettify output
-# outputs one module per line
-findModules() {
-  regExpTestSuffix="test$"
-  regExpLocalSuffix=".local$"
-  find . -mindepth 2 -maxdepth 3 -type f -name '*.go' -exec dirname {} \; | _sed --regexp-extended -e "/$regExpTestSuffix/d" -e "/$regExpLocalSuffix/d" | sort --stable | uniq
-}
-
-# find folders directly under . that have at least one *.go file and prettify output
-# outputs space separated modules without ./
-findModulesPretty() {
-  regExpDotSlash="\.\/"
-  findModules | _sed --regexp-extended -e "s/$regExpDotSlash//" | tr '\n' ' '
-}
-
-# example: joinBy , a b c. output: a, b, c
-joinBy() {
-  delim=${1:-} first=${2:-}
-
-  if shift 2; then
-    printf %s "$first" "${@/#/$delim}"
-  fi
-}
-
 # example: requestedHelp "$*"
 requestedHelp() {
   if ! [[ "$*" =~ -h|--help|help ]]; then
     return 1
   fi
-}
-
-# spell-checker: disable-next
-# example: didYouMean "helo" "hello" "world" output "Did you mean: hello"
-didYouMean() {
-  input=$1 idx=0 len=${#1}
-  declare -a options=("${@:2}") candidates=()
-
-  if [ "$len" -gt 2 ]; then
-    idx=$((len - 2))
-  fi
-
-  for o in "${options[@]}"; do
-    # candidates are options that look like input OR start with input's 2 letters OR end with input's 2 letters
-    if [[ $o =~ $input ]] || [[ $o =~ ${input:0:2} ]] || [[ $o =~ ${input:$idx} ]]; then
-      candidates+=("$o")
-    fi
-  done
-
-  if [ ${#candidates[@]} == 0 ]; then
-    return
-  fi
-
-  printf \\n
-  msgln "instead of '$input' did you mean..."
-  msg "$(joinBy ", " "${candidates[@]}")" ...?
 }
 
 # example: if macos;
@@ -177,11 +52,4 @@ _sed() {
   fi
 
   sed "$@"
-}
-
-# example: debug did something to $variable
-debugMsg() {
-  if [ "${DEBUG:-}" ]; then
-    echo -e 🐛 "$*" >&2
-  fi
 }
