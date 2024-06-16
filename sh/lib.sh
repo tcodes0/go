@@ -53,3 +53,15 @@ _sed() {
 
   sed "$@"
 }
+
+# err $LINENO "message" (default message: error)
+err() {
+  linenum=$1
+  msg=error
+
+  if [ "${*:2}" ]; then
+    msg=${*:2}
+  fi
+
+  echo "$msg: $0":"$linenum" \("${FUNCNAME[1]}"\) >&2
+}
