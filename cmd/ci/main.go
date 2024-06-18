@@ -149,11 +149,12 @@ func ci(logger logging.Logger, theEvent *event) error {
 	}
 
 	ticker := time.NewTicker(misc.Seconds(1))
+	lock := &sync.Mutex{}
 
 	go func() {
 		select {
 		case <-ticker.C:
-			render(ciStdout, ciStderr)
+			render(lock, ciStdout, ciStderr)
 		case <-done:
 			return
 		}
@@ -187,8 +188,9 @@ func ci(logger logging.Logger, theEvent *event) error {
 	// race the ci and signal notifier routines, let the second error be ignored
 	err = <-errChan
 
-	flushLogs(logger, ciLogFile, ciStdout, ciStderr)
 	ticker.Stop()
+	render(lock, ciStdout, ciStderr)
+	flushLogs(logger, ciLogFile, ciStdout, ciStderr)
 
 	for range 2 {
 		done <- true
@@ -329,6 +331,25 @@ func cmdVarResolver(inputStr, eventJSONFile, token string) []string {
 	})
 }
 
+func render(lock *sync.Mutex, stdout, stderr *bytes.Buffer) {
+	ok := lock.TryLock()
+	if !ok {
+		// abort if already rendering
+		return
+	} else {
+		defer lock.Unlock()
+	}
+
+	statuses := configs.StatusRegexp.FindAllString(stdout.String(), -1)
+	for _, status := range statuses {
+		fmt.Println(status)
+	}
+
+	for _, line := range strings.Split(stderr.String(), "\n") {
+		fmt.Println(line)
+	}
+}
+
 func flushLogs(logger logging.Logger, logfile string, stdout, stderr *bytes.Buffer) {
 	_, err := stdout.Write(stderr.Bytes())
 	if err != nil {
@@ -342,5 +363,3 @@ func flushLogs(logger logging.Logger, logfile string, stdout, stderr *bytes.Buff
 		logger.Error().Logf("writeFile: %s", err.Error())
 	}
 }
-
-func render(stdout, stderr *bytes.Buffer) {}
