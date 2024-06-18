@@ -7,6 +7,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	_ "embed"
 	"encoding/json"
 	"errors"
@@ -15,30 +16,31 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"os/signal"
 	"regexp"
 	"strings"
-	"sync"
-	"syscall"
 	"time"
 
 	"github.com/samber/lo"
 	"github.com/tcodes0/go/cmd"
 	"github.com/tcodes0/go/logging"
 	"github.com/tcodes0/go/misc"
+	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v3"
 )
 
 type config struct {
-	StatusRegexp *regexp.Regexp
-	PRTitle      string        `yaml:"prTitle"`
-	PRBaseRef    string        `yaml:"prBaseRef"`
-	PRHeadRef    string        `yaml:"prHeadRef"`
-	PushBaseRef  string        `yaml:"pushBaseRef"`
-	StatusRaw    string        `yaml:"statusRegexp"`
-	Exec         string        `yaml:"exec"`
-	MinLines     int           `yaml:"minLines"`
-	MinDuration  time.Duration `yaml:"minDurationSeconds"`
+	StatusRegexp    *regexp.Regexp
+	PRTitle         string `yaml:"prTitle"`
+	PRBaseRef       string `yaml:"prBaseRef"`
+	PRHeadRef       string `yaml:"prHeadRef"`
+	PushBaseRef     string `yaml:"pushBaseRef"`
+	StatusRegexpRaw string `yaml:"statusRegexp"`
+	Exec            string `yaml:"exec"`
+	MinLines        int    `yaml:"minLines"`
+	MinDurationRaw  int    `yaml:"minDurationSeconds"`
+	MaxDurationRaw  int    `yaml:"maxDurationSeconds"`
+	MinDuration     time.Duration
+	MaxDuration     time.Duration
 }
 
 type event struct {
@@ -76,9 +78,26 @@ var (
 
 func main() {
 	start := time.Now()
+	logger := &logging.Logger{}
+
+	var err error
+
+	// first deferred func will run last
+	defer func() {
+		if msg := recover(); msg != nil {
+			logger.Fatalf("panic: %v", msg)
+		}
+
+		logger.Logf("took %d", time.Since(start)/time.Second)
+
+		if err != nil {
+			logger.Error().Logf("error: %v", err)
+		}
+	}()
+
 	fPush := flagset.Bool("push", false, "use a push event, what happens on merge")
 
-	err := flagset.Parse(os.Args[1:])
+	err = flagset.Parse(os.Args[1:])
 	if err != nil {
 		usageExit(err)
 	}
@@ -96,8 +115,10 @@ func main() {
 		opts = append(opts, logging.OptColor())
 	}
 
-	logger := logging.Create(opts...)
-	configs.StatusRegexp = regexp.MustCompile(configs.StatusRaw)
+	logger = logging.Create(opts...)
+	configs.StatusRegexp = regexp.MustCompile(configs.StatusRegexpRaw)
+	configs.MinDuration = misc.Seconds(configs.MinDurationRaw)
+	configs.MaxDuration = misc.Seconds(configs.MaxDurationRaw)
 
 	ciEvent := &event{
 		PullRequest: &fieldPullRequest{
@@ -114,11 +135,6 @@ func main() {
 	}
 
 	err = ci(*logger, ciEvent)
-	if err != nil {
-		logger.Fatalf("fatal: %v", err)
-	}
-
-	logger.Logf("took %d", time.Since(start)/time.Second)
 }
 
 func usageExit(err error) {
@@ -140,8 +156,8 @@ func ci(logger logging.Logger, theEvent *event) error {
 		return err
 	}
 
-	ciCmd, ciStdout, ciStderr := prepareCI(eventJSONFile, token)
-	done := make(chan bool, 2)
+	ctx, ciCmd, ciStdout, ciStderr, cancel := prepareCI(eventJSONFile, token)
+	defer cancel()
 
 	err = ciCmd.Start()
 	if err != nil {
@@ -149,136 +165,90 @@ func ci(logger logging.Logger, theEvent *event) error {
 	}
 
 	ticker := time.NewTicker(misc.Seconds(1))
-	lock := &sync.Mutex{}
+	defer ticker.Stop()
 
-	go func() {
-		select {
-		case <-ticker.C:
-			render(lock, ciStdout, ciStderr)
-		case <-done:
-			return
+	requestFrame := make(chan bool)
+	go render(ctx, ciStdout, ciStderr, ticker, requestFrame)
+
+	misc.ListenStopSignal(ctx, func(sig os.Signal) {
+		logger.Debug().Log("caught %s", sig.String())
+
+		e := ciCmd.Process.Signal(sig)
+		if e != nil {
+			logger.Error().Logf("ci %s: %s", sig.String(), e.Error())
 		}
+	})
+
+	defer func() {
+		flushLogs(logger, ciLogFile, ciStdout, ciStderr)
+		// ensure all info is on screen
+		requestFrame <- true
 	}()
 
-	errChan := make(chan error, 2)
-
-	go func() {
-		errChan <- misc.Wrap(ciCmd.Wait(), "wait")
-	}()
-
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
-
-	go func() {
-		select {
-		case sig := <-sigChan:
-			logger.Debug().Log("\ncaught %s", sig.String())
-
-			e := ciCmd.Process.Signal(sig)
-			if e != nil {
-				logger.Error().Logf("ci %s: %s", sig.String(), e.Error())
-			}
-
-			errChan <- errors.New(sig.String())
-		case <-done:
-			return
-		}
-	}()
-
-	// race the ci and signal notifier routines, let the second error be ignored
-	err = <-errChan
-
-	ticker.Stop()
-	render(lock, ciStdout, ciStderr)
-	flushLogs(logger, ciLogFile, ciStdout, ciStderr)
-
-	for range 2 {
-		done <- true
-	}
-
-	return err
+	return misc.Wrap(ciCmd.Wait(), "wait ci")
 }
 
 //nolint:funlen // it does a lot!
 func prepareEnv(logger logging.Logger, theEvent *event) (eventFile, ciLogFile, token string, e error) {
-	errChan := make(chan error, 4)
-	wait := sync.WaitGroup{}
-	wait.Add(4)
-
-	go func() {
+	errG := errgroup.Group{}
+	errG.Go(func() error {
 		eventFileBytes, err := exec.Command("mktemp", "/tmp/ci-event-json-XXXXXX").Output()
-		eventFile = string(eventFileBytes)
-		errChan <- misc.Wrap(err, "mktemp event json")
+		eventFile = strings.TrimSuffix(string(eventFileBytes), "\n")
+		logger.Debug().Logf("event json file %s", eventFile)
 
-		logger.Debug().Log("event json file %s", eventFile)
-		wait.Done()
-	}()
+		return misc.Wrap(err, "mktemp event json")
+	})
 
-	go func() {
-		gitBranch, err := exec.Command("git", "branch", "--show-current").Output()
-		errChan <- misc.Wrap(err, "git branch")
+	errG.Go(func() error {
+		bGitBranch, err := exec.Command("git", "branch", "--show-current").Output()
+		gitBranch := strings.TrimSuffix(string(bGitBranch), "\n")
+		eventVarResolver(theEvent, gitBranch)
+		logger.Debug().Logf("git branch %s", gitBranch)
 
-		logger.Debug().Log("git branch %s", gitBranch)
+		return misc.Wrap(err, "git branch")
+	})
 
-		eventVarResolver(theEvent, string(gitBranch))
-		wait.Done()
-	}()
-
-	go func() {
+	errG.Go(func() error {
 		ciLogBytes, err := exec.Command("mktemp", "/tmp/ci-log-json-XXXXXX").Output()
-		ciLogFile = string(ciLogBytes)
-		errChan <- misc.Wrap(err, "mktemp ci log")
+		ciLogFile = strings.TrimSuffix(string(ciLogBytes), "\n")
+		logger.Debug().Logf("ci log file %s", ciLogFile)
 
-		logger.Debug().Log("ci log file %s", ciLogFile)
-		wait.Done()
-	}()
+		return misc.Wrap(err, "mktemp ci log")
+	})
 
-	go func() {
+	errG.Go(func() error {
 		bToken, err := exec.Command("gh", "auth", "token").Output()
-		token = string(bToken)
-		errChan <- misc.Wrap(err, "auth token")
+		token = strings.TrimSuffix(string(bToken), "\n")
+		logger.Debug().Logf("token length %d", len(token))
 
-		logger.Debug().Log("token length %d", len(token))
-		wait.Done()
-	}()
+		return misc.Wrap(err, "auth token")
+	})
 
-	wait.Wait()
-
-	for range 4 {
-		if err := <-errChan; err != nil {
-			return "", "", "", err
-		}
+	e = errG.Wait()
+	if e != nil {
+		return "", "", "", e
 	}
-
-	errChan = make(chan error, 2)
-
-	wait.Add(2)
 
 	data, err := json.Marshal(theEvent)
 	if err != nil {
 		return "", "", "", misc.Wrap(err, "marshal")
 	}
 
-	go func() {
+	errG.Go(func() error {
 		err := cmd.WriteFile(eventFile, data)
-		errChan <- misc.Wrap(err, "writeFile event")
 
-		wait.Done()
-	}()
+		return misc.Wrap(err, "writeFile event")
+	})
 
-	go func() {
+	errG.Go(func() error {
 		err := cmd.WriteFile(ciLogFile, data)
-		errChan <- misc.Wrap(err, "writeFile ci")
 
-		wait.Done()
-	}()
+		return misc.Wrap(err, "writeFile ci")
+	})
 
-	wait.Wait()
-
-	for range 2 {
-		if err := <-errChan; err != nil {
-			return "", "", "", err
-		}
+	e = errG.Wait()
+	if e != nil {
+		return "", "", "", e
 	}
 
 	return eventFile, ciLogFile, token, nil
@@ -302,19 +272,23 @@ func eventVarResolver(theEvent *event, gitBranch string) {
 	}
 }
 
-func prepareCI(eventJSONFile, token string) (ciCmd *exec.Cmd, stdout, stderr *bytes.Buffer) {
+func prepareCI(eventJSONFile, token string) (
+	ctx context.Context,
+	ciCmd *exec.Cmd,
+	stdout,
+	stderr *bytes.Buffer,
+	cancel context.CancelFunc,
+) {
 	stdout = &bytes.Buffer{}
 	stderr = &bytes.Buffer{}
 	cmds := cmdVarResolver(configs.Exec, eventJSONFile, token)
+	ctx, cancel = context.WithDeadline(context.Background(), time.Now().Add(configs.MaxDuration))
 	//nolint:gosec // has validation
-	ciCmd = exec.Command(cmds[0], strings.Join(cmds[1:], " "))
+	ciCmd = exec.CommandContext(ctx, cmds[0], cmds[1:]...)
 	ciCmd.Stdout = stdout
 	ciCmd.Stderr = stderr
 
-	stdout.WriteString("stdout:\n")
-	stderr.WriteString("\nstderr:\n")
-
-	return ciCmd, stdout, stderr
+	return ctx, ciCmd, stdout, stderr, cancel
 }
 
 func cmdVarResolver(inputStr, eventJSONFile, token string) []string {
@@ -331,22 +305,19 @@ func cmdVarResolver(inputStr, eventJSONFile, token string) []string {
 	})
 }
 
-func render(lock *sync.Mutex, stdout, stderr *bytes.Buffer) {
-	ok := lock.TryLock()
-	if !ok {
-		// abort if already rendering
-		return
-	} else {
-		defer lock.Unlock()
-	}
+func render(ctx context.Context, stdout, _ *bytes.Buffer, ticker *time.Ticker, request chan bool) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
 
-	statuses := configs.StatusRegexp.FindAllString(stdout.String(), -1)
-	for _, status := range statuses {
-		fmt.Println(status)
-	}
-
-	for _, line := range strings.Split(stderr.String(), "\n") {
-		fmt.Println(line)
+		case <-request:
+		case <-ticker.C:
+			statuses := configs.StatusRegexp.FindAllString(stdout.String(), -1)
+			for _, status := range statuses {
+				fmt.Println(status)
+			}
+		}
 	}
 }
 

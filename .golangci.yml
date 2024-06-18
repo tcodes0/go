@@ -137,3 +137,7 @@ linters-settings:
   # can be removed after updates if there are no warnings
   errcheck:
     ignore: ""
+
+  wrapcheck:
+    ignorePackageGlobs:
+      - golang.org/x/sync/*
