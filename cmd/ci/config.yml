@@ -2,7 +2,7 @@ prTitle: "feat(ci): add PR title to act event"
 prBaseRef: main
 prHeadRef: <local-branch>
 pushBaseRef: refs/heads/main
-statusRegexp: "\[([^]]+)\].*(succeeded|failed)"
+statusRegexp: '\[([^]]+)\].*(succeeded|failed)'
 minLines: 30
 minDurationSeconds: 5
 exec: "act -e <event-json-file> -s GITHUB_TOKEN=<github-token> --container-architecture linux/amd64"

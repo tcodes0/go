@@ -6,9 +6,9 @@
 
 set -euo pipefail
 shopt -s globstar
-trap 'err $LINENO' ERR
 # shellcheck disable=SC1091
 source "$PWD/sh/lib.sh"
+trap 'err $LINENO' ERR
 
 ### vars and functions ###
 

@@ -121,6 +121,8 @@ linters-settings:
       - '^misc\.Minutes'
       - '^misc\.Hours'
       - '^misc\.Days'
+      - '^(wg|wait|waitGroup)\.Add'
+      - '^make'
 
   funlen:
     ignore-comments: true

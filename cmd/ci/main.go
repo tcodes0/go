@@ -18,6 +18,7 @@ import (
 	"os/signal"
 	"regexp"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -117,7 +118,7 @@ func main() {
 		logger.Fatalf("fatal: %v", err)
 	}
 
-	logger.Logf("Took %d", time.Since(start)/time.Second)
+	logger.Logf("took %d", time.Since(start)/time.Second)
 }
 
 func usageExit(err error) {
@@ -134,47 +135,31 @@ func usageExit(err error) {
 }
 
 func ci(logger logging.Logger, theEvent *event) error {
-	eventJSONFile, ciLogFile, gitBranch, token, err := prepare(logger, theEvent)
+	eventJSONFile, ciLogFile, token, err := prepareEnv(logger, theEvent)
 	if err != nil {
 		return err
 	}
 
-	eventVarResolver(theEvent, gitBranch)
-
-	outBuf := &bytes.Buffer{}
-	errBuf := &bytes.Buffer{}
-	cmds := cmdVarResolver(configs.Exec, eventJSONFile, token)
-	//nolint:gosec // has validation
-	ciCmd := exec.Command(cmds[0], strings.Join(cmds[1:], " "))
-	ciCmd.Stdout = outBuf
-	ciCmd.Stderr = errBuf
-	renderDone := make(chan bool)
-
-	outBuf.WriteString("stdout:\n")
-	errBuf.WriteString("\nstderr:\n")
-
-	defer func() {
-		flushLogs(logger, ciLogFile, outBuf, errBuf)
-		renderDone <- true
-	}()
+	ciCmd, ciStdout, ciStderr := prepareCI(eventJSONFile, token)
+	done := make(chan bool, 2)
 
 	err = ciCmd.Start()
 	if err != nil {
 		return misc.Wrap(err, "start")
 	}
 
-	tick := time.NewTicker(misc.Seconds(2))
+	ticker := time.NewTicker(misc.Seconds(1))
 
 	go func() {
 		select {
-		case <-tick.C:
-			render(outBuf, errBuf)
-		case <-renderDone:
+		case <-ticker.C:
+			render(ciStdout, ciStderr)
+		case <-done:
 			return
 		}
 	}()
 
-	errChan := make(chan error, 1)
+	errChan := make(chan error, 2)
 
 	go func() {
 		errChan <- misc.Wrap(ciCmd.Wait(), "wait")
@@ -187,64 +172,114 @@ func ci(logger logging.Logger, theEvent *event) error {
 		select {
 		case sig := <-sigChan:
 			logger.Debug().Log("\ncaught %s", sig.String())
+
+			e := ciCmd.Process.Signal(sig)
+			if e != nil {
+				logger.Error().Logf("ci %s: %s", sig.String(), e.Error())
+			}
+
 			errChan <- errors.New(sig.String())
+		case <-done:
+			return
 		}
 	}()
 
-	return <-errChan
-}
+	// race the ci and signal notifier routines, let the second error be ignored
+	err = <-errChan
 
-func prepare(logger logging.Logger, theEvent *event) (eventFile, ciLog, branch, token string, err error) {
-	command := exec.Command("mktemp", "/tmp/ci-event-json-XXXXXX")
+	flushLogs(logger, ciLogFile, ciStdout, ciStderr)
+	ticker.Stop()
 
-	eventJSONFile, err := command.Output()
-	if err != nil {
-		return "", "", "", "", misc.Wrap(err, "mktemp event json")
+	for range 2 {
+		done <- true
 	}
 
-	logger.Debug().Log("event json file %s", eventJSONFile)
+	return err
+}
+
+//nolint:funlen // it does a lot!
+func prepareEnv(logger logging.Logger, theEvent *event) (eventFile, ciLogFile, token string, e error) {
+	errChan := make(chan error, 4)
+	wait := sync.WaitGroup{}
+	wait.Add(4)
+
+	go func() {
+		eventFileBytes, err := exec.Command("mktemp", "/tmp/ci-event-json-XXXXXX").Output()
+		eventFile = string(eventFileBytes)
+		errChan <- misc.Wrap(err, "mktemp event json")
+
+		logger.Debug().Log("event json file %s", eventFile)
+		wait.Done()
+	}()
+
+	go func() {
+		gitBranch, err := exec.Command("git", "branch", "--show-current").Output()
+		errChan <- misc.Wrap(err, "git branch")
+
+		logger.Debug().Log("git branch %s", gitBranch)
+
+		eventVarResolver(theEvent, string(gitBranch))
+		wait.Done()
+	}()
+
+	go func() {
+		ciLogBytes, err := exec.Command("mktemp", "/tmp/ci-log-json-XXXXXX").Output()
+		ciLogFile = string(ciLogBytes)
+		errChan <- misc.Wrap(err, "mktemp ci log")
+
+		logger.Debug().Log("ci log file %s", ciLogFile)
+		wait.Done()
+	}()
+
+	go func() {
+		bToken, err := exec.Command("gh", "auth", "token").Output()
+		token = string(bToken)
+		errChan <- misc.Wrap(err, "auth token")
+
+		logger.Debug().Log("token length %d", len(token))
+		wait.Done()
+	}()
+
+	wait.Wait()
+
+	for range 4 {
+		if err := <-errChan; err != nil {
+			return "", "", "", err
+		}
+	}
+
+	errChan = make(chan error, 2)
+
+	wait.Add(2)
 
 	data, err := json.Marshal(theEvent)
 	if err != nil {
-		return "", "", "", "", misc.Wrap(err, "marshal")
+		return "", "", "", misc.Wrap(err, "marshal")
 	}
 
-	command = exec.Command("mktemp", "/tmp/ci-log-json-XXXXXX")
+	go func() {
+		err := cmd.WriteFile(eventFile, data)
+		errChan <- misc.Wrap(err, "writeFile event")
 
-	ciLogFile, err := command.Output()
-	if err != nil {
-		return "", "", "", "", misc.Wrap(err, "mktemp ci log")
+		wait.Done()
+	}()
+
+	go func() {
+		err := cmd.WriteFile(ciLogFile, data)
+		errChan <- misc.Wrap(err, "writeFile ci")
+
+		wait.Done()
+	}()
+
+	wait.Wait()
+
+	for range 2 {
+		if err := <-errChan; err != nil {
+			return "", "", "", err
+		}
 	}
 
-	logger.Debug().Log("ci log file %s", ciLogFile)
-
-	err = cmd.WriteFile(string(eventJSONFile), data)
-	if err != nil {
-		return "", "", "", "", misc.Wrap(err, "writeFile event")
-	}
-
-	err = cmd.WriteFile(string(ciLogFile), data)
-	if err != nil {
-		return "", "", "", "", misc.Wrap(err, "writeFile ci")
-	}
-
-	command = exec.Command("git", "branch", "--show-current")
-
-	gitBranch, err := command.Output()
-	if err != nil {
-		return "", "", "", "", misc.Wrap(err, "git branch")
-	}
-
-	command = exec.Command("gh", "auth", "token")
-
-	bToken, err := command.Output()
-	if err != nil {
-		return "", "", "", "", misc.Wrap(err, "auth token")
-	}
-
-	logger.Debug().Log("token length %d", len(token))
-
-	return string(eventJSONFile), string(ciLogFile), string(gitBranch), string(bToken), nil
+	return eventFile, ciLogFile, token, nil
 }
 
 func eventVarResolver(theEvent *event, gitBranch string) {
@@ -265,18 +300,19 @@ func eventVarResolver(theEvent *event, gitBranch string) {
 	}
 }
 
-func flushLogs(logger logging.Logger, logfile string, stdout, stderr *bytes.Buffer) {
-	_, err := stdout.Write(stderr.Bytes())
-	if err != nil {
-		logger.Error().Logf("concat buffers: %s", err.Error())
+func prepareCI(eventJSONFile, token string) (ciCmd *exec.Cmd, stdout, stderr *bytes.Buffer) {
+	stdout = &bytes.Buffer{}
+	stderr = &bytes.Buffer{}
+	cmds := cmdVarResolver(configs.Exec, eventJSONFile, token)
+	//nolint:gosec // has validation
+	ciCmd = exec.Command(cmds[0], strings.Join(cmds[1:], " "))
+	ciCmd.Stdout = stdout
+	ciCmd.Stderr = stderr
 
-		return
-	}
+	stdout.WriteString("stdout:\n")
+	stderr.WriteString("\nstderr:\n")
 
-	err = cmd.WriteFile(logfile, stdout.Bytes())
-	if err != nil {
-		logger.Error().Logf("writeFile: %s", err.Error())
-	}
+	return ciCmd, stdout, stderr
 }
 
 func cmdVarResolver(inputStr, eventJSONFile, token string) []string {
@@ -291,6 +327,20 @@ func cmdVarResolver(inputStr, eventJSONFile, token string) []string {
 
 		return input
 	})
+}
+
+func flushLogs(logger logging.Logger, logfile string, stdout, stderr *bytes.Buffer) {
+	_, err := stdout.Write(stderr.Bytes())
+	if err != nil {
+		logger.Error().Logf("concat buffers: %s", err.Error())
+
+		return
+	}
+
+	err = cmd.WriteFile(logfile, stdout.Bytes())
+	if err != nil {
+		logger.Error().Logf("writeFile: %s", err.Error())
+	}
 }
 
 func render(stdout, stderr *bytes.Buffer) {}
