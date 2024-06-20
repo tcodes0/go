@@ -115,6 +115,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	misc.DotEnv(".env", false /*noisy*/)
+
 	fColor := misc.LookupEnv(cmd.EnvColor, false)
 	fLogLevel := misc.LookupEnv(cmd.EnvLogLevel, int(logging.LInfo))
 
@@ -142,7 +144,7 @@ func usage(err error) {
 
 	fmt.Println("miscellaneous automation tool")
 	fmt.Println("usage: ./run <task> <module?> <other args?> (run task)")
-	fmt.Println("usage: ./run -h (task help)")
+	fmt.Println("usage: ./run <task> -h (task help)")
 	fmt.Println()
 	fmt.Println("module tasks:")
 
@@ -174,6 +176,7 @@ func usage(err error) {
 	fmt.Println("- " + strings.Join(modules, "\n- "))
 	fmt.Println()
 	fmt.Println(cmd.EnvVarUsage())
+	fmt.Println(".env file is used")
 }
 
 // run <task> <module or input1> ...inputs.

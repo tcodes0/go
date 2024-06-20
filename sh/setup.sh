@@ -176,7 +176,6 @@ fi
 # notes
 
 msgln note: \'act\' requires first time setup
-msgln note: run \'export CMD_COLOR=true\' to see colored output from runner
 
 if [ "$(nvm_version || true)" ]; then
   msgln note: when using nvm and upgrading node, global packages need to be reinstalled
