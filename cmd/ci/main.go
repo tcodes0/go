@@ -92,6 +92,7 @@ func main() {
 
 		if err != nil {
 			logger.Error().Logf("%v", err)
+			os.Exit(1)
 		}
 	}()
 

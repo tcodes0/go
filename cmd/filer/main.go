@@ -20,28 +20,39 @@ import (
 )
 
 type config struct {
-	Food string `yaml:"food"`
+	Action string   `yaml:"action"`
+	Input  []string `yaml:"input"`
 }
 
 var (
 	//go:embed config.yml
 	raw     string
-	configs config
-	flagset = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	configs []config
 )
 
 func main() {
-	_ = flagset.Bool("pizza", true, "pepperoni or mozzarella!. (default TRUE)")
+	logger := &logging.Logger{}
 
-	err := flagset.Parse(os.Args[1:])
-	if err != nil {
-		usageExit(err)
-	}
+	var err error
+
+	// first deferred func will run last
+	defer func() {
+		if msg := recover(); msg != nil {
+			logger.Fatalf("%v", msg)
+		}
+
+		if err != nil {
+			logger.Error().Logf("%v", err)
+			os.Exit(1)
+		}
+	}()
 
 	err = yaml.Unmarshal([]byte(raw), &configs)
 	if err != nil {
 		usageExit(err)
 	}
+
+	misc.DotEnv(".env", false /* noisy */)
 
 	fColor := misc.LookupEnv(cmd.EnvColor, false)
 	fLogLevel := misc.LookupEnv(cmd.EnvLogLevel, int(logging.LInfo))
@@ -51,17 +62,12 @@ func main() {
 		opts = append(opts, logging.OptColor())
 	}
 
-	logger := logging.Create(opts...)
-
-	err = filer(*logger)
-	if err != nil {
-		logger.Fatalf("fatal: %v", err)
-	}
+	logger = logging.Create(opts...)
+	err = filer(*logger, configs)
 }
 
 func usageExit(err error) {
-	fmt.Println()
-	fmt.Println("description here")
+	fmt.Println("execute a config of simple file tasks")
 	fmt.Println()
 	fmt.Println(cmd.EnvVarUsage())
 
@@ -72,6 +78,36 @@ func usageExit(err error) {
 	os.Exit(1)
 }
 
-func filer(_ logging.Logger) error {
+func filer(logger logging.Logger, configs []config) error {
+	for _, config := range configs {
+		if config.Action == "symlink" {
+			err := symlink(logger, config.Input[0], config.Input[1])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func symlink(logger logging.Logger, target, link string) error {
+	_, err := os.Stat(target)
+	if err != nil {
+		return misc.Wrapf(err, "stat")
+	}
+
+	_, err = os.Stat(link)
+	if err == nil {
+		logger.Warn().Logf("skip: symlink %s already exists", link)
+
+		return nil
+	}
+
+	err = os.Symlink(target, link)
+	if err != nil {
+		return misc.Wrapf(err, "symlink %s %s", target, link)
+	}
+
 	return nil
 }

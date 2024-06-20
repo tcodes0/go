@@ -44,6 +44,7 @@ func main() {
 
 		if err != nil {
 			logger.Error().Logf("%v", err)
+			os.Exit(1)
 		}
 	}()
 
@@ -70,7 +71,6 @@ func main() {
 }
 
 func usageExit(err error) {
-	fmt.Println()
 	fmt.Println("description here")
 	fmt.Println()
 	fmt.Println(cmd.EnvVarUsage())
