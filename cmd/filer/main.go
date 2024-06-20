@@ -51,7 +51,7 @@ func main() {
 		}
 	}()
 
-	fConfig := flagset.String("config", "", "config file path (required)")
+	fConf := flagset.String("config", "", "config file path (required)")
 	fCommitL := flagset.Bool("commit", false, "apply changes (default: false)")
 	fCommitS := flagset.Bool("c", false, "apply changes (default: false)")
 
@@ -62,7 +62,7 @@ func main() {
 
 	fDryrun := !(*fCommitL || *fCommitS)
 
-	configs, err := readConfig(*fConfig)
+	configs, err := readConfig(*fConf)
 	if err != nil {
 		usageExit(err)
 	}
@@ -172,7 +172,8 @@ func filer(logger logging.Logger, configs []*config, dryrun bool) error {
 }
 
 func symlink(logger logging.Logger, input []string, dryrun bool) error {
-	if len(input) != 1 {
+	//nolint:mnd // len check
+	if len(input) != 2 {
 		return fmt.Errorf("symlink: expected 2 inputs got %v", input)
 	}
 
