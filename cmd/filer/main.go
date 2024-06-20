@@ -13,7 +13,9 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 
+	"github.com/samber/lo"
 	"github.com/tcodes0/go/cmd"
 	"github.com/tcodes0/go/logging"
 	"github.com/tcodes0/go/misc"
@@ -45,8 +47,8 @@ func main() {
 	}()
 
 	fConfig := flagset.String("config", "", "config file path (required)")
-	fDryrunL := flagset.Bool("dryrun", false, "do not make changes just print (default false)")
-	fDryrunS := flagset.Bool("n", false, "do not make changes just print (default false)")
+	fDryrunL := flagset.Bool("dryrun", false, "do not make changes just print (default: false)")
+	fDryrunS := flagset.Bool("n", false, "do not make changes just print (default: false)")
 
 	err = flagset.Parse(os.Args[1:])
 	if err != nil {
@@ -73,6 +75,8 @@ func main() {
 	if fColor {
 		opts = append(opts, logging.OptColor())
 	}
+
+	envVarResolver(configs)
 
 	logger = logging.Create(opts...)
 	err = filer(*logger, configs, fDryrun)
@@ -105,7 +109,8 @@ func readConfig(file string) ([]*config, error) {
 
 func usageExit(err error) {
 	flagset.Usage()
-	fmt.Println("execute a config of simple file tasks")
+	fmt.Println("execute a config of simple file tasks.")
+	fmt.Println("no rollback on error, use -n")
 	fmt.Println()
 	fmt.Println(cmd.EnvVarUsage())
 
@@ -114,6 +119,17 @@ func usageExit(err error) {
 	}
 
 	os.Exit(1)
+}
+
+func envVarResolver(configs []*config) {
+	envs := map[string]string{}
+	envs["$HOME"] = os.Getenv("HOME")
+
+	for _, conf := range configs {
+		conf.Input = lo.Map(conf.Input, func(input string, _ int) string {
+			return strings.ReplaceAll(input, "$HOME", envs["$HOME"])
+		})
+	}
 }
 
 func filer(logger logging.Logger, configs []*config, dryrun bool) error {
@@ -137,28 +153,31 @@ func filer(logger logging.Logger, configs []*config, dryrun bool) error {
 	return nil
 }
 
-func symlink(logger logging.Logger, target, link string, dryrun bool) error {
-	_, err := os.Stat(target)
+func symlink(logger logging.Logger, source, link string, dryrun bool) error {
+	_, err := os.Stat(source)
 	if err != nil {
 		return misc.Wrapf(err, "stat")
 	}
 
 	_, err = os.Stat(link)
 	if err == nil {
-		logger.Warn().Logf("skip: symlink %s already exists", link)
+		logger.Warn().Logf("skip: file exists %s", link)
 
 		return nil
 	}
 
 	if dryrun {
-		logger.Logf("symlink %s -> %s", link, target)
+		_, err = fmt.Printf("symlink %s -> %s\n", link, source)
+		if err != nil {
+			logger.Error().Logf("println: %v", err)
+		}
 
 		return nil
 	}
 
-	err = os.Symlink(target, link)
+	err = os.Symlink(source, link)
 	if err != nil {
-		return misc.Wrapf(err, "symlink %s %s", target, link)
+		return misc.Wrapf(err, "symlink %s %s", source, link)
 	}
 
 	return nil
