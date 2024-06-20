@@ -52,15 +52,15 @@ func main() {
 	}()
 
 	fConfig := flagset.String("config", "", "config file path (required)")
-	fDryrunL := flagset.Bool("dryrun", false, "do not make changes just print (default: false)")
-	fDryrunS := flagset.Bool("n", false, "do not make changes just print (default: false)")
+	fCommitL := flagset.Bool("commit", false, "apply changes (default: false)")
+	fCommitS := flagset.Bool("c", false, "apply changes (default: false)")
 
 	err = flagset.Parse(os.Args[1:])
 	if err != nil {
 		usageExit(err)
 	}
 
-	fDryrun := *fDryrunL || *fDryrunS
+	fDryrun := !(*fCommitL || *fCommitS)
 
 	configs, err := readConfig(*fConfig)
 	if err != nil {
@@ -115,7 +115,7 @@ func readConfig(file string) ([]*config, error) {
 func usageExit(err error) {
 	flagset.Usage()
 	fmt.Println("execute a config of simple file tasks.")
-	fmt.Println("no rollback on error, use -n")
+	fmt.Println("changes no files by default.")
 	fmt.Println()
 	fmt.Println(cmd.EnvVarUsage())
 
@@ -162,6 +162,10 @@ func filer(logger logging.Logger, configs []*config, dryrun bool) error {
 		}
 
 		logger.Warn().Logf("ignore: unknown action %s", config.Action)
+	}
+
+	if dryrun {
+		fmt.Printf("to apply changes run: %s -commit", strings.Join(os.Args, " "))
 	}
 
 	return nil
