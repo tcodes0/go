@@ -43,12 +43,11 @@ var (
 )
 
 type task struct {
-	Env       []string `yaml:"env"`
-	Name      string   `yaml:"name"`
-	Needs     string   `yaml:"needs"`
-	Exec      []string `yaml:"exec"`
-	Module    bool     `yaml:"module"`
-	MinInputs int      `yaml:"minInputs"`
+	Env    []string `yaml:"env"`
+	Name   string   `yaml:"name"`
+	Needs  string   `yaml:"needs"`
+	Exec   []string `yaml:"exec"`
+	Module bool     `yaml:"module"`
 }
 
 // validate <module or input1> ...inputs.
@@ -61,10 +60,6 @@ func (task *task) validate(logger logging.Logger, inputs ...string) error {
 	err := task.validateModule(logger, inputs...)
 	if err != nil {
 		return err
-	}
-
-	if task.MinInputs != 0 && len(inputs) < task.MinInputs {
-		return fmt.Errorf("%s: expected minimum %d inputs got: %v", task.Name, task.MinInputs, inputs)
 	}
 
 	for _, need := range strings.Split(task.Needs, ",") {
@@ -146,21 +141,24 @@ func usage(err error) {
 	}
 
 	fmt.Println("miscellaneous automation tool")
-	fmt.Println("usage: ./run <task> \ttask inputs if any...")
+	fmt.Println("usage: ./run <task> <module?> <other args?> (run task)")
+	fmt.Println("usage: ./run -h (task help)")
 	fmt.Println()
-	fmt.Println("tasks available:")
+	fmt.Println("module tasks:")
 
-	for _, task := range tasks {
+	for _, task := range lo.Filter(tasks, func(t *task, _ int) bool { return t.Module }) {
 		line := "./run "
 		line += task.Name + "\t"
 
-		if task.Module {
-			line += "<module> "
-		}
+		fmt.Println(line)
+	}
 
-		for range task.MinInputs {
-			line += "<input> "
-		}
+	fmt.Println()
+	fmt.Println("repository tasks:")
+
+	for _, task := range lo.Filter(tasks, func(t *task, _ int) bool { return !t.Module }) {
+		line := "./run "
+		line += task.Name + "\t"
 
 		fmt.Println(line)
 	}
@@ -172,12 +170,10 @@ func usage(err error) {
 
 	fmt.Println()
 	fmt.Println("modules:")
-	fmt.Println(strings.Join(modules, "\n"))
+	fmt.Println("- all (iterate all modules)")
+	fmt.Println("- " + strings.Join(modules, "\n- "))
 	fmt.Println()
 	fmt.Println(cmd.EnvVarUsage())
-	fmt.Println()
-	fmt.Println("use 'all' as module to iterate all modules")
-	fmt.Println("pass -h to tasks for documentation")
 }
 
 // run <task> <module or input1> ...inputs.
