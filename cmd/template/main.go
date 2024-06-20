@@ -32,8 +32,22 @@ var (
 
 func main() {
 	_ = flagset.Bool("pizza", true, "pepperoni or mozzarella!. (default TRUE)")
+	logger := &logging.Logger{}
 
-	err := flagset.Parse(os.Args[1:])
+	var err error
+
+	// first deferred func will run last
+	defer func() {
+		if msg := recover(); msg != nil {
+			logger.Fatalf("%v", msg)
+		}
+
+		if err != nil {
+			logger.Error().Logf("%v", err)
+		}
+	}()
+
+	err = flagset.Parse(os.Args[1:])
 	if err != nil {
 		usageExit(err)
 	}
@@ -51,12 +65,8 @@ func main() {
 		opts = append(opts, logging.OptColor())
 	}
 
-	logger := logging.Create(opts...)
-
+	logger = logging.Create(opts...)
 	err = template(*logger)
-	if err != nil {
-		logger.Fatalf("fatal: %v", err)
-	}
 }
 
 func usageExit(err error) {

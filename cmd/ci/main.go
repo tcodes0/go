@@ -85,13 +85,13 @@ func main() {
 	// first deferred func will run last
 	defer func() {
 		if msg := recover(); msg != nil {
-			logger.Fatalf("panic: %v", msg)
+			logger.Fatalf("%v", msg)
 		}
 
 		logger.Logf("took %d", time.Since(start)/time.Second)
 
 		if err != nil {
-			logger.Error().Logf("error: %v", err)
+			logger.Error().Logf("%v", err)
 		}
 	}()
 
