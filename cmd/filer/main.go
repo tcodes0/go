@@ -25,11 +25,7 @@ type config struct {
 	Input  []string `yaml:"input"`
 }
 
-var (
-	//go:embed config.yml
-	raw     []byte
-	flagset = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-)
+var flagset = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 
 func main() {
 	logger := &logging.Logger{}
@@ -48,16 +44,24 @@ func main() {
 		}
 	}()
 
-	fConfig := flagset.String("config", "", "config file path")
+	fConfig := flagset.String("config", "", "config file path (required)")
+	fDryrunL := flagset.Bool("dryrun", false, "do not make changes just print (default false)")
+	fDryrunS := flagset.Bool("n", false, "do not make changes just print (default false)")
 
 	err = flagset.Parse(os.Args[1:])
 	if err != nil {
 		usageExit(err)
 	}
 
+	fDryrun := *fDryrunL || *fDryrunS
+
 	configs, err := readConfig(*fConfig)
 	if err != nil {
 		usageExit(err)
+	}
+
+	if len(configs) == 0 || len(configs) == 1 && configs[0] == nil {
+		usageExit(errors.New("empty config"))
 	}
 
 	misc.DotEnv(".env", false /* noisy */)
@@ -71,10 +75,12 @@ func main() {
 	}
 
 	logger = logging.Create(opts...)
-	err = filer(*logger, configs)
+	err = filer(*logger, configs, fDryrun)
 }
 
 func readConfig(file string) ([]*config, error) {
+	raw := []byte{}
+
 	if file != "" {
 		cfgFile, err := os.Open(file)
 		if err != nil {
@@ -98,6 +104,7 @@ func readConfig(file string) ([]*config, error) {
 }
 
 func usageExit(err error) {
+	flagset.Usage()
 	fmt.Println("execute a config of simple file tasks")
 	fmt.Println()
 	fmt.Println(cmd.EnvVarUsage())
@@ -109,13 +116,19 @@ func usageExit(err error) {
 	os.Exit(1)
 }
 
-func filer(logger logging.Logger, configs []*config) error {
+func filer(logger logging.Logger, configs []*config, dryrun bool) error {
 	for _, config := range configs {
+		if config == nil {
+			continue
+		}
+
 		if config.Action == "symlink" {
-			err := symlink(logger, config.Input[0], config.Input[1])
+			err := symlink(logger, config.Input[0], config.Input[1], dryrun)
 			if err != nil {
 				return err
 			}
+
+			continue
 		}
 
 		logger.Warn().Logf("ignore: unknown action %s", config.Action)
@@ -124,7 +137,7 @@ func filer(logger logging.Logger, configs []*config) error {
 	return nil
 }
 
-func symlink(logger logging.Logger, target, link string) error {
+func symlink(logger logging.Logger, target, link string, dryrun bool) error {
 	_, err := os.Stat(target)
 	if err != nil {
 		return misc.Wrapf(err, "stat")
@@ -133,6 +146,12 @@ func symlink(logger logging.Logger, target, link string) error {
 	_, err = os.Stat(link)
 	if err == nil {
 		logger.Warn().Logf("skip: symlink %s already exists", link)
+
+		return nil
+	}
+
+	if dryrun {
+		logger.Logf("symlink %s -> %s", link, target)
 
 		return nil
 	}
