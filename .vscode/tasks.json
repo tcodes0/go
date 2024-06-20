@@ -38,6 +38,7 @@
         "clock",
         "cmd/ci",
         "cmd/copyright",
+        "cmd/filer",
         "cmd/gengowork",
         "cmd/genvscodetasks",
         "cmd/runner",

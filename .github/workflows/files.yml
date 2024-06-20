@@ -54,3 +54,5 @@ cmd_gen_vscode_tasks:
   - cmd/genvscodetasks/**.go
 cmd_ci:
   - cmd/ci/**.go
+cmd_filer:
+  - cmd/filer/**.go

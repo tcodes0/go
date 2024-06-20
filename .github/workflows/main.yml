@@ -24,6 +24,7 @@ jobs:
       modCmdGenGoWork: ${{ steps.list-changed-files.outputs.cmd_gen_go_work_all_changed_files }}
       modCmdGenVscodeTasks: ${{ steps.list-changed-files.outputs.cmd_gen_vscode_tasks_all_changed_files }}
       modCmdCi: ${{ steps.list-changed-files.outputs.cmd_ci_all_changed_files }}
+      modCmdFiler: ${{ steps.list-changed-files.outputs.cmd_filer_all_changed_files }}
       # others
       anyGoMod: ${{ steps.list-changed-files.outputs.any_go_mod_all_changed_files }}
       rootGoMod: ${{ steps.list-changed-files.outputs.root_go_mod_all_changed_files }}
@@ -213,7 +214,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: changed-files
     # does not work locally
-    if: needs.changed-files.anyCodeAdded && github.event.local != true
+    if: needs.changed-files.outputs.anyCodeAdded && github.event.local != true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -344,3 +345,12 @@ jobs:
     with:
       goVersion: 1.22
       modulePath: cmd/ci
+
+  filer:
+    name: cmd/filer
+    needs: changed-files
+    if: needs.changed-files.outputs.modCmdFiler
+    uses: ./.github/workflows/module-pr.yml
+    with:
+      goVersion: 1.22
+      modulePath: cmd/filer
