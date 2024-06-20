@@ -22,6 +22,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	actionSymlink = "symlink"
+	actionRemove  = "remove"
+)
+
 type config struct {
 	Action string   `yaml:"action"`
 	Input  []string `yaml:"input"`
@@ -88,12 +93,12 @@ func readConfig(file string) ([]*config, error) {
 	if file != "" {
 		cfgFile, err := os.Open(file)
 		if err != nil {
-			return nil, misc.Wrapf(err, "open %s", file)
+			return nil, misc.Wrap(err, "open")
 		}
 
 		raw, err = io.ReadAll(cfgFile)
 		if err != nil {
-			return nil, misc.Wrapf(err, "read %s", file)
+			return nil, misc.Wrap(err, "read")
 		}
 	}
 
@@ -138,8 +143,17 @@ func filer(logger logging.Logger, configs []*config, dryrun bool) error {
 			continue
 		}
 
-		if config.Action == "symlink" {
-			err := symlink(logger, config.Input[0], config.Input[1], dryrun)
+		if config.Action == actionSymlink {
+			err := symlink(logger, config.Input, dryrun)
+			if err != nil {
+				return err
+			}
+
+			continue
+		}
+
+		if config.Action == actionRemove {
+			err := remove(logger, config.Input, dryrun)
 			if err != nil {
 				return err
 			}
@@ -153,7 +167,14 @@ func filer(logger logging.Logger, configs []*config, dryrun bool) error {
 	return nil
 }
 
-func symlink(logger logging.Logger, source, link string, dryrun bool) error {
+func symlink(logger logging.Logger, input []string, dryrun bool) error {
+	if len(input) != 1 {
+		return fmt.Errorf("symlink: expected 2 inputs got %v", input)
+	}
+
+	source := input[0]
+	link := input[1]
+
 	_, err := os.Stat(source)
 	if err != nil {
 		return misc.Wrapf(err, "stat")
@@ -178,6 +199,28 @@ func symlink(logger logging.Logger, source, link string, dryrun bool) error {
 	err = os.Symlink(source, link)
 	if err != nil {
 		return misc.Wrapf(err, "symlink %s %s", source, link)
+	}
+
+	return nil
+}
+
+func remove(logger logging.Logger, input []string, dryrun bool) (err error) {
+	if len(input) != 1 {
+		return fmt.Errorf("remove: expected 1 input got %v", input)
+	}
+
+	if dryrun {
+		_, err = fmt.Printf("remove %s\n", input[0])
+		if err != nil {
+			logger.Error().Logf("println: %v", err)
+		}
+
+		return nil
+	}
+
+	err = os.Remove(input[0])
+	if err != nil {
+		return misc.Wrap(err, "remove")
 	}
 
 	return nil
