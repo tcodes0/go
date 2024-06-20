@@ -1,0 +1,4 @@
+- action: symlink
+  input:
+    - "target.txt"
+    - "link.txt"

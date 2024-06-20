@@ -10,6 +10,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 
@@ -26,8 +27,8 @@ type config struct {
 
 var (
 	//go:embed config.yml
-	raw     string
-	configs []config
+	raw     []byte
+	flagset = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 )
 
 func main() {
@@ -47,7 +48,14 @@ func main() {
 		}
 	}()
 
-	err = yaml.Unmarshal([]byte(raw), &configs)
+	fConfig := flagset.String("config", "", "config file path")
+
+	err = flagset.Parse(os.Args[1:])
+	if err != nil {
+		usageExit(err)
+	}
+
+	configs, err := readConfig(*fConfig)
 	if err != nil {
 		usageExit(err)
 	}
@@ -66,6 +74,29 @@ func main() {
 	err = filer(*logger, configs)
 }
 
+func readConfig(file string) ([]*config, error) {
+	if file != "" {
+		cfgFile, err := os.Open(file)
+		if err != nil {
+			return nil, misc.Wrapf(err, "open %s", file)
+		}
+
+		raw, err = io.ReadAll(cfgFile)
+		if err != nil {
+			return nil, misc.Wrapf(err, "read %s", file)
+		}
+	}
+
+	configs := []*config{}
+
+	err := yaml.Unmarshal(raw, &configs)
+	if err != nil {
+		return nil, misc.Wrap(err, "unmarshal")
+	}
+
+	return configs, nil
+}
+
 func usageExit(err error) {
 	fmt.Println("execute a config of simple file tasks")
 	fmt.Println()
@@ -78,7 +109,7 @@ func usageExit(err error) {
 	os.Exit(1)
 }
 
-func filer(logger logging.Logger, configs []config) error {
+func filer(logger logging.Logger, configs []*config) error {
 	for _, config := range configs {
 		if config.Action == "symlink" {
 			err := symlink(logger, config.Input[0], config.Input[1])
@@ -86,6 +117,8 @@ func filer(logger logging.Logger, configs []config) error {
 				return err
 			}
 		}
+
+		logger.Warn().Logf("ignore: unknown action %s", config.Action)
 	}
 
 	return nil

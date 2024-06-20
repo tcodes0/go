@@ -25,7 +25,7 @@ type config struct {
 
 var (
 	//go:embed config.yml
-	raw     string
+	raw     []byte
 	configs config
 	flagset = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 )
@@ -53,7 +53,7 @@ func main() {
 		usageExit(err)
 	}
 
-	err = yaml.Unmarshal([]byte(raw), &configs)
+	err = yaml.Unmarshal(raw, &configs)
 	if err != nil {
 		usageExit(err)
 	}
