@@ -25,6 +25,7 @@ import (
 const (
 	actionSymlink = "symlink"
 	actionRemove  = "remove"
+	actionBak     = "backup"
 )
 
 type config struct {
@@ -161,6 +162,15 @@ func filer(logger logging.Logger, configs []*config, dryrun bool) error {
 			continue
 		}
 
+		if config.Action == actionBak {
+			err := bak(logger, config.Input, dryrun)
+			if err != nil {
+				return err
+			}
+
+			continue
+		}
+
 		logger.Warn().Logf("ignore: unknown action %s", config.Action)
 	}
 
@@ -226,6 +236,47 @@ func remove(logger logging.Logger, input []string, dryrun bool) (err error) {
 	err = os.Remove(input[0])
 	if err != nil {
 		return misc.Wrap(err, "remove")
+	}
+
+	return nil
+}
+
+func bak(logger logging.Logger, input []string, dryrun bool) (err error) {
+	if len(input) != 1 {
+		return fmt.Errorf("bak: expected 1 input got %v", input)
+	}
+
+	bakFile := input[0] + ".bak"
+
+	_, err = os.Stat(bakFile)
+	if err == nil {
+		logger.Warn().Logf("skip: file exists %s", bakFile)
+
+		return nil
+	}
+
+	if dryrun {
+		_, err = fmt.Printf("create %s.bak\n", input[0])
+		if err != nil {
+			logger.Error().Logf("println: %v", err)
+		}
+
+		return nil
+	}
+
+	backup, err := os.OpenFile(bakFile, os.O_CREATE|os.O_WRONLY, 0o664)
+	if err != nil {
+		return misc.Wrap(err, "open bak")
+	}
+
+	file, err := os.Open(input[0])
+	if err != nil {
+		return misc.Wrap(err, "open")
+	}
+
+	_, err = io.Copy(backup, file)
+	if err != nil {
+		return misc.Wrap(err, "copy")
 	}
 
 	return nil

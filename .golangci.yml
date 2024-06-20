@@ -123,6 +123,7 @@ linters-settings:
       - '^misc\.Days'
       - '^(wg|wait|waitGroup)\.Add'
       - '^make'
+      - '^os.OpenFile'
 
   funlen:
     ignore-comments: true
