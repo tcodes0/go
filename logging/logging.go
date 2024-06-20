@@ -30,11 +30,11 @@ const (
 	// highest level.
 	LNone
 
-	debug string = "DEBG "
-	info  string = "INFO "
-	warn  string = "WARN "
-	erro  string = "ERRO "
-	fatal string = "FATL "
+	debug string = "DEBUG "
+	info  string = "INFO  "
+	warn  string = "WARN  "
+	erro  string = "ERROR "
+	fatal string = "FATAL "
 
 	// UTC time with file and line of log message.
 	defaultFlags = log.LstdFlags | log.Lshortfile | log.LUTC
