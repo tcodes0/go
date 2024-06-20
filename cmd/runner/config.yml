@@ -1,4 +1,7 @@
-# unmarshaled into cmd/runner/main.go task type
+# see main.go task type
+# <variables> are replaced by some value
+# see main.go const section for variables
+
 - name: build
   module: true
   env:

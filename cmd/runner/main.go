@@ -29,10 +29,10 @@ const (
 	needGitClean = "<git-clean>"
 	needOnline   = "<online>"
 
-	varModule    = "<module>"
-	varInherit   = "<inherit>"
-	varTasksModT = "<task-module-names>"
-	varTasksModF = "<task-not-module-names>"
+	varModule    = "<module>"                // the module passed as input
+	varInherit   = "<inherit>"               // copy this from the environment
+	varTasksModT = "<task-module-names>"     // all module task names
+	varTasksModF = "<task-not-module-names>" // all not module task names
 )
 
 var (
