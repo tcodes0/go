@@ -6,9 +6,12 @@
 package misc
 
 import (
+	"bufio"
+	"fmt"
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 type lookupEnv interface {
@@ -50,5 +53,33 @@ func LookupEnv[T lookupEnv](key string, fallback T) T {
 
 		//nolint:forcetypeassert // generic constraint
 		return reflect.ValueOf(bol).Interface().(T)
+	}
+}
+
+func DotEnv(path string, noisy bool) {
+	file, err := os.Open(path)
+	if err != nil {
+		if noisy {
+			fmt.Println(Wrap(err, "no .env file found"))
+		}
+
+		return
+	}
+
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		err := scanner.Err()
+		if err != nil {
+			if noisy {
+				fmt.Println(Wrap(err, "scanning .env file"))
+			}
+
+			return
+		}
+
+		line := strings.Split(scanner.Text(), "=")
+
+		os.Setenv(line[0], line[1])
 	}
 }

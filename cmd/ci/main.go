@@ -66,6 +66,7 @@ type ref struct {
 }
 
 var (
+	logger  = &logging.Logger{}
 	flagset = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 	//go:embed config.yml
 	raw              string
@@ -78,23 +79,34 @@ var (
 
 func main() {
 	start := time.Now()
-	logger := &logging.Logger{}
 
 	var err error
 
 	// first deferred func will run last
 	defer func() {
 		if msg := recover(); msg != nil {
-			logger.Fatalf("panic: %v", msg)
+			logger.Fatalf("%v", msg)
 		}
 
 		logger.Logf("took %d", time.Since(start)/time.Second)
 
 		if err != nil {
-			logger.Error().Logf("error: %v", err)
+			logger.Error().Log(err.Error())
+			os.Exit(1)
 		}
 	}()
 
+	misc.DotEnv(".env", false /* noisy */)
+
+	fColor := misc.LookupEnv(cmd.EnvColor, false)
+	fLogLevel := misc.LookupEnv(cmd.EnvLogLevel, int(logging.LInfo))
+
+	opts := []logging.CreateOptions{logging.OptFlags(log.Lshortfile), logging.OptLevel(logging.Level(fLogLevel))}
+	if fColor {
+		opts = append(opts, logging.OptColor())
+	}
+
+	logger = logging.Create(opts...)
 	fPush := flagset.Bool("push", false, "use a push event, what happens on merge")
 
 	err = flagset.Parse(os.Args[1:])
@@ -107,15 +119,6 @@ func main() {
 		usageExit(err)
 	}
 
-	fColor := misc.LookupEnv(cmd.EnvColor, false)
-	fLogLevel := misc.LookupEnv(cmd.EnvLogLevel, int(logging.LInfo))
-
-	opts := []logging.CreateOptions{logging.OptFlags(log.Lshortfile), logging.OptLevel(logging.Level(fLogLevel))}
-	if fColor {
-		opts = append(opts, logging.OptColor())
-	}
-
-	logger = logging.Create(opts...)
 	configs.StatusRegexp = regexp.MustCompile(configs.StatusRegexpRaw)
 	configs.MinDuration = misc.Seconds(configs.MinDurationRaw)
 	configs.MaxDuration = misc.Seconds(configs.MaxDurationRaw)
@@ -144,7 +147,7 @@ func usageExit(err error) {
 	fmt.Println(cmd.EnvVarUsage())
 
 	if err != nil && !errors.Is(err, flag.ErrHelp) {
-		fmt.Printf("error: %v\n", err)
+		logger.Error().Log(err.Error())
 	}
 
 	os.Exit(1)

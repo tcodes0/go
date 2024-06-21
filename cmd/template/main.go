@@ -25,23 +25,28 @@ type config struct {
 
 var (
 	//go:embed config.yml
-	raw     string
+	raw     []byte
 	configs config
 	flagset = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	logger  = &logging.Logger{}
 )
 
 func main() {
-	_ = flagset.Bool("pizza", true, "pepperoni or mozzarella!. (default TRUE)")
+	var err error
 
-	err := flagset.Parse(os.Args[1:])
-	if err != nil {
-		usageExit(err)
-	}
+	// first deferred func will run last
+	defer func() {
+		if msg := recover(); msg != nil {
+			logger.Fatalf("%v", msg)
+		}
 
-	err = yaml.Unmarshal([]byte(raw), &configs)
-	if err != nil {
-		usageExit(err)
-	}
+		if err != nil {
+			logger.Error().Log(err.Error())
+			os.Exit(1)
+		}
+	}()
+
+	misc.DotEnv(".env", false /* noisy */)
 
 	fColor := misc.LookupEnv(cmd.EnvColor, false)
 	fLogLevel := misc.LookupEnv(cmd.EnvLogLevel, int(logging.LInfo))
@@ -51,27 +56,34 @@ func main() {
 		opts = append(opts, logging.OptColor())
 	}
 
-	logger := logging.Create(opts...)
+	logger = logging.Create(opts...)
+	_ = flagset.Bool("pizza", true, "pepperoni or mozzarella!. (default TRUE)")
 
-	err = template(*logger)
+	err = flagset.Parse(os.Args[1:])
 	if err != nil {
-		logger.Fatalf("fatal: %v", err)
+		usageExit(err)
 	}
+
+	err = yaml.Unmarshal(raw, &configs)
+	if err != nil {
+		usageExit(err)
+	}
+
+	err = template()
 }
 
 func usageExit(err error) {
-	fmt.Println()
 	fmt.Println("description here")
 	fmt.Println()
 	fmt.Println(cmd.EnvVarUsage())
 
 	if err != nil && !errors.Is(err, flag.ErrHelp) {
-		fmt.Printf("error: %v\n", err)
+		logger.Error().Log(err.Error())
 	}
 
 	os.Exit(1)
 }
 
-func template(_ logging.Logger) error {
+func template() error {
 	return nil
 }
