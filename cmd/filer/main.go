@@ -255,6 +255,11 @@ func bak(logger logging.Logger, input []string, dryrun bool) (err error) {
 		return nil
 	}
 
+	fileStat, err := os.Stat(input[0])
+	if err == nil {
+		return misc.Wrap(err, "stat")
+	}
+
 	if dryrun {
 		_, err = fmt.Printf("create %s.bak\n", input[0])
 		if err != nil {
@@ -264,7 +269,7 @@ func bak(logger logging.Logger, input []string, dryrun bool) (err error) {
 		return nil
 	}
 
-	backup, err := os.OpenFile(bakFile, os.O_CREATE|os.O_WRONLY, 0o664)
+	backup, err := os.OpenFile(bakFile, os.O_CREATE|os.O_WRONLY, fileStat.Mode())
 	if err != nil {
 		return misc.Wrap(err, "open bak")
 	}
