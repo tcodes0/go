@@ -13,6 +13,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/samber/lo"
@@ -198,6 +199,15 @@ func link(source, link string, dryrun bool) error {
 	_, err := os.Stat(source)
 	if err != nil {
 		return misc.Wrapf(err, "stat")
+	}
+
+	linkDir := filepath.Dir(link)
+
+	_, err = os.Stat(linkDir)
+	if err != nil {
+		logger.Logf("try: mkdir -p %s", linkDir)
+
+		return misc.Wrapf(err, "stat dir")
 	}
 
 	// do not follow symlinks!
