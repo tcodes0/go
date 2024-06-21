@@ -1,0 +1,87 @@
+# see main.go task type
+# <variables> are replaced by some value
+# see main.go const section for variables
+
+- name: build
+  module: true
+  env:
+    - MOD_PATH=<module>
+    - HOME=<inherit>
+    - PATH=<inherit>
+  exec:
+    - ./sh/workflows/module-pr/build.sh
+
+- name: lint
+  module: true
+  exec:
+    - "golangci-lint run --timeout 10s --print-issued-lines=false"
+
+- name: format
+  module: true
+  exec:
+    - "gofumpt -l -w"
+    - "prettier --write <module>/**/*{.yml,.yaml,.json}"
+
+- name: test
+  module: true
+  env:
+    - CACHE=true
+    - GITHUB_OUTPUT=/dev/null
+    - COVERAGE_FILE=coverage.out
+    - MOD_PATH=<module>
+    - PATH=<inherit>
+    - HOME=<inherit>
+  exec:
+    - ./sh/workflows/module-pr/test-pretty.sh
+
+- name: ci
+  needs: "<git-clean>, <online>"
+  exec:
+    - ./.local/ci.sh
+
+- name: format-configs
+  exec:
+    - "prettier --write ./**/*{.yml,.yaml,.json}"
+
+- name: generate-mocks
+  exec:
+    - ./sh/generate-mocks.sh
+
+- name: spellcheck
+  exec:
+    - "cspell --gitignore ."
+
+- name: setup
+  exec:
+    - ./sh/setup.sh
+
+- name: generate-go-work
+  env:
+    - PATH=<inherit>
+    - HOME=<inherit>
+    - CMD_COLOR=<inherit>
+    - CMD_LOGLEVEL=<inherit>
+  exec:
+    - go run cmd/gengowork/main.go
+
+- name: new-module
+  exec:
+    - ./sh/new-module.sh
+
+- name: generate-vscode-tasks
+  env:
+    - PATH=<inherit>
+    - HOME=<inherit>
+    - CMD_COLOR=<inherit>
+    - CMD_LOGLEVEL=<inherit>
+  exec:
+    - "go run cmd/genvscodetasks/main.go -module-commands <task-module-names> -repo-commands <task-not-module-names>"
+
+- name: copyright
+  env:
+    - PATH=<inherit>
+    - HOME=<inherit>
+    - CMD_COLOR=<inherit>
+    - CMD_LOGLEVEL=<inherit>
+  exec:
+    - "go run cmd/copyright/main.go"
