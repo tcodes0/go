@@ -50,8 +50,8 @@ fi
 
 testOutputJson=$(mktemp /tmp/go-test-json-XXXXXX)
 
-# tee a copy of output for further processing
-go test "${flags[@]}" "$testDir" >"$testOutputJson"
+# ignore failure to continue script
+go test "${flags[@]}" "$testDir" >"$testOutputJson" || true
 
 # delete lines not parseable as json output from 'go test'
 regExpPrefixGo="^go:"
