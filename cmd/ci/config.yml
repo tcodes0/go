@@ -2,7 +2,6 @@ prTitle: "feat(ci): add PR title to act event"
 prBaseRef: main
 prHeadRef: <local-branch>
 pushBaseRef: refs/heads/main
-statusRegexp: '\[([^]]+)\].*(succeeded|failed)'
 minLines: 30
 minDurationSeconds: 5
 maxDurationSeconds: 180 # 3 minutes
