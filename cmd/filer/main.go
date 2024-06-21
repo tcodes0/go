@@ -19,25 +19,26 @@ import (
 	"github.com/tcodes0/go/cmd"
 	"github.com/tcodes0/go/logging"
 	"github.com/tcodes0/go/misc"
-	"gopkg.in/yaml.v3"
 )
 
 const (
-	actionSymlink = "symlink"
-	actionRemove  = "remove"
-	actionBak     = "backup"
+	actionLink   = "link"
+	actionRemove = "remove"
+	actionBak    = "backup"
 )
 
-type config struct {
-	Action string   `yaml:"action"`
-	Input  []string `yaml:"input"`
-}
-
-var flagset = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+var (
+	logger       = &logging.Logger{}
+	flagset      = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	actions      = []string{actionLink, actionRemove, actionBak}
+	descriptions = []string{
+		"create symbolic link; provide files in pairs, one per line, first is source, second is link",
+		"delete; one file per line",
+		"copy with .bak extension; one file per line",
+	}
+)
 
 func main() {
-	logger := &logging.Logger{}
-
 	var err error
 
 	// first deferred func will run last
@@ -52,26 +53,6 @@ func main() {
 		}
 	}()
 
-	fConf := flagset.String("config", "", "config file path (required)")
-	fCommitL := flagset.Bool("commit", false, "apply changes (default: false)")
-	fCommitS := flagset.Bool("c", false, "apply changes (default: false)")
-
-	err = flagset.Parse(os.Args[1:])
-	if err != nil {
-		usageExit(err)
-	}
-
-	fDryrun := !(*fCommitL || *fCommitS)
-
-	configs, err := readConfig(*fConf)
-	if err != nil {
-		usageExit(err)
-	}
-
-	if len(configs) == 0 || len(configs) == 1 && configs[0] == nil {
-		usageExit(errors.New("empty config"))
-	}
-
 	misc.DotEnv(".env", false /* noisy */)
 
 	fColor := misc.LookupEnv(cmd.EnvColor, false)
@@ -82,96 +63,128 @@ func main() {
 		opts = append(opts, logging.OptColor())
 	}
 
-	envVarResolver(configs)
-
 	logger = logging.Create(opts...)
-	err = filer(*logger, configs, fDryrun)
+	fFiles := flagset.String("files", "", "path to newline separated list of files (required)")
+	fAction := flagset.String("action", "", "action to take on files (required)")
+	fCommitL := flagset.Bool("commit", false, "apply changes (default: false)")
+	fCommitS := flagset.Bool("c", false, "apply changes (default: false)")
+
+	err = flagset.Parse(os.Args[1:])
+	if err != nil {
+		usageExit(err)
+	}
+
+	fDryrun := !(*fCommitL || *fCommitS)
+
+	files, err := readConfig(*fFiles)
+	if err != nil {
+		usageExit(err)
+	}
+
+	if *fAction == "" {
+		usageExit(errors.New("empty action"))
+	}
+
+	if _, found := lo.Find(actions, func(a string) bool { return a == *fAction }); !found {
+		usageExit(fmt.Errorf("unknown action %s", *fAction))
+	}
+
+	files = envVarResolver(files)
+	err = filer(files, *fAction, fDryrun)
 }
 
-func readConfig(file string) ([]*config, error) {
-	raw := []byte{}
-
-	if file != "" {
-		cfgFile, err := os.Open(file)
-		if err != nil {
-			return nil, misc.Wrap(err, "open")
-		}
-
-		raw, err = io.ReadAll(cfgFile)
-		if err != nil {
-			return nil, misc.Wrap(err, "read")
-		}
+func readConfig(configPath string) ([]string, error) {
+	if configPath == "" {
+		return nil, errors.New("empty config")
 	}
 
-	configs := []*config{}
-
-	err := yaml.Unmarshal(raw, &configs)
+	cfgFile, err := os.Open(configPath)
 	if err != nil {
-		return nil, misc.Wrap(err, "unmarshal")
+		return nil, misc.Wrap(err, "open")
 	}
 
-	return configs, nil
+	raw, err := io.ReadAll(cfgFile)
+	if err != nil {
+		return nil, misc.Wrap(err, "read")
+	}
+
+	files := strings.Split(string(raw), "\n")
+	files = lo.Filter(files, func(file string, _ int) bool {
+		return file != "" && !strings.HasPrefix(file, "#")
+	})
+
+	if len(files) == 0 {
+		return nil, errors.New("empty config")
+	}
+
+	return files, nil
 }
 
 func usageExit(err error) {
 	flagset.Usage()
-	fmt.Println("execute a config of simple file tasks.")
-	fmt.Println("changes no files by default.")
+	fmt.Println("perform an action on a list of files.")
+	fmt.Println("changes nothing by default, pass -commit")
+	fmt.Println("comments with # and newlines are ignored in config file.")
+	fmt.Println()
+	fmt.Println("actions available:")
+
+	for i, action := range actions {
+		fmt.Printf("- %s: %s\n", action, descriptions[i])
+	}
+
 	fmt.Println()
 	fmt.Println(cmd.EnvVarUsage())
 
 	if err != nil && !errors.Is(err, flag.ErrHelp) {
-		fmt.Printf("error: %v\n", err)
+		logger.Error().Logf("%s", err.Error())
 	}
 
 	os.Exit(1)
 }
 
-func envVarResolver(configs []*config) {
+func envVarResolver(files []string) []string {
 	envs := map[string]string{}
 	envs["$HOME"] = os.Getenv("HOME")
+	out := make([]string, len(files))
 
-	for _, conf := range configs {
-		conf.Input = lo.Map(conf.Input, func(input string, _ int) string {
-			return strings.ReplaceAll(input, "$HOME", envs["$HOME"])
-		})
+	for i, file := range files {
+		out[i] = strings.ReplaceAll(file, "$HOME", envs["$HOME"])
 	}
+
+	return out
 }
 
-func filer(logger logging.Logger, configs []*config, dryrun bool) error {
-	for _, config := range configs {
-		if config == nil {
-			continue
+func filer(files []string, action string, dryrun bool) error {
+	switch action {
+	case actionLink:
+		if len(files)%2 != 0 {
+			return fmt.Errorf("symlink: file count must be even, got %v", len(files))
 		}
 
-		if config.Action == actionSymlink {
-			err := symlink(logger, config.Input, dryrun)
+		for i, file := range files {
+			if i%2 != 0 {
+				continue
+			}
+
+			err := link(file, files[i+1], dryrun)
 			if err != nil {
 				return err
 			}
-
-			continue
 		}
-
-		if config.Action == actionRemove {
-			err := remove(logger, config.Input, dryrun)
+	case actionRemove:
+		for _, file := range files {
+			err := remove(file, dryrun)
 			if err != nil {
 				return err
 			}
-
-			continue
 		}
-
-		if config.Action == actionBak {
-			err := bak(logger, config.Input, dryrun)
+	case actionBak:
+		for _, file := range files {
+			err := bak(file, dryrun)
 			if err != nil {
 				return err
 			}
-
-			continue
 		}
-
-		logger.Warn().Logf("ignore: unknown action %s", config.Action)
 	}
 
 	if dryrun {
@@ -181,15 +194,7 @@ func filer(logger logging.Logger, configs []*config, dryrun bool) error {
 	return nil
 }
 
-func symlink(logger logging.Logger, input []string, dryrun bool) error {
-	//nolint:mnd // len check
-	if len(input) != 2 {
-		return fmt.Errorf("symlink: expected 2 inputs got %v", input)
-	}
-
-	source := input[0]
-	link := input[1]
-
+func link(source, link string, dryrun bool) error {
 	_, err := os.Stat(source)
 	if err != nil {
 		return misc.Wrapf(err, "stat")
@@ -219,13 +224,17 @@ func symlink(logger logging.Logger, input []string, dryrun bool) error {
 	return nil
 }
 
-func remove(logger logging.Logger, input []string, dryrun bool) (err error) {
-	if len(input) != 1 {
-		return fmt.Errorf("remove: expected 1 input got %v", input)
+func remove(target string, dryrun bool) error {
+	_, err := os.Stat(target)
+	if err != nil {
+		logger.Warn().Logf("skip: file not found %s", target)
+
+		//nolint:nilerr // func about removing files
+		return nil
 	}
 
 	if dryrun {
-		_, err = fmt.Printf("remove %s\n", input[0])
+		_, err = fmt.Printf("remove %s\n", target)
 		if err != nil {
 			logger.Error().Logf("println: %v", err)
 		}
@@ -233,7 +242,7 @@ func remove(logger logging.Logger, input []string, dryrun bool) (err error) {
 		return nil
 	}
 
-	err = os.Remove(input[0])
+	err = os.Remove(target)
 	if err != nil {
 		return misc.Wrap(err, "remove")
 	}
@@ -241,12 +250,8 @@ func remove(logger logging.Logger, input []string, dryrun bool) (err error) {
 	return nil
 }
 
-func bak(logger logging.Logger, input []string, dryrun bool) (err error) {
-	if len(input) != 1 {
-		return fmt.Errorf("bak: expected 1 input got %v", input)
-	}
-
-	bakFile := input[0] + ".bak"
+func bak(target string, dryrun bool) (err error) {
+	bakFile := target + ".bak"
 
 	_, err = os.Stat(bakFile)
 	if err == nil {
@@ -255,13 +260,13 @@ func bak(logger logging.Logger, input []string, dryrun bool) (err error) {
 		return nil
 	}
 
-	fileStat, err := os.Stat(input[0])
-	if err == nil {
+	fileStat, err := os.Stat(target)
+	if err != nil {
 		return misc.Wrap(err, "stat")
 	}
 
 	if dryrun {
-		_, err = fmt.Printf("create %s.bak\n", input[0])
+		_, err = fmt.Printf("create %s.bak\n", target)
 		if err != nil {
 			logger.Error().Logf("println: %v", err)
 		}
@@ -274,7 +279,7 @@ func bak(logger logging.Logger, input []string, dryrun bool) (err error) {
 		return misc.Wrap(err, "open bak")
 	}
 
-	file, err := os.Open(input[0])
+	file, err := os.Open(target)
 	if err != nil {
 		return misc.Wrap(err, "open")
 	}

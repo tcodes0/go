@@ -28,12 +28,10 @@ var (
 	raw     []byte
 	configs config
 	flagset = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	logger  = &logging.Logger{}
 )
 
 func main() {
-	_ = flagset.Bool("pizza", true, "pepperoni or mozzarella!. (default TRUE)")
-	logger := &logging.Logger{}
-
 	var err error
 
 	// first deferred func will run last
@@ -48,15 +46,7 @@ func main() {
 		}
 	}()
 
-	err = flagset.Parse(os.Args[1:])
-	if err != nil {
-		usageExit(err)
-	}
-
-	err = yaml.Unmarshal(raw, &configs)
-	if err != nil {
-		usageExit(err)
-	}
+	misc.DotEnv(".env", false /* noisy */)
 
 	fColor := misc.LookupEnv(cmd.EnvColor, false)
 	fLogLevel := misc.LookupEnv(cmd.EnvLogLevel, int(logging.LInfo))
@@ -67,7 +57,19 @@ func main() {
 	}
 
 	logger = logging.Create(opts...)
-	err = template(*logger)
+	_ = flagset.Bool("pizza", true, "pepperoni or mozzarella!. (default TRUE)")
+
+	err = flagset.Parse(os.Args[1:])
+	if err != nil {
+		usageExit(err)
+	}
+
+	err = yaml.Unmarshal(raw, &configs)
+	if err != nil {
+		usageExit(err)
+	}
+
+	err = template()
 }
 
 func usageExit(err error) {
@@ -82,6 +84,6 @@ func usageExit(err error) {
 	os.Exit(1)
 }
 
-func template(_ logging.Logger) error {
+func template() error {
 	return nil
 }
