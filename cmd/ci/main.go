@@ -29,18 +29,17 @@ import (
 )
 
 type config struct {
-	StatusRegexp    *regexp.Regexp
-	PRTitle         string `yaml:"prTitle"`
-	PRBaseRef       string `yaml:"prBaseRef"`
-	PRHeadRef       string `yaml:"prHeadRef"`
-	PushBaseRef     string `yaml:"pushBaseRef"`
-	StatusRegexpRaw string `yaml:"statusRegexp"`
-	Exec            string `yaml:"exec"`
-	MinLines        int    `yaml:"minLines"`
-	MinDurationRaw  int    `yaml:"minDurationSeconds"`
-	MaxDurationRaw  int    `yaml:"maxDurationSeconds"`
-	MinDuration     time.Duration
-	MaxDuration     time.Duration
+	PassFailRegexp *regexp.Regexp
+	PRTitle        string `yaml:"prTitle"`
+	PRBaseRef      string `yaml:"prBaseRef"`
+	PRHeadRef      string `yaml:"prHeadRef"`
+	PushBaseRef    string `yaml:"pushBaseRef"`
+	Exec           string `yaml:"exec"`
+	MinLines       int    `yaml:"minLines"`
+	MinDurationRaw int    `yaml:"minDurationSeconds"`
+	MaxDurationRaw int    `yaml:"maxDurationSeconds"`
+	MinDuration    time.Duration
+	MaxDuration    time.Duration
 }
 
 type event struct {
@@ -66,15 +65,18 @@ type ref struct {
 }
 
 var (
+	//go:embed config.yml
+	raw     string
+	configs config
 	logger  = &logging.Logger{}
 	flagset = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	//go:embed config.yml
-	raw              string
-	configs          config
+
+	varToken         = "<github-token>"
 	varLocalBranch   = "<local-branch>"
 	varEventJSONFile = "<event-json-file>"
-	//nolint:gosec // not a real token
-	varToken = "<github-token>"
+
+	passFailRegexpRaw = `\[(?P<job>[^]]+)\].*(?P<status>succeeded|failed)`
+	pass              = "succeeded"
 )
 
 func main() {
@@ -88,7 +90,7 @@ func main() {
 			logger.Fatalf("%v", msg)
 		}
 
-		logger.Logf("took %d", time.Since(start)/time.Second)
+		logger.Logf("took %ds", time.Since(start)/time.Second)
 
 		if err != nil {
 			logger.Error().Log(err.Error())
@@ -119,7 +121,7 @@ func main() {
 		usageExit(err)
 	}
 
-	configs.StatusRegexp = regexp.MustCompile(configs.StatusRegexpRaw)
+	configs.PassFailRegexp = regexp.MustCompile(passFailRegexpRaw)
 	configs.MinDuration = misc.Seconds(configs.MinDurationRaw)
 	configs.MaxDuration = misc.Seconds(configs.MaxDurationRaw)
 
@@ -173,8 +175,10 @@ func ci(logger logging.Logger, theEvent *event) error {
 	requestFrame := make(chan bool)
 	go render(ctx, ciStdout, ciStderr, ticker, requestFrame)
 
-	misc.ListenStopSignal(ctx, func(sig os.Signal) {
-		logger.Debug().Log("caught %s", sig.String())
+	go misc.RoutineListenStopSignal(ctx, func(sig os.Signal) {
+		logger.Error().Log("\nfatal: %s stopping...", sig.String())
+		// clear cursor to end of screen
+		fmt.Printf("\033[0J")
 
 		e := ciCmd.Process.Signal(sig)
 		if e != nil {
@@ -188,7 +192,7 @@ func ci(logger logging.Logger, theEvent *event) error {
 		requestFrame <- true
 	}()
 
-	return misc.Wrap(ciCmd.Wait(), "wait ci")
+	return misc.Wrap(ciCmd.Wait(), "wait")
 }
 
 //nolint:funlen // it does a lot!
@@ -309,6 +313,9 @@ func cmdVarResolver(inputStr, eventJSONFile, token string) []string {
 }
 
 func render(ctx context.Context, stdout, _ *bytes.Buffer, ticker *time.Ticker, request chan bool) {
+	fmt.Print("\033[H\033[2J") // move 1-1, clear whole screen
+	fmt.Printf("running ci...\n")
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -316,9 +323,18 @@ func render(ctx context.Context, stdout, _ *bytes.Buffer, ticker *time.Ticker, r
 
 		case <-request:
 		case <-ticker.C:
-			statuses := configs.StatusRegexp.FindAllString(stdout.String(), -1)
-			for _, status := range statuses {
-				fmt.Println(status)
+			matches := configs.PassFailRegexp.FindAllStringSubmatch(stdout.String(), -1)
+
+			fmt.Println("\033[H") // move 1-1
+
+			for _, match := range matches {
+				job := strings.Trim(match[1], " ")
+
+				if match[2] == pass {
+					fmt.Printf("%s %s%s%s\n", "\033[7;38;05;242m PASS \033[0m", "\033[2m", job, "\033[0m")
+				} else {
+					fmt.Printf("%s %s\n", "\033[2;7;38;05;197;47m FAIL \033[0m", job)
+				}
 			}
 		}
 	}
