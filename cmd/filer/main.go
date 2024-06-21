@@ -200,15 +200,24 @@ func link(source, link string, dryrun bool) error {
 		return misc.Wrapf(err, "stat")
 	}
 
-	_, err = os.Stat(link)
+	// do not follow symlinks!
+	lStat, err := os.Lstat(link)
 	if err == nil {
 		logger.Warn().Logf("skip: file exists %s", link)
+
+		if lStat.Mode()&os.ModeSymlink != 0 {
+			_, err = os.Stat(link)
+			if err != nil {
+				logger.Error().Logf("broken link %s", link)
+				logger.Logf("try: unlink %s", link)
+			}
+		}
 
 		return nil
 	}
 
 	if dryrun {
-		_, err = fmt.Printf("symlink %s -> %s\n", link, source)
+		_, err = fmt.Printf("link %s -> %s\n", link, source)
 		if err != nil {
 			logger.Error().Logf("println: %v", err)
 		}
@@ -218,19 +227,33 @@ func link(source, link string, dryrun bool) error {
 
 	err = os.Symlink(source, link)
 	if err != nil {
-		return misc.Wrapf(err, "symlink %s %s", source, link)
+		return misc.Wrapf(err, "symlink")
 	}
 
 	return nil
 }
 
 func remove(target string, dryrun bool) error {
-	_, err := os.Stat(target)
+	stat, err := os.Stat(target)
 	if err != nil {
 		logger.Warn().Logf("skip: file not found %s", target)
 
 		//nolint:nilerr // func about removing files
 		return nil
+	}
+
+	if stat.IsDir() {
+		entries, e := os.ReadDir(target)
+		if e != nil {
+			return misc.Wrap(e, "read dir")
+		}
+
+		if len(entries) > 0 {
+			logger.Warn().Logf("skip: directory not empty %s", target)
+			logger.Logf("try: rm -fr %s", target)
+
+			return nil
+		}
 	}
 
 	if dryrun {
@@ -263,6 +286,13 @@ func bak(target string, dryrun bool) (err error) {
 	fileStat, err := os.Stat(target)
 	if err != nil {
 		return misc.Wrap(err, "stat")
+	}
+
+	if fileStat.IsDir() {
+		logger.Warn().Logf("skip: directory %s", target)
+		logger.Logf("try: cp %s %s.bak", target, target)
+
+		return nil
 	}
 
 	if dryrun {
