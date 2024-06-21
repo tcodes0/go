@@ -20,7 +20,8 @@
     "ui.semanticTokens": true,
     // conflicts with golanci-lint 1.58
     "ui.diagnostic.analyses": {
-      "lostcancel": false
+      "lostcancel": false,
+      "printf": false
     }
   },
   // - - - - - - - - BASH - - - - - - - - -
