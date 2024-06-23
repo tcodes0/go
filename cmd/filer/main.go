@@ -122,7 +122,10 @@ func readConfig(configPath string) ([]string, error) {
 }
 
 func usageExit(err error) {
-	flagset.Usage()
+	if !errors.Is(err, flag.ErrHelp) {
+		flagset.Usage()
+	}
+
 	fmt.Println("perform an action on a list of files.")
 	fmt.Println("changes nothing by default, pass -commit")
 	fmt.Println("comments with # and newlines are ignored in config file.")
@@ -136,7 +139,7 @@ func usageExit(err error) {
 	fmt.Println()
 	fmt.Println(cmd.EnvVarUsage())
 
-	if err != nil && !errors.Is(err, flag.ErrHelp) {
+	if !errors.Is(err, flag.ErrHelp) {
 		logger.Error().Logf("%s", err.Error())
 	}
 
