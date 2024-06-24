@@ -344,3 +344,12 @@ jobs:
     with:
       goVersion: 1.22
       modulePath: cmd/ci
+
+  cmd-csv:
+    name: cmd/csv
+    needs: changed-files
+    if: needs.changed-files.outputs.TODO
+    uses: ./.github/workflows/module-pr.yml
+    with:
+      goVersion: TODO
+      modulePath: cmd/csv
