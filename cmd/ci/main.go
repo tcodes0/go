@@ -173,10 +173,10 @@ func ci(logger logging.Logger, theEvent *event) error {
 	defer ticker.Stop()
 
 	requestFrame := make(chan bool)
-	go render(ctx, ciStdout, ciStderr, ticker, requestFrame)
+	go renderer(ctx, ciStdout, ciStderr, ticker, requestFrame, ciLogFile)
 
 	go misc.RoutineListenStopSignal(ctx, func(sig os.Signal) {
-		logger.Error().Log("\nfatal: %s stopping...", sig.String())
+		logger.Error().Logf("\nfatal: %s stopping...", sig.String())
 		// clear cursor to end of screen
 		fmt.Printf("\033[0J")
 
@@ -188,8 +188,10 @@ func ci(logger logging.Logger, theEvent *event) error {
 
 	defer func() {
 		flushLogs(logger, ciLogFile, ciStdout, ciStderr)
+		ticker.Stop()
 		// ensure all info is on screen
 		requestFrame <- true
+		<-requestFrame
 	}()
 
 	return misc.Wrap(ciCmd.Wait(), "wait")
@@ -312,30 +314,46 @@ func cmdVarResolver(inputStr, eventJSONFile, token string) []string {
 	})
 }
 
-func render(ctx context.Context, stdout, _ *bytes.Buffer, ticker *time.Ticker, request chan bool) {
+func renderer(ctx context.Context, stdout, _ *bytes.Buffer, ticker *time.Ticker, request chan bool, ciLog string) {
 	fmt.Print("\033[H\033[2J") // move 1-1, clear whole screen
-	fmt.Printf("running ci...\n")
 
+loop:
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			break loop
 
 		case <-request:
+			frame(stdout)
+			fmt.Println()
+			fmt.Printf("ci log:\t%s\n", ciLog)
+
 		case <-ticker.C:
-			matches := configs.PassFailRegexp.FindAllStringSubmatch(stdout.String(), -1)
+			frame(stdout)
+		}
+	}
 
-			fmt.Println("\033[H") // move 1-1
+	close(request)
+}
 
-			for _, match := range matches {
-				job := strings.Trim(match[1], " ")
+func frame(stdout *bytes.Buffer) {
+	matches := configs.PassFailRegexp.FindAllStringSubmatch(stdout.String(), -1)
 
-				if match[2] == pass {
-					fmt.Printf("%s %s%s%s\n", "\033[7;38;05;242m PASS \033[0m", "\033[2m", job, "\033[0m")
-				} else {
-					fmt.Printf("%s %s\n", "\033[2;7;38;05;197;47m FAIL \033[0m", job)
-				}
-			}
+	fmt.Println("\033[H") // move 1-1
+
+	if len(matches) == 0 {
+		fmt.Printf("running ci...")
+
+		return
+	}
+
+	for _, match := range matches {
+		job := strings.Trim(match[1], " ")
+
+		if match[2] == pass {
+			fmt.Printf("%s %s%s%s\n", "\033[7;38;05;242m PASS \033[0m", "\033[2m", job, "\033[0m")
+		} else {
+			fmt.Printf("%s %s\n", "\033[2;7;38;05;197;47m FAIL \033[0m", job)
 		}
 	}
 }
