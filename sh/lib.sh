@@ -41,7 +41,7 @@ requestedHelp() {
 
 # example: if macos;
 macos() {
-  ([ "$(uname)" == "Darwin" ] && true) || false
+  ([ "$(uname)" == "Darwin" ] && true)
 }
 
 # wrapper to avoid macos sed incompatibilities
