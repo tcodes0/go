@@ -4,8 +4,6 @@
 # license that can be found in the LICENSE file and online
 # at https://opensource.org/license/BSD-3-clause.
 
-### options, imports, mocks ###
-
 set -euo pipefail
 shopt -s globstar
 # shellcheck disable=SC1091
@@ -14,14 +12,22 @@ source "$PWD/sh/lib.sh"
 ### vars and functions ###
 
 start=$(date +%s)
-firstFailedJob=""
-hasSuccessfulJob=""
+failedJobs=""
+passingJobs=0
 ciPid=""
 
 usageExit() {
   msgln "Usage: $0 "
   msgln "Usage: $0 push"
   exit 1
+}
+
+pushFailedJob() {
+  local job="$1"
+
+  if [[ "${failedJobs[*]}" != *${job}* ]]; then
+    failedJobs+=" $job"
+  fi
 }
 
 # $1 logfile
@@ -38,12 +44,10 @@ printJobProgress() {
 
     if [ "$status" == "$success" ]; then
       printf "%b %b%s%b\n" "$LIB_COLOR_PASS" "$LIB_FORMAT_DIM" "$job" "$LIB_VISUAL_END"
-      hasSuccessfulJob=true
+      passingJobs=$((passingJobs + 1))
     else
       printf "%b %b\n" "$LIB_COLOR_FAIL" "$job"
-      if [ ! "$firstFailedJob" ]; then
-        firstFailedJob="$job"
-      fi
+      pushFailedJob "$job"
     fi
   done < <(grep -Eie "Job ($success|$failed)" "$ciLog" || true)
 }
@@ -100,23 +104,28 @@ prepareLogs() {
 
 # $1 logfile
 postCi() {
-  local exitStatus=0 log="$1" minDurationSeconds=5
+  local failed log="$1" minDurationSeconds=5
   msgln
 
   if [ $(($(date +%s) - start)) -le $minDurationSeconds ]; then
     tac "$log" | head
-    exitStatus=1
-  elif [ -n "$firstFailedJob" ]; then
-    grep --color=always -Eie "$firstFailedJob" "$log" || true
-    msgln "above: logs for '$firstFailedJob'"
-    exitStatus=1
-  elif [ -z "$hasSuccessfulJob" ]; then
+    failed=true
+  elif [ "${#failedJobs}" != 0 ]; then
+    msgln ${#failedJobs} jobs failed \($passingJobs OK\)
+    msgln see logs:
+
+    for failed in "${failedJobs[@]}"; do
+      msgln \'grep --color=always -Ee "$failedJobs" "$log"\'
+    done
+
+    failed=true
+  elif [ "$passingJobs" == 0 ]; then
     grep --color=always -Eie "error" "$log" || true
     msgln "error: no jobs succeeded"
-    exitStatus=1
-    # look for errors at end of log
+    failed=true
+    # look for errors at the end of log, fail if found
   elif tac "$log" | head | grep --color=always -Eie error; then
-    exitStatus=1
+    failed=true
   fi
 
   msgln
@@ -125,7 +134,7 @@ postCi() {
   msgln
   msgln took $(($(date +%s) - start))s
 
-  if [ "$exitStatus" != 0 ]; then
+  if [ "$failed" ]; then
     printf "%b" "$LIB_COLOR_FAIL"
   fi
 }
