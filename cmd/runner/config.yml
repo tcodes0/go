@@ -37,7 +37,7 @@
 
 - name: ci
   exec:
-    - "./sh/ci.sh"
+    - "echo run ./ci"
 
 - name: format-configs
   exec:
@@ -68,15 +68,6 @@
   minInputs: 1
   exec:
     - ./sh/new-module.sh
-
-- name: generate-vscode-tasks
-  env:
-    - PATH=<inherit>
-    - HOME=<inherit>
-    - CMD_COLOR=<inherit>
-    - CMD_LOGLEVEL=<inherit>
-  exec:
-    - "go run cmd/genvscodetasks/main.go -module-commands <task-module-names> -repo-commands <task-not-module-names>"
 
 - name: copyright
   env:

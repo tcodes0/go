@@ -146,7 +146,6 @@ postCi() {
 
   msgln
   msgln full logs:\\t"$log"
-  msgln took $(($(date +%s) - start))s
 
   if [ "$failed" ]; then
     printf "%b" "$LIB_COLOR_FAIL"

@@ -70,6 +70,5 @@ printf "$format" "$name" "$name" "$name" >>.github/workflows/main.yml
 
 msgln "todo:
   - ./run <generate go work task>
-  - ./run <generate vscode task config task>
   - ./run <copyright task>
   - edit github workflows"
