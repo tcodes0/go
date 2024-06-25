@@ -50,13 +50,25 @@ printJobProgress() {
       pushFailedJob "$job"
     fi
   done < <(grep -Eie "Job ($success|$failed)" "$ciLog" || true)
+
+  printf %ss $(($(date +%s) - start))
 }
 
 # script args
-validateInput() {
+validate() {
   if [ $# -gt 1 ]; then
-    msgln "Invalid arguments: $*"
+    err $LINENO "Invalid arguments: $*"
     usageExit
+  fi
+
+  if [ "$(git status -s)" ]; then
+    err $LINENO "please commit or stash all changes"
+    return 1
+  fi
+
+  if ! ping -c 1 1.1.1.1 >/dev/null; then
+    err $LINENO "please check your internet connection"
+    return 1
   fi
 }
 
@@ -104,7 +116,7 @@ prepareLogs() {
 
 # $1 logfile
 postCi() {
-  local failed log="$1" minDurationSeconds=5
+  local failed="" log="$1" minDurationSeconds=5
   msgln
 
   if [ $(($(date +%s) - start)) -le $minDurationSeconds ]; then
@@ -114,8 +126,8 @@ postCi() {
     msgln ${#failedJobs} jobs failed \($passingJobs OK\)
     msgln see logs:
 
-    for failed in "${failedJobs[@]}"; do
-      msgln \'grep --color=always -Ee "$failedJobs" "$log"\'
+    for job in "${failedJobs[@]}"; do
+      msgln grep --color=always -Ee "$job" "$log"
     done
 
     failed=true
@@ -129,9 +141,7 @@ postCi() {
   fi
 
   msgln
-  msgln full logs:\\t\\t"$log"
-
-  msgln
+  msgln full logs:\\t"$log"
   msgln took $(($(date +%s) - start))s
 
   if [ "$failed" ]; then
@@ -141,7 +151,7 @@ postCi() {
 
 ### script ###
 
-validateInput "$@"
+validate "$@"
 read -rs logFile eventJsonFile <<<"$(prepareLogs "${1:-}")"
 
 ciCommand="act"
@@ -153,7 +163,7 @@ $ciCommand "${ciCommandArgs[@]}" >>"$logFile" 2>&1 || true &
 ciPid=$!
 
 printf "\e[H\e[2J" # move 1-1, clear whole screen
-msgln "running ci..."
+msgln "   running ci..."
 
 while ps -p "$ciPid" >/dev/null; do
   printf "\e[H" # move 1-1
