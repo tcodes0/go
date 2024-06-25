@@ -6,6 +6,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	_ "embed"
@@ -139,7 +140,8 @@ func main() {
 		ciEvent.PullRequest = nil
 	}
 
-	err = ci(*logger, ciEvent)
+	ciStdout, logfile, err := ci(*logger, ciEvent)
+	postCi(*logger, ciStdout, logfile, start, &configs)
 }
 
 func usageExit(err error) {
@@ -155,10 +157,10 @@ func usageExit(err error) {
 	os.Exit(1)
 }
 
-func ci(logger logging.Logger, theEvent *event) error {
+func ci(logger logging.Logger, theEvent *event) (*bytes.Buffer, string, error) {
 	eventJSONFile, ciLogFile, token, err := prepareMisc(logger, theEvent)
 	if err != nil {
-		return err
+		return nil, "", err
 	}
 
 	ctx, ciCmd, ciStdout, ciStderr, cancel := prepareCI(eventJSONFile, token)
@@ -166,7 +168,7 @@ func ci(logger logging.Logger, theEvent *event) error {
 
 	err = ciCmd.Start()
 	if err != nil {
-		return misc.Wrap(err, "start")
+		return nil, "", misc.Wrap(err, "start")
 	}
 
 	ticker := time.NewTicker(misc.Seconds(1))
@@ -175,7 +177,7 @@ func ci(logger logging.Logger, theEvent *event) error {
 	flush := make(chan bool)
 	renderDone := make(chan bool)
 
-	go renderer(ctx, ciStdout, ciStderr, ticker, flush, renderDone, ciLogFile)
+	go renderer(ctx, ciStdout, ciStderr, ticker, flush, renderDone)
 
 	go misc.RoutineListenStopSignal(ctx, func(sig os.Signal) {
 		logger.Error().Logf("\nfatal: %s stopping...", sig.String())
@@ -197,7 +199,7 @@ func ci(logger logging.Logger, theEvent *event) error {
 		<-renderDone
 	}()
 
-	return misc.Wrap(ciCmd.Wait(), "wait")
+	return ciStdout, ciLogFile, misc.Wrap(ciCmd.Wait(), "wait")
 }
 
 //nolint:funlen // it does a lot!
@@ -317,7 +319,7 @@ func cmdVarResolver(inputStr, eventJSONFile, token string) []string {
 	})
 }
 
-func renderer(ctx context.Context, stdout, _ *bytes.Buffer, ticker *time.Ticker, flush, done chan bool, ciLog string) {
+func renderer(ctx context.Context, stdout, _ *bytes.Buffer, ticker *time.Ticker, flush, done chan bool) {
 	fmt.Print("\033[H\033[2J") // move 1-1, clear whole screen
 
 loop:
@@ -328,8 +330,6 @@ loop:
 
 		case <-flush:
 			frame(stdout)
-			fmt.Println()
-			fmt.Printf("full log:\t%s\n", ciLog)
 
 			break loop
 
@@ -374,5 +374,71 @@ func flushLogs(logger logging.Logger, logfile string, stdout, stderr *bytes.Buff
 	err = cmd.WriteFile(logfile, stdout.Bytes())
 	if err != nil {
 		logger.Error().Logf("writeFile: %s", err.Error())
+	}
+}
+
+//nolint:funlen // big b1g func ;p
+func postCi(logger logging.Logger, output *bytes.Buffer, logFile string, start time.Time, cfg *config) {
+	defer func() {
+		fmt.Println()
+		fmt.Printf("full log:\t%s\n", logFile)
+	}()
+
+	if time.Now().Sub(start) < cfg.MinDuration {
+		logger.Error().Logf("ci took less than %ss", cfg.MinDuration)
+
+		return
+	}
+
+	outSt := output.String()
+	matches := configs.PassFailRegexp.FindAllStringSubmatch(outSt, -1)
+	firstFail := ""
+	hasSuccess := false
+	errRegexp := regexp.MustCompile("(?i)error")
+
+	for _, match := range matches {
+		if hasSuccess && firstFail != "" {
+			break
+		}
+
+		if match[2] == pass {
+			hasSuccess = true
+		} else if firstFail == "" {
+			firstFail = match[1]
+		}
+	}
+
+	if firstFail != "" {
+		scanner := bufio.NewScanner(output)
+		for scanner.Scan() {
+			if scanner.Err() != nil {
+				logger.Error().Logf("scanner: %s", scanner.Err().Error())
+
+				return
+			}
+
+			if strings.Contains(scanner.Text(), firstFail) {
+				fmt.Println(scanner.Text())
+			}
+		}
+
+		logger.Error().Logf("above: logs for '%s'", firstFail)
+
+		return
+	}
+
+	if !hasSuccess {
+		for _, match := range errRegexp.FindAllString(outSt, -1) {
+			fmt.Println(match)
+		}
+
+		logger.Error().Logf("no jobs succeeded")
+
+		return
+	}
+
+	rev := lo.Reverse([]rune(outSt))
+	for _, tail := range strings.SplitN(string(rev), "\n", cfg.MinLines) {
+		fmt.Println(tail)
 	}
 }
