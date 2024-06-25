@@ -35,8 +35,9 @@
     - ./sh/workflows/module-pr/test-pretty.sh
 
 - name: ci
+  needs: "<git-clean>, <online>"
   exec:
-    - "echo use ./ci"
+    - "./sh/ci.sh"
 
 - name: format-configs
   exec:
