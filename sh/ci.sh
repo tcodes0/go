@@ -12,8 +12,8 @@ source "$PWD/sh/lib.sh"
 ### vars and functions ###
 
 start=$(date +%s)
-failedJobs=""
-passingJobs=0
+failedJobs=()
+passingJobs=()
 ciPid=""
 
 usageExit() {
@@ -22,11 +22,15 @@ usageExit() {
   exit 1
 }
 
-pushFailedJob() {
-  local job="$1"
+pushJob() {
+  local type="$1" job="$2"
 
-  if [[ "${failedJobs[*]}" != *${job}* ]]; then
-    failedJobs+=" $job"
+  if [ "$type" == "fail" ]; then
+    if [[ "${failedJobs[*]}" != *${job}* ]]; then
+      failedJobs+=("$job")
+    fi
+  elif [[ "${passingJobs[*]}" != *${job}* ]]; then
+    passingJobs+=("$job")
   fi
 }
 
@@ -44,14 +48,14 @@ printJobProgress() {
 
     if [ "$status" == "$success" ]; then
       printf "%b %b%s%b\n" "$LIB_COLOR_PASS" "$LIB_FORMAT_DIM" "$job" "$LIB_VISUAL_END"
-      passingJobs=$((passingJobs + 1))
+      pushJob pass "$job"
     else
       printf "%b %b\n" "$LIB_COLOR_FAIL" "$job"
-      pushFailedJob "$job"
+      pushJob fail "$job"
     fi
   done < <(grep -Eie "Job ($success|$failed)" "$ciLog" || true)
 
-  printf %ss $(($(date +%s) - start))
+  printf %ss\\n $(($(date +%s) - start))
 }
 
 # script args
@@ -120,23 +124,23 @@ postCi() {
   msgln
 
   if [ $(($(date +%s) - start)) -le $minDurationSeconds ]; then
-    tac "$log" | head
+    tail "$log"
     failed=true
-  elif [ "${#failedJobs}" != 0 ]; then
-    msgln ${#failedJobs} jobs failed \($passingJobs OK\)
+  elif [ "${#failedJobs[@]}" != 0 ]; then
+    msgln ${#failedJobs[@]} jobs failed \(${#passingJobs[@]} OK\)
     msgln see logs:
 
     for job in "${failedJobs[@]}"; do
-      msgln grep --color=always -Ee "$job" "$log"
+      msgln grep --color=always -Ee \""$job"\" "$log" | less
     done
 
     failed=true
-  elif [ "$passingJobs" == 0 ]; then
+  elif [ ${#passingJobs[@]} == 0 ]; then
     grep --color=always -Eie "error" "$log" || true
     msgln "error: no jobs succeeded"
     failed=true
     # look for errors at the end of log, fail if found
-  elif tac "$log" | head | grep --color=always -Eie error; then
+  elif tail "$log" | grep --color=always -Eie error; then
     failed=true
   fi
 
@@ -172,5 +176,6 @@ while ps -p "$ciPid" >/dev/null; do
 done
 
 # catch status of last job that could have been missed by loop
+printf "\e[H" # move 1-1
 printJobProgress "$logFile"
 postCi "$logFile"

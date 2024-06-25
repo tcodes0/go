@@ -1,4 +1,4 @@
-name: Main
+name: main
 run-name: ${{ github.head_ref }}@${{ github.sha }}
 
 on:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   changed-files:
-    name: Analyze changed files
+    name: analyze_changed_files
     runs-on: ubuntu-latest
     outputs:
       # modules
@@ -56,7 +56,7 @@ jobs:
           files_yaml_from_source_file: .github/workflows/files.yml
 
   debug:
-    name: Debug
+    name: debug
     runs-on: ubuntu-latest
     if: false # change to debug
     env:
@@ -67,7 +67,7 @@ jobs:
         run: true
 
   commitlint:
-    name: Commit Lint
+    name: commit_lint
     runs-on: ubuntu-latest
     needs: changed-files
     env:
@@ -97,7 +97,7 @@ jobs:
         run: ./sh/workflows/main/commit-lint.sh
 
   root-go-mod:
-    name: Root go.mod up to date
+    name: root_go_mod_up_to_date
     runs-on: ubuntu-latest
     needs: changed-files
     if: needs.changed-files.outputs.rootGoMod
@@ -116,7 +116,7 @@ jobs:
           working-directory: .
 
   cmd-go-mod:
-    name: Cmd go.mod up to date
+    name: cmd_go_mod_up_to_date
     runs-on: ubuntu-latest
     needs: changed-files
     if: false # needs.changed-files.outputs.cmdGoMod # https://github.com/tcodes0/go/issues/26
@@ -135,7 +135,7 @@ jobs:
           working-directory: cmd
 
   go-work:
-    name: Go.work up to date
+    name: go_work_up_to_date
     runs-on: ubuntu-latest
     needs: changed-files
     if: false && needs.changed-files.outputs.anyGoMod
@@ -150,7 +150,7 @@ jobs:
         run: ./sh/workflows/main/diff.sh
 
   mocks:
-    name: Go mocks up to date
+    name: go_mocks_up_to_date
     runs-on: ubuntu-latest
     needs: changed-files
     if: needs.changed-files.outputs.anyMod
@@ -173,7 +173,7 @@ jobs:
         run: ./sh/workflows/main/diff.sh
 
   shell:
-    name: Lint format shell
+    name: lint_format_shell
     runs-on: ubuntu-latest
     needs: changed-files
     if: needs.changed-files.outputs.shell
@@ -193,7 +193,7 @@ jobs:
           # sh_checker_comment: true
 
   config:
-    name: Format config
+    name: format_config
     runs-on: ubuntu-latest
     needs: changed-files
     if: needs.changed-files.outputs.config
@@ -209,7 +209,7 @@ jobs:
           args: --check ${{ env.FILES }}
 
   docs:
-    name: Spellcheck
+    name: spellcheck
     runs-on: ubuntu-latest
     needs: changed-files
     # does not work locally
@@ -226,7 +226,7 @@ jobs:
           config: ./cspell.config.yml
 
   copyright:
-    name: Copyright
+    name: copyright
     runs-on: ubuntu-latest
     needs: changed-files
     if: needs.changed-files.outputs.anyCodeAdded
