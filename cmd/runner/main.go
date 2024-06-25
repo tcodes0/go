@@ -12,7 +12,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/exec"
 	"slices"
@@ -26,9 +25,6 @@ import (
 )
 
 const (
-	needGitClean = "<git-clean>"
-	needOnline   = "<online>"
-
 	varModule    = "<module>"
 	varInherit   = "<inherit>"
 	varTasksModT = "<task-module-names>"
@@ -45,7 +41,6 @@ var (
 type task struct {
 	Env       []string `yaml:"env"`
 	Name      string   `yaml:"name"`
-	Needs     string   `yaml:"needs"`
 	Exec      []string `yaml:"exec"`
 	Module    bool     `yaml:"module"`
 	MinInputs int      `yaml:"minInputs"`
@@ -65,25 +60,6 @@ func (task *task) validate(logger logging.Logger, inputs ...string) error {
 
 	if task.MinInputs != 0 && len(inputs) < task.MinInputs {
 		return fmt.Errorf("%s: expected minimum %d inputs got: %v", task.Name, task.MinInputs, inputs)
-	}
-
-	for _, need := range strings.Split(task.Needs, ",") {
-		need = strings.TrimSpace(need)
-
-		switch need {
-		default:
-			err = fmt.Errorf("unknown need: %s", need)
-		case "":
-			continue
-		case needGitClean:
-			err = checkGitClean()
-		case needOnline:
-			err = checkOnline()
-		}
-
-		if err != nil {
-			break
-		}
 	}
 
 	return err
@@ -242,27 +218,6 @@ func run(logger logging.Logger, inputs ...string) error {
 }
 
 func didYouMean(input string) {}
-
-func checkGitClean() error {
-	err := exec.Command("git", "diff", "--exit-code").Run()
-	if err != nil {
-		return misc.Wrap(err, "please commit or stash all changes")
-	}
-
-	return nil
-}
-
-func checkOnline() error {
-	//nolint:noctx // simple internet test
-	res, err := http.Get("https://1.1.1.1" /*cloudflare*/)
-	if err != nil {
-		return misc.Wrap(err, "please check your internet connection")
-	}
-
-	defer res.Body.Close()
-
-	return nil
-}
 
 func envVarMapper(logger logging.Logger, inputs []string) func(pair string, _ int) string {
 	return func(pair string, _ int) string {
