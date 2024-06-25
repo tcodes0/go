@@ -120,6 +120,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	misc.DotEnv(".env", false /*noisy*/)
+
 	fColor := misc.LookupEnv(cmd.EnvColor, false)
 	fLogLevel := misc.LookupEnv(cmd.EnvLogLevel, int(logging.LInfo))
 
@@ -204,7 +206,8 @@ func run(logger logging.Logger, inputs ...string) error {
 
 		//nolint:gosec // has validation
 		command := exec.Command(cmdInput[0], cmdInput[1:]...)
-		logger.Debug().Log(strings.Join(cmdInput, " "))
+
+		logger.Log(line)
 
 		if len(theTask.Env) > 0 {
 			envs := lo.Map(theTask.Env, envVarMapper(logger, inputs))
@@ -218,10 +221,12 @@ func run(logger logging.Logger, inputs ...string) error {
 
 		out, err := command.Output()
 		if len(out) > 0 {
-			logger.Log("\n" + string(out))
+			fmt.Println(string(out))
 		}
 
-		logger.Debug().Log("\n" + stderrBuffer.String())
+		if stderrBuffer.Len() > 0 {
+			logger.Log(stderrBuffer.String())
+		}
 
 		if err != nil {
 			exitErr, ok := (err).(*exec.ExitError)
@@ -229,7 +234,7 @@ func run(logger logging.Logger, inputs ...string) error {
 				logger.Error().Log("stderr: " + string(exitErr.Stderr))
 			}
 
-			return misc.Wrapf(err, "command '%s'", strings.Join(cmdInput, " "))
+			return misc.Wrapf(err, "command '%s'", line)
 		}
 	}
 

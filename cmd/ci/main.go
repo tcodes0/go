@@ -90,7 +90,7 @@ func main() {
 			logger.Fatalf("%v", msg)
 		}
 
-		logger.Logf("took %ds", time.Since(start)/time.Second)
+		fmt.Printf("took %ds\n", time.Since(start)/time.Second)
 
 		if err != nil {
 			logger.Error().Log(err.Error())
@@ -329,7 +329,7 @@ loop:
 		case <-flush:
 			frame(stdout)
 			fmt.Println()
-			fmt.Printf("ci log:\t%s\n", ciLog)
+			fmt.Printf("full log:\t%s\n", ciLog)
 
 			break loop
 
