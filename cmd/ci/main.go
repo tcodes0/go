@@ -156,7 +156,7 @@ func usageExit(err error) {
 }
 
 func ci(logger logging.Logger, theEvent *event) error {
-	eventJSONFile, ciLogFile, token, err := prepareEnv(logger, theEvent)
+	eventJSONFile, ciLogFile, token, err := prepareMisc(logger, theEvent)
 	if err != nil {
 		return err
 	}
@@ -172,8 +172,10 @@ func ci(logger logging.Logger, theEvent *event) error {
 	ticker := time.NewTicker(misc.Seconds(1))
 	defer ticker.Stop()
 
-	requestFrame := make(chan bool)
-	go renderer(ctx, ciStdout, ciStderr, ticker, requestFrame, ciLogFile)
+	flush := make(chan bool)
+	renderDone := make(chan bool)
+
+	go renderer(ctx, ciStdout, ciStderr, ticker, flush, renderDone, ciLogFile)
 
 	go misc.RoutineListenStopSignal(ctx, func(sig os.Signal) {
 		logger.Error().Logf("\nfatal: %s stopping...", sig.String())
@@ -190,15 +192,16 @@ func ci(logger logging.Logger, theEvent *event) error {
 		flushLogs(logger, ciLogFile, ciStdout, ciStderr)
 		ticker.Stop()
 		// ensure all info is on screen
-		requestFrame <- true
-		<-requestFrame
+		flush <- true
+
+		<-renderDone
 	}()
 
 	return misc.Wrap(ciCmd.Wait(), "wait")
 }
 
 //nolint:funlen // it does a lot!
-func prepareEnv(logger logging.Logger, theEvent *event) (eventFile, ciLogFile, token string, e error) {
+func prepareMisc(logger logging.Logger, theEvent *event) (eventFile, ciLogFile, token string, e error) {
 	errG := errgroup.Group{}
 	errG.Go(func() error {
 		eventFileBytes, err := exec.Command("mktemp", "/tmp/ci-event-json-XXXXXX").Output()
@@ -314,7 +317,7 @@ func cmdVarResolver(inputStr, eventJSONFile, token string) []string {
 	})
 }
 
-func renderer(ctx context.Context, stdout, _ *bytes.Buffer, ticker *time.Ticker, request chan bool, ciLog string) {
+func renderer(ctx context.Context, stdout, _ *bytes.Buffer, ticker *time.Ticker, flush, done chan bool, ciLog string) {
 	fmt.Print("\033[H\033[2J") // move 1-1, clear whole screen
 
 loop:
@@ -323,17 +326,19 @@ loop:
 		case <-ctx.Done():
 			break loop
 
-		case <-request:
+		case <-flush:
 			frame(stdout)
 			fmt.Println()
 			fmt.Printf("ci log:\t%s\n", ciLog)
+
+			break loop
 
 		case <-ticker.C:
 			frame(stdout)
 		}
 	}
 
-	close(request)
+	close(done)
 }
 
 func frame(stdout *bytes.Buffer) {
