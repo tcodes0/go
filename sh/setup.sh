@@ -77,6 +77,9 @@ setup manual 'missing ps' ps view running programs
 setup manual 'missing grep' grep search files for matches
 setup manual 'missing sleep' sleep block a script for some time
 setup manual 'missing head' head read a number of lines from a file
+setup manual 'missing less' less pager to view files
+setup manual 'missing tail' tail read the end of a file
+setup manual 'missing uname' uname print system information
 
 if macos; then
   setup manual 'missing gsed' gsed gnu sed stream editor, available on brew as 'gnu-sed'
