@@ -1,8 +1,0 @@
-prTitle: "feat(ci): add PR title to act event"
-prBaseRef: main
-prHeadRef: <local-branch>
-pushBaseRef: refs/heads/main
-minLines: 30
-minDurationSeconds: 5
-maxDurationSeconds: 180 # 3 minutes
-exec: "act -e <event-json-file> -s GITHUB_TOKEN=<github-token> --container-architecture linux/amd64"

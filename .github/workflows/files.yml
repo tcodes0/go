@@ -52,5 +52,3 @@ cmd_gen_go_work:
   - cmd/gengowork/**.go
 cmd_gen_vscode_tasks:
   - cmd/genvscodetasks/**.go
-cmd_ci:
-  - cmd/ci/**.go
