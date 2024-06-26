@@ -46,7 +46,6 @@ type task struct {
 	MinInputs int      `yaml:"minInputs"`
 }
 
-// validate <module or input1> ...inputs.
 func (task *task) validate(logger logging.Logger, inputs ...string) error {
 	_, help := lo.Find(inputs, func(input string) bool { return input == "-h" || input == "--help" })
 	if help {
@@ -158,7 +157,6 @@ func usage(err error) {
 	fmt.Println("pass -h to tasks for documentation")
 }
 
-// run <task> <module or input1> ...inputs.
 func run(logger logging.Logger, inputs ...string) error {
 	if len(inputs) == 0 {
 		return misc.Wrap(errUsage, "task is required")

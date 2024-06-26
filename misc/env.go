@@ -18,6 +18,7 @@ type lookupEnv interface {
 	string | int | bool
 }
 
+// generic os.LookupEnv with fallback if value is not set or empty.
 func LookupEnv[T lookupEnv](key string, fallback T) T {
 	val, ok := os.LookupEnv(key)
 	if !ok || val == "" {
@@ -60,7 +61,7 @@ func DotEnv(path string, noisy bool) {
 	file, err := os.Open(path)
 	if err != nil {
 		if noisy {
-			fmt.Println(Wrap(err, "no .env file found"))
+			fmt.Fprintf(os.Stderr, "%s\n", err.Error())
 		}
 
 		return
@@ -72,14 +73,21 @@ func DotEnv(path string, noisy bool) {
 		err := scanner.Err()
 		if err != nil {
 			if noisy {
-				fmt.Println(Wrap(err, "scanning .env file"))
+				fmt.Fprint(os.Stderr, Wrap(err, "scanning .env file"))
 			}
 
 			return
 		}
 
-		line := strings.Split(scanner.Text(), "=")
+		key, val, ok := strings.Cut(scanner.Text(), "=")
+		if !ok {
+			if noisy {
+				fmt.Fprintf(os.Stderr, "= not found in line: %s\n", scanner.Text())
+			}
 
-		os.Setenv(line[0], line[1])
+			continue
+		}
+
+		os.Setenv(key, val)
 	}
 }
