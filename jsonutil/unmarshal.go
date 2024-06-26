@@ -12,10 +12,8 @@ import (
 	"github.com/tcodes0/go/misc"
 )
 
-// unmarshals a reader to a pointer; closes the reader.
+// unmarshals a reader to a pointer; does not close the reader.
 func UnmarshalReader[T any](r io.ReadCloser) (*T, error) {
-	defer r.Close()
-
 	data, err := io.ReadAll(r)
 	if err != nil {
 		return nil, misc.Wrap(err, "reading")

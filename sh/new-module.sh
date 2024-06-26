@@ -13,34 +13,62 @@ source "$PWD/sh/lib.sh"
 
 ### vars and functions ###
 
-usageExit() {
-  msgln "Usage: $0 <name>  initializes a new go module called <name>"
-  exit 1
-}
-
 name="${1:-}"
+formatMod="
+  %s:
+    name: %s
+    needs: changed-files
+    if: needs.changed-files.outputs.TODO
+    uses: ./.github/workflows/module-pr.yml
+    with:
+      goVersion: TODO
+      modulePath: %s
+"
+formatCmd="
+  cmd-%s:
+    name: cmd/%s
+    needs: changed-files
+    if: needs.changed-files.outputs.TODO
+    uses: ./.github/workflows/module-pr.yml
+    with:
+      goVersion: TODO
+      modulePath: cmd/%s
+"
 
 ### validation, input handling ###
 
-if requestedHelp "$*"; then
-  usageExit
-fi
-
-if [ -z "$name" ]; then
-  usageExit
+if requestedHelp "$*" || [ -z "$name" ]; then
+  msgln "Inputs:"
+  msgln "<name>\t initializes a new go module called <name>\t (required)"
+  msgln "-cmd\t instead of a module init cmd/<name>"
+  exit 1
 fi
 
 ### script ###
 
-module="$LIB_ROOT_MODULE/$name"
+module="github.com/tcodes0/go/$name"
+format=""
 
-mkdir -p "$name/${name}_test"
-cd "$name"
-go mod init "$module"
-printf "package %s\n" "$name" >"$name.go"
+if [[ "$*" =~ -cmd ]]; then
+  mkdir -p "cmd/$name"
+  cd "cmd/$name"
+  printf "package main\n" >"main.go"
+  touch config.yml
+  format=$formatCmd
+else
+  mkdir -p "$name/${name}_test"
+  cd "$name"
+  go mod init "$module"
+  printf "package %s\n" "$name" >"$name.go"
+  format=$formatMod
+fi
+
+\cd -
+
+# shellcheck disable=SC2059 # format variable
+printf "$format" "$name" "$name" "$name" >>.github/workflows/main.yml
 
 msgln "todo:
-  - run script to update go.work
-  - add $module to github workflows
-  - add $module to vscode json config
-"
+  - ./run <generate go work task>
+  - ./run <copyright task>
+  - edit github workflows"

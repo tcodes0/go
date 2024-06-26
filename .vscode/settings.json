@@ -20,8 +20,14 @@
     "ui.semanticTokens": true,
     // conflicts with golanci-lint 1.58
     "ui.diagnostic.analyses": {
-      "lostcancel": false
+      "lostcancel": false,
+      "printf": false
     }
+  },
+  // - - - - - - - - YAML - - - - - - - - -
+  "prettier.configPath": ".prettierrc.yml",
+  "[yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   // - - - - - - - - BASH - - - - - - - - -
   "shellformat.flag": "-i 2 -ln bash",

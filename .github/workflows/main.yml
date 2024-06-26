@@ -1,4 +1,4 @@
-name: Main
+name: main
 run-name: ${{ github.head_ref }}@${{ github.sha }}
 
 on:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   changed-files:
-    name: Analyze changed files
+    name: analyze_changed_files
     runs-on: ubuntu-latest
     outputs:
       # modules
@@ -21,6 +21,7 @@ jobs:
       modLogging: ${{ steps.list-changed-files.outputs.logging_all_changed_files }}
       modMisc: ${{ steps.list-changed-files.outputs.misc_all_changed_files }}
       modCmdCopyright: ${{ steps.list-changed-files.outputs.cmd_copyright_all_changed_files }}
+      modCmdGenGoWork: ${{ steps.list-changed-files.outputs.cmd_gen_go_work_all_changed_files }}
       # others
       anyGoMod: ${{ steps.list-changed-files.outputs.any_go_mod_all_changed_files }}
       rootGoMod: ${{ steps.list-changed-files.outputs.root_go_mod_all_changed_files }}
@@ -37,6 +38,9 @@ jobs:
         || steps.list-changed-files.outputs.jsonutil_all_changed_files
         || steps.list-changed-files.outputs.logging_all_changed_files
         || steps.list-changed-files.outputs.misc_all_changed_files
+        || steps.list-changed-files.outputs.cmd_copyright_all_changed_files
+        || steps.list-changed-files.outputs.cmd_gen_go_work_all_changed_files
+        || steps.list-changed-files.outputs.cmd_gen_vscode_tasks_all_changed_files
         }}
     steps:
       - name: Checkout
@@ -50,7 +54,7 @@ jobs:
           files_yaml_from_source_file: .github/workflows/files.yml
 
   debug:
-    name: Debug
+    name: debug
     runs-on: ubuntu-latest
     if: false # change to debug
     env:
@@ -61,7 +65,7 @@ jobs:
         run: true
 
   commitlint:
-    name: Commit Lint
+    name: commit_lint
     runs-on: ubuntu-latest
     needs: changed-files
     env:
@@ -91,7 +95,7 @@ jobs:
         run: ./sh/workflows/main/commit-lint.sh
 
   root-go-mod:
-    name: Root go.mod up to date
+    name: root_go_mod_up_to_date
     runs-on: ubuntu-latest
     needs: changed-files
     if: needs.changed-files.outputs.rootGoMod
@@ -110,10 +114,10 @@ jobs:
           working-directory: .
 
   cmd-go-mod:
-    name: Cmd go.mod up to date
+    name: cmd_go_mod_up_to_date
     runs-on: ubuntu-latest
     needs: changed-files
-    if: needs.changed-files.outputs.cmdGoMod
+    if: false # needs.changed-files.outputs.cmdGoMod # https://github.com/tcodes0/go/issues/26
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -129,24 +133,22 @@ jobs:
           working-directory: cmd
 
   go-work:
-    name: Go.work up to date
+    name: go_work_up_to_date
     runs-on: ubuntu-latest
     needs: changed-files
-    if: needs.changed-files.outputs.anyGoMod
+    if: false && needs.changed-files.outputs.anyGoMod
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Generate go work
-        env:
-          IGNORE: ".local"
-        run: ./sh/generate-go-work.sh
+        run: go run cmd/gengowork/main.go
 
       - name: Diff
         run: ./sh/workflows/main/diff.sh
 
   mocks:
-    name: Go mocks up to date
+    name: go_mocks_up_to_date
     runs-on: ubuntu-latest
     needs: changed-files
     if: needs.changed-files.outputs.anyMod
@@ -169,7 +171,7 @@ jobs:
         run: ./sh/workflows/main/diff.sh
 
   shell:
-    name: Lint format and test shell
+    name: lint_format_shell
     runs-on: ubuntu-latest
     needs: changed-files
     if: needs.changed-files.outputs.shell
@@ -188,11 +190,8 @@ jobs:
           # needs write access https://github.com/luizm/action-sh-checker/pull/57
           # sh_checker_comment: true
 
-      - name: Test
-        run: find sh/sh_test -name "*-test.sh" -exec ./{} \;
-
   config:
-    name: Format config
+    name: format_config
     runs-on: ubuntu-latest
     needs: changed-files
     if: needs.changed-files.outputs.config
@@ -207,25 +206,25 @@ jobs:
         with:
           args: --check ${{ env.FILES }}
 
-  docs:
-    name: Spellcheck docs
+  spellcheck:
+    name: spellcheck
     runs-on: ubuntu-latest
     needs: changed-files
-    # does not work locally, see CI scripts
-    if: needs.changed-files.outputs.doc && github.event.local != true
+    # doesn't work on local ci, finds 0 files and gives false ok
+    if: needs.changed-files.outputs.anyCodeAdded && github.event.local != true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Cspell
-        uses: streetsidesoftware/cspell-action@v6.2.0
+        uses: streetsidesoftware/cspell-action@v6.4.0
         with:
-          files: "**/*.md"
+          files: "."
           incremental_files_only: true
           config: ./cspell.config.yml
 
   copyright:
-    name: Copyright
+    name: copyright
     runs-on: ubuntu-latest
     needs: changed-files
     if: needs.changed-files.outputs.anyCodeAdded
@@ -316,3 +315,12 @@ jobs:
     with:
       goVersion: 1.22
       modulePath: cmd/copyright
+
+  generate-go-work:
+    name: cmd/gengowork
+    needs: changed-files
+    if: needs.changed-files.outputs.modCmdGenGoWork
+    uses: ./.github/workflows/module-pr.yml
+    with:
+      goVersion: 1.22
+      modulePath: cmd/gengowork

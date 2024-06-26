@@ -33,6 +33,11 @@ renameExpect() {
 
 ### script ###
 
+if requestedHelp "$*"; then
+  msgln "generate test mocks using mockery"
+  exit 1
+fi
+
 mockery
 saveMockeryVersion
 stripVersion

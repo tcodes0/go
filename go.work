@@ -3,13 +3,12 @@ go 1.22
 
 use (
 	.
-	./clock
-	./cmd
-	./httpmisc
-	./hue
-	./identifier
-	./jsonutil
-	./logging
-	./misc
-
+	clock
+	cmd
+	httpmisc
+	hue
+	identifier
+	jsonutil
+	logging
+	misc
 )

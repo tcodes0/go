@@ -24,7 +24,7 @@ setup() {
   installLink="$2"
   binary="$3"
   comments="${*:4}"
-  declare -A installCommandsByLang=(
+  declare -A installCommandsByType=(
     ["go"]="go install"
     ["js"]="npm install --global"
     ["manual"]="-"
@@ -32,7 +32,7 @@ setup() {
 
   if ! command -v "$binary" >/dev/null; then
     fail "$binary $comments"
-    fixProblems+=("${installCommandsByLang[$type]} $installLink")
+    fixProblems+=("${installCommandsByType[$type]} $installLink")
   else
     pass "$binary"
   fi
@@ -53,6 +53,11 @@ exitShowProblems() {
   exit 1
 }
 
+if requestedHelp "$*"; then
+  msgln "check for missing tools, configuration and show notes"
+  exit 1
+fi
+
 # by order of priority
 
 # basic gnu/linux tools included by default, git, etc...
@@ -72,6 +77,9 @@ setup manual 'missing ps' ps view running programs
 setup manual 'missing grep' grep search files for matches
 setup manual 'missing sleep' sleep block a script for some time
 setup manual 'missing head' head read a number of lines from a file
+setup manual 'missing less' less pager to view files
+setup manual 'missing tail' tail read the end of a file
+setup manual 'missing uname' uname print system information
 
 if macos; then
   setup manual 'missing gsed' gsed gnu sed stream editor, available on brew as 'gnu-sed'
@@ -161,9 +169,17 @@ else
   pass 'docker running'
 fi
 
+if ! MOD_PATH=cmd/runner ./sh/workflows/module-pr/build.sh; then
+  fail 'build cmd/runner' 'build failed'
+  fixProblems+=("cmd/runner build failed, ./run symlink won't work")
+else
+  pass 'build cmd/runner'
+fi
+
 # notes
 
 msgln note: \'act\' requires first time setup
+msgln note: run \'export CMD_COLOR=true\' to see colored output from runner, or add to .env
 
 if [ "$(nvm_version || true)" ]; then
   msgln note: when using nvm and upgrading node, global packages need to be reinstalled

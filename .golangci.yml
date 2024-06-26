@@ -67,6 +67,8 @@ linters-settings:
 
   gosec:
     exclude-generated: true
+    excludes:
+      - G101 # Look for hard coded credentials, this linter is dumb
 
   importas:
     no-unaliased: true
@@ -121,6 +123,8 @@ linters-settings:
       - '^misc\.Minutes'
       - '^misc\.Hours'
       - '^misc\.Days'
+      - '^(wg|wait|waitGroup)\.Add'
+      - "^make"
 
   funlen:
     ignore-comments: true
@@ -135,3 +139,7 @@ linters-settings:
   # can be removed after updates if there are no warnings
   errcheck:
     ignore: ""
+
+  wrapcheck:
+    ignorePackageGlobs:
+      - golang.org/x/sync/*

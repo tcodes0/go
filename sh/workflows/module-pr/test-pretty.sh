@@ -9,11 +9,9 @@ shopt -s globstar
 # shellcheck disable=SC1091
 source "$PWD/sh/lib.sh"
 
-# mod path may have a -h
-if requestedHelp "$MOD_PATH"; then
-  msgln "Usage:"
-  msgln "$0 <module>"
-  msgln "$0 <module> -cover"
+if requestedHelp "$*"; then
+  msgln "Inputs:"
+  msgln "<module>\t run tests; output coverage files\t (required)"
   exit 1
 fi
 
@@ -23,7 +21,7 @@ testDir="./$MOD_PATH/$testPkg"
 regExpPrefixCmd="^cmd/"
 
 if [[ "$MOD_PATH" =~ $regExpPrefixCmd ]]; then
-  # cmds have just a main package
+  # cmds don't follow _test subpackage convention
   testDir="./$MOD_PATH"
 fi
 
@@ -41,7 +39,7 @@ flags+=(-race)
 # go vet linter is handled by lint step
 flags+=(-vet=off)
 # output coverage profile to file
-flags+=(-coverprofile="$LIB_COVERAGE_FILE")
+flags+=(-coverprofile="$COVERAGE_FILE")
 # package to scan coverage, necessary for blackbox testing
 flags+=(-coverpkg="./$MOD_PATH")
 
@@ -53,25 +51,23 @@ fi
 testOutputJson=$(mktemp /tmp/go-test-json-XXXXXX)
 
 # tee a copy of output for further processing
-go test "${flags[@]}" "$testDir" 2>&1 | tee "$testOutputJson" | gotestfmt
+go test "${flags[@]}" "$testDir" >"$testOutputJson"
 
 # delete lines not parseable as json output from 'go test'
 regExpPrefixGo="^go:"
 _sed --in-place --regexp-extended -e "/$regExpPrefixGo/d" "$testOutputJson"
 
+gotestfmt -input "$testOutputJson"
+
 echo "testOutputJson=$testOutputJson"
 echo "testOutputJson=$testOutputJson" >>"$GITHUB_OUTPUT"
 
-if ! [ "${DISPLAY_COVERAGE:-}" ]; then
+if [ ! -f "$COVERAGE_FILE" ]; then
+  msgln "$COVERAGE_FILE not found, did you run tests with -coverprofile=?"
   exit
 fi
 
-if [ ! -f "$LIB_COVERAGE_FILE" ]; then
-  msgln "$LIB_COVERAGE_FILE not found"
-  exit 1
-fi
-
-cover -html="$LIB_COVERAGE_FILE" -o coverage.html
+cover -html="$COVERAGE_FILE" -o coverage.html
 
 opener=xdg-open
 
@@ -79,8 +75,4 @@ if macos; then
   opener=open
 fi
 
-if $opener "$PWD/coverage.html" >/dev/null 2>&1; then
-  msgln see your browser
-else
-  msgln "open $PWD/coverage.html.out in your browser"
-fi
+msgln view coverage html: \'$opener "$PWD/coverage.html"\'

@@ -5,6 +5,7 @@ mockname: "Mock{{.InterfaceName}}"
 outpkg: "{{.PackageName}}"
 filename: "mock_{{.InterfaceName | snakecase}}.go"
 include-regex: ".*"
+exclude-regex: "^lookupEnv$"
 packages:
   github.com/tcodes0/go/httpmisc:
   github.com/tcodes0/go/misc:
