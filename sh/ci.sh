@@ -131,7 +131,7 @@ postCi() {
     msgln see logs:
 
     for job in "${failedJobs[@]}"; do
-      msgln grep --color=always -Ee \""$job"\" "$log" | less
+      msgln grep --color=always -Ee \""$job"\" "$log" \| less
     done
 
     failed=true
