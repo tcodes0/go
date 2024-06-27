@@ -17,13 +17,20 @@ dictionaries:
 words:
   - alnum
   - bellynha
+  - busa
+  - cipush
   - cmds
   - commitlintrc
+  - cweill
+  - davecgh
   - debg
   - erro
+  - fatih
   - fatl
+  - generatevscodetasks
   - gengowork
   - genvscodetasks
+  - gger
   - gocritic
   - godotenv
   - gofmt
@@ -34,21 +41,37 @@ words:
   - gomodifytags
   - gopkgs
   - gopls
+  - gorun
   - gosec
   - gotestfmt
   - gotests
   - govet
   - gsed
+  - haya
+  - honnef
   - httpflush
   - ifaceassert
   - iname
   - inpackage
   - inplace
+  - joho
+  - logg
   - maintidx
+  - meepo
+  - menlo
   - msgln
+  - mvdan
   - nocasematch
   - noctx
+  - nolint
   - nolintlint
+  - nower
+  - objx
+  - ogger
+  - pmezard
+  - ramya
+  - ribeiro
+  - samber
   - scandir
   - seqs
   - shellcheck
@@ -56,36 +79,13 @@ words:
   - stretchr
   - tcodes
   - tcodes0
+  - thom
   - thomazella
   - tparallel
   - unappend
+  - unmarshaled
   - unmarshalling
   - unmarshals
-  - nower
-  - wrapf
-  - samber
-  - nolint
-  - unmarshaled
-  - menlo
-  - ogger
-  - gger
-  - logg
-  - xerrors
-  - davecgh
-  - pmezard
-  - objx
-  - thom
-  - ribeiro
-  - cipush
-  - gorun
-  - generatevscodetasks
-  - mvdan
-  - joho
-  - fatih
   - uudashr
-  - cweill
-  - ramya
-  - haya
-  - busa
-  - honnef
-  - meepo
+  - wrapf
+  - xerrors

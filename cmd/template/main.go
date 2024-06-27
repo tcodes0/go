@@ -25,10 +25,11 @@ type config struct {
 
 var (
 	//go:embed config.yml
-	raw     []byte
-	configs config
-	flagset = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	logger  = &logging.Logger{}
+	raw      []byte
+	configs  config
+	flagset  = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	logger   = &logging.Logger{}
+	errUsage = errors.New("see usage")
 )
 
 func main() {
@@ -41,8 +42,11 @@ func main() {
 		}
 
 		if err != nil {
-			logger.Error().Log(err.Error())
-			os.Exit(1)
+			if errors.Is(err, errUsage) {
+				usage(err)
+			}
+
+			logger.Fatalf("%s", err.Error())
 		}
 	}()
 
@@ -61,27 +65,29 @@ func main() {
 
 	err = flagset.Parse(os.Args[1:])
 	if err != nil {
-		usageExit(err)
+		err = errors.Join(err, errUsage)
+
+		return
 	}
 
 	err = yaml.Unmarshal(raw, &configs)
 	if err != nil {
-		usageExit(err)
+		err = errors.Join(err, errUsage)
+
+		return
 	}
 
 	err = template()
 }
 
-func usageExit(err error) {
+func usage(err error) {
+	if !errors.Is(err, flag.ErrHelp) {
+		flagset.Usage()
+	}
+
 	fmt.Println("description here")
 	fmt.Println()
 	fmt.Println(cmd.EnvVarUsage())
-
-	if err != nil && !errors.Is(err, flag.ErrHelp) {
-		logger.Error().Log(err.Error())
-	}
-
-	os.Exit(1)
 }
 
 func template() error {

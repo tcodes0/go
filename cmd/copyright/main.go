@@ -109,7 +109,7 @@ func boilerplate(logger logging.Logger, fix bool) error {
 	}
 
 	for _, path := range paths {
-		logger.Log(path)
+		fmt.Print(path)
 	}
 
 	if !fix {

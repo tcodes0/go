@@ -8,7 +8,6 @@ any_go_mod:
   - "**/go.mod"
   - "**/go.sum"
 config:
-  - "**/*.yaml"
   - "**/*.yml"
   - "**/*.json"
 doc:
@@ -50,7 +49,5 @@ cmd_copyright:
   - cmd/copyright/**.go
 cmd_gen_go_work:
   - cmd/gengowork/**.go
-cmd_gen_vscode_tasks:
-  - cmd/genvscodetasks/**.go
-cmd_ci:
-  - cmd/ci/**.go
+cmd_filer:
+  - cmd/filer/**.go

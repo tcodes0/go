@@ -1,4 +1,4 @@
-name: Module PR
+name: module_pr
 run-name: ${{ inputs.modulePath }}@${{ github.sha }}
 
 on:
@@ -15,7 +15,7 @@ on:
 
 jobs:
   build:
-    name: Build
+    name: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -32,7 +32,7 @@ jobs:
         run: ./sh/workflows/module-pr/build.sh
 
   test:
-    name: Test
+    name: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -67,7 +67,7 @@ jobs:
           package-name: github.com/tcodes0/go
 
   lint:
-    name: Lint
+    name: lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -89,7 +89,7 @@ jobs:
           args: --print-issued-lines=false
 
   go-mod:
-    name: Go.mod up to date
+    name: go_mod_up_to_date
     runs-on: ubuntu-latest
     if: false # https://github.com/tcodes0/go/issues/26
     steps:

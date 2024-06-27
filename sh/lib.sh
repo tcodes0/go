@@ -20,6 +20,11 @@ msgln() {
   msg "$*\\n"
 }
 
+# example: log warning!
+log() {
+  msg "$*\\n" >&2
+}
+
 # example: msg hello world
 msg() {
   echo -ne "$*"
