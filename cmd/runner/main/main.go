@@ -36,14 +36,26 @@ var (
 	//go:embed config.yml
 	config string
 	tasks  []*runner.Task
+	logger = &logging.Logger{}
 )
 
 func main() {
-	err := yaml.Unmarshal([]byte(config), &tasks)
-	if err != nil {
-		usage(err)
-		os.Exit(1)
-	}
+	var err error
+
+	// first deferred func will run last
+	defer func() {
+		if msg := recover(); msg != nil {
+			logger.Fatalf("%v", msg)
+		}
+
+		if err != nil {
+			if errors.Is(err, runner.ErrUsage) {
+				usage(err)
+			}
+
+			logger.Fatalf("%s", err.Error())
+		}
+	}()
 
 	misc.DotEnv(".env", false /*noisy*/)
 
@@ -55,16 +67,16 @@ func main() {
 		opts = append(opts, logging.OptColor())
 	}
 
-	logger := logging.Create(opts...)
+	logger = logging.Create(opts...)
+
+	err = yaml.Unmarshal([]byte(config), &tasks)
+	if err != nil {
+		err = errors.Join(err, runner.ErrUsage)
+
+		return
+	}
 
 	err = run(*logger, os.Args[1:]...)
-	if err != nil {
-		if errors.Is(err, runner.ErrUsage) {
-			usage(err)
-		}
-
-		logger.Fatalf(err.Error())
-	}
 }
 
 func usage(err error) {

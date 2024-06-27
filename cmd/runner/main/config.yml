@@ -19,8 +19,8 @@
 - name: format
   module: true
   exec:
-    - "gofumpt -l -w"
-    - "prettier --write <module>/**/*{.yml,.yaml,.json}"
+    - gofumpt -l -w
+    - prettier --write <module>/**/*{.yml}
 
 - name: test
   module: true
@@ -36,7 +36,7 @@
 
 - name: format-configs
   exec:
-    - "prettier --write ./**/*{.yml,.yaml,.json}"
+    - "prettier --write ./**/*{.yml,.json}"
 
 - name: generate-mocks
   exec:

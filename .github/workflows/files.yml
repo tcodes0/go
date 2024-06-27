@@ -8,7 +8,6 @@ any_go_mod:
   - "**/go.mod"
   - "**/go.sum"
 config:
-  - "**/*.yaml"
   - "**/*.yml"
   - "**/*.json"
 doc:
