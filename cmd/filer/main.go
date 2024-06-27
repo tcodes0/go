@@ -32,6 +32,7 @@ var (
 	logger       = &logging.Logger{}
 	flagset      = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 	actions      = []string{actionLink, actionRemove, actionBak}
+	errUsage     = errors.New("see usage")
 	descriptions = []string{
 		"create symbolic link; provide files in pairs, one per line, first is source, second is link",
 		"delete; one file per line",
@@ -39,6 +40,7 @@ var (
 	}
 )
 
+//nolint:funlen // you shouldn't count blank lines!1!!
 func main() {
 	var err error
 
@@ -49,8 +51,11 @@ func main() {
 		}
 
 		if err != nil {
-			logger.Error().Logf("%v", err)
-			os.Exit(1)
+			if errors.Is(err, errUsage) {
+				usage(err)
+			}
+
+			logger.Fatalf("%s", err.Error())
 		}
 	}()
 
@@ -65,29 +70,37 @@ func main() {
 	}
 
 	logger = logging.Create(opts...)
-	fFiles := flagset.String("files", "", "path to newline separated list of files (required)")
+	fConfig := flagset.String("config", "", "path to newline separated list of files (required)")
 	fAction := flagset.String("action", "", "action to take on files (required)")
 	fCommitL := flagset.Bool("commit", false, "apply changes (default: false)")
 	fCommitS := flagset.Bool("c", false, "apply changes (default: false)")
 
 	err = flagset.Parse(os.Args[1:])
 	if err != nil {
-		usageExit(err)
+		err = errors.Join(err, errUsage)
+
+		return
 	}
 
 	fDryrun := !(*fCommitL || *fCommitS)
 
-	files, err := readConfig(*fFiles)
+	files, err := readConfig(*fConfig)
 	if err != nil {
-		usageExit(err)
+		err = errors.Join(err, errUsage)
+
+		return
 	}
 
 	if *fAction == "" {
-		usageExit(errors.New("empty action"))
+		err = misc.Wrap(errUsage, "empty action")
+
+		return
 	}
 
 	if _, found := lo.Find(actions, func(a string) bool { return a == *fAction }); !found {
-		usageExit(fmt.Errorf("unknown action %s", *fAction))
+		err = misc.Wrapf(errUsage, "unknown action %s", *fAction)
+
+		return
 	}
 
 	files = envVarResolver(files)
@@ -121,14 +134,14 @@ func readConfig(configPath string) ([]string, error) {
 	return files, nil
 }
 
-func usageExit(err error) {
+func usage(err error) {
 	if !errors.Is(err, flag.ErrHelp) {
 		flagset.Usage()
 	}
 
-	fmt.Println("perform an action on a list of files.")
+	fmt.Println("perform an action on a list of files")
 	fmt.Println("changes nothing by default, pass -commit")
-	fmt.Println("comments with # and newlines are ignored in config file.")
+	fmt.Println("comments with # and newlines are ignored in config file")
 	fmt.Println()
 	fmt.Println("actions available:")
 
@@ -138,12 +151,6 @@ func usageExit(err error) {
 
 	fmt.Println()
 	fmt.Println(cmd.EnvVarUsage())
-
-	if !errors.Is(err, flag.ErrHelp) {
-		logger.Error().Logf("%s", err.Error())
-	}
-
-	os.Exit(1)
 }
 
 func envVarResolver(files []string) []string {
