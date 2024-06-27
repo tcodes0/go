@@ -25,7 +25,7 @@ import (
 const (
 	actionLink   = "link"
 	actionRemove = "remove"
-	actionBackup    = "backup"
+	actionBackup = "backup"
 )
 
 var (
