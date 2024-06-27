@@ -1,7 +1,9 @@
-# unmarshaled into cmd/runner/main.go task type
+# see main.go task type
+# <variables> are replaced by some value
+# see main.go const section for variables
+
 - name: build
   module: true
-  minInputs: 1
   env:
     - MOD_PATH=<module>
     - HOME=<inherit>
@@ -11,20 +13,17 @@
 
 - name: lint
   module: true
-  minInputs: 1
   exec:
     - "golangci-lint run --timeout 10s --print-issued-lines=false"
 
 - name: format
   module: true
-  minInputs: 1
   exec:
-    - "gofumpt -l -w"
-    - "prettier --write <module>/**/*{.yml,.yaml,.json}"
+    - gofumpt -l -w
+    - prettier --write <module>/**/*{.yml}
 
 - name: test
   module: true
-  minInputs: 1
   env:
     - CACHE=true
     - GITHUB_OUTPUT=/dev/null
@@ -37,7 +36,7 @@
 
 - name: format-configs
   exec:
-    - "prettier --write ./**/*{.yml,.yaml,.json}"
+    - "prettier --write ./**/*{.yml,.json}"
 
 - name: generate-mocks
   exec:
@@ -61,7 +60,6 @@
     - go run cmd/gengowork/main.go
 
 - name: new-module
-  minInputs: 1
   exec:
     - ./sh/new-module.sh
 

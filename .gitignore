@@ -27,8 +27,6 @@ coverage.html
 
 # Project files
 .env
-notes.md
-banner*.txt
 *__debug_bin*
 *pgdump
 .local/*

@@ -19,81 +19,43 @@ import (
 
 	"github.com/samber/lo"
 	"github.com/tcodes0/go/cmd"
+	"github.com/tcodes0/go/cmd/runner"
 	"github.com/tcodes0/go/logging"
 	"github.com/tcodes0/go/misc"
 	"gopkg.in/yaml.v3"
 )
 
 const (
-	varModule    = "<module>"
-	varInherit   = "<inherit>"
-	varTasksModT = "<task-module-names>"
-	varTasksModF = "<task-not-module-names>"
+	varModule    = "<module>"                // the module passed as input
+	varInherit   = "<inherit>"               // copy this from the environment
+	varTasksModT = "<task-module-names>"     // all module task names
+	varTasksModF = "<task-not-module-names>" // all not module task names
 )
 
 var (
 	//go:embed config.yml
-	config   string
-	tasks    []*task
-	errUsage = errors.New("see usage")
+	config string
+	tasks  []*runner.Task
+	logger = &logging.Logger{}
 )
 
-type task struct {
-	Env       []string `yaml:"env"`
-	Name      string   `yaml:"name"`
-	Exec      []string `yaml:"exec"`
-	Module    bool     `yaml:"module"`
-	MinInputs int      `yaml:"minInputs"`
-}
-
-func (task *task) validate(logger logging.Logger, inputs ...string) error {
-	_, help := lo.Find(inputs, func(input string) bool { return input == "-h" || input == "--help" })
-	if help {
-		return nil
-	}
-
-	err := task.validateModule(logger, inputs...)
-	if err != nil {
-		return err
-	}
-
-	if task.MinInputs != 0 && len(inputs) < task.MinInputs {
-		return fmt.Errorf("%s: expected minimum %d inputs got: %v", task.Name, task.MinInputs, inputs)
-	}
-
-	return err
-}
-
-func (task *task) validateModule(logger logging.Logger, inputs ...string) error {
-	if !task.Module {
-		return nil
-	}
-
-	if len(inputs) < 1 {
-		return misc.Wrapf(errUsage, "%s: module is required", task.Name)
-	}
-
-	mods, err := cmd.FindModules(logger)
-	if err != nil {
-		return misc.Wrap(err, "FindModules")
-	}
-
-	_, found := lo.Find(mods, func(m string) bool { return m == inputs[0] })
-	if !found {
-		didYouMean(inputs[0])
-
-		return misc.Wrapf(errUsage, "%s: unknown module", inputs[0])
-	}
-
-	return nil
-}
-
 func main() {
-	err := yaml.Unmarshal([]byte(config), &tasks)
-	if err != nil {
-		usage(err)
-		os.Exit(1)
-	}
+	var err error
+
+	// first deferred func will run last
+	defer func() {
+		if msg := recover(); msg != nil {
+			logger.Fatalf("%v", msg)
+		}
+
+		if err != nil {
+			if errors.Is(err, runner.ErrUsage) {
+				usage(err)
+			}
+
+			logger.Fatalf("%s", err.Error())
+		}
+	}()
 
 	misc.DotEnv(".env", false /*noisy*/)
 
@@ -105,16 +67,16 @@ func main() {
 		opts = append(opts, logging.OptColor())
 	}
 
-	logger := logging.Create(opts...)
+	logger = logging.Create(opts...)
+
+	err = yaml.Unmarshal([]byte(config), &tasks)
+	if err != nil {
+		err = errors.Join(err, runner.ErrUsage)
+
+		return
+	}
 
 	err = run(*logger, os.Args[1:]...)
-	if err != nil {
-		if errors.Is(err, errUsage) {
-			usage(err)
-		}
-
-		logger.Fatalf(err.Error())
-	}
 }
 
 func usage(err error) {
@@ -123,21 +85,24 @@ func usage(err error) {
 	}
 
 	fmt.Println("miscellaneous automation tool")
-	fmt.Println("usage: ./run <task> \ttask inputs if any...")
+	fmt.Println("usage: ./run <task> <module?> <other args?> (run task)")
+	fmt.Println("usage: ./run <task> -h (task help)")
 	fmt.Println()
-	fmt.Println("tasks available:")
+	fmt.Println("module tasks:")
 
-	for _, task := range tasks {
+	for _, task := range lo.Filter(tasks, func(t *runner.Task, _ int) bool { return t.Module }) {
 		line := "./run "
 		line += task.Name + "\t"
 
-		if task.Module {
-			line += "<module> "
-		}
+		fmt.Println(line)
+	}
 
-		for range task.MinInputs {
-			line += "<input> "
-		}
+	fmt.Println()
+	fmt.Println("repository tasks:")
+
+	for _, task := range lo.Filter(tasks, func(t *runner.Task, _ int) bool { return !t.Module }) {
+		line := "./run "
+		line += task.Name + "\t"
 
 		fmt.Println(line)
 	}
@@ -149,28 +114,29 @@ func usage(err error) {
 
 	fmt.Println()
 	fmt.Println("modules:")
-	fmt.Println(strings.Join(modules, "\n"))
+	fmt.Println("- all (iterate all modules)")
+	fmt.Println("- " + strings.Join(modules, "\n- "))
 	fmt.Println()
 	fmt.Println(cmd.EnvVarUsage())
-	fmt.Println()
-	fmt.Println("use 'all' as module to iterate all modules")
-	fmt.Println("pass -h to tasks for documentation")
+	fmt.Println(".env file is used")
 }
 
+// run <task> <module or input1> ...inputs.
 func run(logger logging.Logger, inputs ...string) error {
 	if len(inputs) == 0 {
-		return misc.Wrap(errUsage, "task is required")
+		return misc.Wrap(runner.ErrUsage, "task is required")
 	}
 
-	theTask, found := lo.Find(tasks, func(t *task) bool { return t.Name == inputs[0] })
+	theTask, found := lo.Find(tasks, func(t *runner.Task) bool { return t.Name == inputs[0] })
 	if !found {
-		didYouMean(inputs[0])
+		runner.DidYouMean(inputs[0])
 
-		return misc.Wrapf(errUsage, "%s: unknown task", inputs[0])
+		return misc.Wrapf(runner.ErrUsage, "%s: unknown task", inputs[0])
 	}
 
-	err := theTask.validate(logger, inputs[1:]...)
+	err := theTask.Validate(logger, inputs[1:]...)
 	if err != nil {
+		//nolint:wrapcheck // runner pkg
 		return err
 	}
 
@@ -215,8 +181,6 @@ func run(logger logging.Logger, inputs ...string) error {
 	return nil
 }
 
-func didYouMean(input string) {}
-
 func envVarMapper(logger logging.Logger, inputs []string) func(pair string, _ int) string {
 	return func(pair string, _ int) string {
 		if strings.Contains(pair, varModule) {
@@ -241,11 +205,11 @@ func envVarMapper(logger logging.Logger, inputs []string) func(pair string, _ in
 func inputVarMapper(inputs []string) func(input string, _ int) string {
 	return func(input string, _ int) string {
 		if strings.Contains(input, varTasksModT) {
-			return strings.ReplaceAll(input, varTasksModT, taskNameFilterJoin(tasks, func(t *task, _ int) bool { return t.Module }))
+			return strings.ReplaceAll(input, varTasksModT, taskNameFilterJoin(tasks, func(t *runner.Task, _ int) bool { return t.Module }))
 		}
 
 		if strings.Contains(input, varTasksModF) {
-			return strings.ReplaceAll(input, varTasksModF, taskNameFilterJoin(tasks, func(t *task, _ int) bool { return !t.Module }))
+			return strings.ReplaceAll(input, varTasksModF, taskNameFilterJoin(tasks, func(t *runner.Task, _ int) bool { return !t.Module }))
 		}
 
 		if strings.Contains(input, varModule) {
@@ -256,9 +220,9 @@ func inputVarMapper(inputs []string) func(input string, _ int) string {
 	}
 }
 
-func taskNameFilterJoin(tasks []*task, filterFunc func(t *task, _ int) bool) string {
+func taskNameFilterJoin(tasks []*runner.Task, filterFunc func(t *runner.Task, _ int) bool) string {
 	modTasks := lo.Filter(tasks, filterFunc)
-	names := lo.Reduce(modTasks, func(agg []string, t *task, _ int) []string {
+	names := lo.Reduce(modTasks, func(agg []string, t *runner.Task, _ int) []string {
 		return append(agg, t.Name)
 	}, make([]string, 0, len(modTasks)))
 
