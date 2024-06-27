@@ -25,13 +25,13 @@ import (
 const (
 	actionLink   = "link"
 	actionRemove = "remove"
-	actionBak    = "backup"
+	actionBackup    = "backup"
 )
 
 var (
 	logger       = &logging.Logger{}
 	flagset      = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	actions      = []string{actionLink, actionRemove, actionBak}
+	actions      = []string{actionLink, actionRemove, actionBackup}
 	errUsage     = errors.New("see usage")
 	descriptions = []string{
 		"create symbolic link; provide files in pairs, one per line, first is source, second is link",
@@ -169,7 +169,7 @@ func filer(files []string, action string, dryrun bool) error {
 	switch action {
 	case actionLink:
 		if len(files)%2 != 0 {
-			return fmt.Errorf("symlink: file count must be even, got %v", len(files))
+			return fmt.Errorf("link: file count not even: %d", len(files))
 		}
 
 		for i, file := range files {
@@ -189,9 +189,9 @@ func filer(files []string, action string, dryrun bool) error {
 				return err
 			}
 		}
-	case actionBak:
+	case actionBackup:
 		for _, file := range files {
-			err := bak(file, dryrun)
+			err := backup(file, dryrun)
 			if err != nil {
 				return err
 			}
@@ -293,7 +293,7 @@ func remove(target string, dryrun bool) error {
 	return nil
 }
 
-func bak(target string, dryrun bool) (err error) {
+func backup(target string, dryrun bool) (err error) {
 	bakFile := target + ".bak"
 
 	_, err = os.Stat(bakFile)
