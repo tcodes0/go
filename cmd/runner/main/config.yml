@@ -34,10 +34,6 @@
   exec:
     - ./sh/workflows/module-pr/test-pretty.sh
 
-- name: ci
-  exec:
-    - "echo run ./ci"
-
 - name: format-configs
   exec:
     - "prettier --write ./**/*{.yml,.yaml,.json}"
