@@ -9,6 +9,8 @@ shopt -s globstar
 # shellcheck disable=SC1091
 source "$PWD/sh/lib.sh"
 
+fixProblems=()
+
 pass() {
   printf "$LIB_COLOR_PASS$LIB_FORMAT_DIM %b$LIB_VISUAL_END\n" "$1"
 }
@@ -16,8 +18,6 @@ pass() {
 fail() {
   printf "$LIB_COLOR_FAIL %b$LIB_VISUAL_END\n" "$1"
 }
-
-fixProblems=()
 
 setup() {
   type="$1"
