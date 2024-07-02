@@ -31,7 +31,7 @@ func FindModules(logger logging.Logger) ([]string, error) {
 	for _, glob := range globs {
 		g, err := filepath.Glob(glob)
 		if err != nil {
-			panic(err)
+			return nil, misc.Wrapfl(err)
 		}
 
 		goFiles = append(goFiles, g...)
