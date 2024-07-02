@@ -30,7 +30,7 @@ fi
 command=build
 
 if [[ "$*" =~ -install ]]; then
-  msgln "build & install"
+  msg "installing build"
   command=install
 fi
 
