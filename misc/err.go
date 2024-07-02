@@ -5,7 +5,11 @@
 
 package misc
 
-import "fmt"
+import (
+	"fmt"
+	"runtime"
+	"strconv"
+)
 
 // Wrap wraps an error with a message.
 func Wrap(err error, message string) error {
@@ -23,4 +27,20 @@ func Wrapf(err error, format string, args ...any) error {
 	}
 
 	return Wrap(err, fmt.Sprintf(format, args...))
+}
+
+// Wrapfl wraps an error with file:line information.
+func Wrapfl(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	file, line := "?", "?"
+
+	_, f, il, ok := runtime.Caller(1)
+	if ok {
+		file, line = f, strconv.Itoa(il)
+	}
+
+	return fmt.Errorf("(%s:%s) %w", file, line, err)
 }

@@ -144,3 +144,4 @@ linters-settings:
   wrapcheck:
     ignorePackageGlobs:
       - golang.org/x/sync/*
+      - github.com/tcodes0/go/misc*

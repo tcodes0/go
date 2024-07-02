@@ -6,9 +6,11 @@
 package logging
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -187,6 +189,21 @@ func (logger *Logger) Fatalf(format string, msg ...any) {
 	logger.incrCallDepth()
 
 	logger.Fatal(out)
+}
+
+// prints a stacktrace as an error level log.
+func (logger *Logger) Stacktrace(allGoroutines bool) {
+	var stackBuffer bytes.Buffer
+
+	// Create a slice to hold stack trace info
+	stack := make([]byte, 4096)
+	n := runtime.Stack(stack, allGoroutines)
+	stackBuffer.Write(stack[:n])
+
+	logger.incrCallDepth()
+
+	// Print to standard error (default logger output point)
+	logger.Error().Log(stackBuffer.String())
 }
 
 // append metadata to all future messages,

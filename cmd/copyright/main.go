@@ -24,35 +24,39 @@ import (
 )
 
 type config struct {
-	Ignore    *regexp.Regexp
-	Header    string `yaml:"header"`
-	HeaderGo  string
-	HeaderSh  string
-	CommentGo string `yaml:"commentGo"`
-	CommentSh string `yaml:"commentSh"`
-	IgnoreRaw string `yaml:"ignoreRaw"`
-	FindNames string `yaml:"findNames"`
+	Header string `yaml:"header"`
 }
 
 var (
 	//go:embed config.yml
-	raw     string
-	configs config
-	flagset = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	raw           string
+	defaultIgnore = `/?mock_.*|.local/.*`
+	flagset       = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	logger        = &logging.Logger{}
+	errUsage      = errors.New("see usage")
 )
 
+//nolint:funlen // main won't lose weight, can't stop growing liMes
 func main() {
-	fFix := flagset.Bool("fix", false, "applies header to files. (default false)")
+	var err error
 
-	err := flagset.Parse(os.Args[1:])
-	if err != nil {
-		usageExit(err)
-	}
+	// first deferred func will run last
+	defer func() {
+		if msg := recover(); msg != nil {
+			logger.Stacktrace(true)
+			logger.Fatalf("%v", msg)
+		}
 
-	err = yaml.Unmarshal([]byte(raw), &configs)
-	if err != nil {
-		usageExit(err)
-	}
+		if err != nil {
+			if errors.Is(err, errUsage) {
+				usage(err)
+			}
+
+			logger.Fatalf("%s", err.Error())
+		}
+	}()
+
+	misc.DotEnv(".env", false /* noisy */)
 
 	fColor := misc.LookupEnv(cmd.EnvColor, false)
 	fLogLevel := misc.LookupEnv(cmd.EnvLogLevel, int(logging.LInfo))
@@ -62,46 +66,73 @@ func main() {
 		opts = append(opts, logging.OptColor())
 	}
 
-	logger := logging.Create(opts...)
+	logger = logging.Create(opts...)
+	fFix := flagset.Bool("fix", false, "write header to files; requires -comment. (default false)")
+	fShebang := flagset.Bool("shebang", false, "preserve first line of file, append header after. (default false)")
+	fComment := flagset.String("comment", "", "comment token, prepended to header lines. (required if -fix)")
+	fFind := flagset.String("find", "", "asterisk glob to find files. (required)")
+	fIgnore := flagset.String("ignore", "", fmt.Sprintf("regexp match to ignore. (default %s)", defaultIgnore))
+
+	err = flagset.Parse(os.Args[1:])
+	if err != nil {
+		err = errors.Join(err, errUsage)
+
+		return
+	}
+
+	cfg := config{}
+
+	err = yaml.Unmarshal([]byte(raw), &cfg)
+	if err != nil {
+		err = errors.Join(err, errUsage)
+
+		return
+	}
+
+	if *fFind == "" || (*fComment == "" && *fFix) {
+		err = errors.Join(errors.New("missing required flags"), errUsage)
+
+		return
+	}
 
 	if fLogLevel == 0 && !*fFix {
-		// withut -fix and explicit level only print errors
+		// without -fix and explicit level only print errors
 		logger.SetLevel(logging.LError)
 	}
 
-	headerLines := strings.Split(configs.Header, "\n")
+	header := ""
 
-	for _, line := range headerLines {
-		configs.HeaderGo += configs.CommentGo + line + "\n"
-		configs.HeaderSh += configs.CommentSh + line + "\n"
+	for _, line := range strings.Split(cfg.Header, "\n") {
+		header += *fComment + line + "\n"
 	}
 
-	configs.Ignore = regexp.MustCompile(configs.IgnoreRaw)
-
-	err = boilerplate(*logger, *fFix)
-	if err != nil {
-		logger.Fatalf("fatal: %v", err)
+	ignore := regexp.MustCompile(defaultIgnore)
+	if *fIgnore != "" {
+		ignore, err = regexp.Compile(*fIgnore)
+		if err != nil {
+			return
+		}
 	}
+
+	err = boilerplate(*fFind, header, *fFix, *fShebang, ignore)
 }
 
-func usageExit(err error) {
+func usage(err error) {
+	if !errors.Is(err, flag.ErrHelp) {
+		flagset.Usage()
+	}
+
 	fmt.Println()
-	fmt.Println("check and fix missing boilerplate header in files")
-	fmt.Println("without -fix fails if files are missing copyright header and prints files")
+	fmt.Println("recursively finds and reports files missing boilerplate header")
+	fmt.Println("-fix writes the header")
 	fmt.Println()
 	fmt.Println(cmd.EnvVarUsage())
-
-	if err != nil && !errors.Is(err, flag.ErrHelp) {
-		fmt.Printf("error: %v\n", err)
-	}
-
-	os.Exit(1)
 }
 
-func boilerplate(logger logging.Logger, fix bool) error {
-	paths, err := filesWithoutHeader(logger)
+func boilerplate(findExpr, header string, fix, shebang bool, ignore *regexp.Regexp) error {
+	paths, err := filesWithoutHeader(findExpr, ignore)
 	if err != nil {
-		return misc.Wrap(err, "finding")
+		return misc.Wrapfl(err)
 	}
 
 	if len(paths) == 0 {
@@ -109,7 +140,7 @@ func boilerplate(logger logging.Logger, fix bool) error {
 	}
 
 	for _, path := range paths {
-		fmt.Print(path)
+		fmt.Println(path)
 	}
 
 	if !fix {
@@ -117,7 +148,7 @@ func boilerplate(logger logging.Logger, fix bool) error {
 	}
 
 	for _, path := range paths {
-		err := fixFile(path)
+		err := fixFile(path, header, shebang)
 		if err != nil {
 			return misc.Wrapf(err, "fixing %s", path)
 		}
@@ -126,8 +157,8 @@ func boilerplate(logger logging.Logger, fix bool) error {
 	return nil
 }
 
-func filesWithoutHeader(logger logging.Logger) (paths []string, err error) {
-	for _, findName := range strings.Split(configs.FindNames, ",") {
+func filesWithoutHeader(findExpr string, ignore *regexp.Regexp) (paths []string, err error) {
+	for _, findName := range strings.Split(findExpr, ",") {
 		command := exec.Command("find", ".", "-name", findName, "-type", "f")
 
 		findOut, err := command.CombinedOutput()
@@ -149,7 +180,7 @@ func filesWithoutHeader(logger logging.Logger) (paths []string, err error) {
 				continue
 			}
 
-			if configs.Ignore.MatchString(filePath) {
+			if ignore.MatchString(filePath) {
 				logger.Debug().Logf("ignored %s", filePath)
 
 				continue
@@ -174,37 +205,35 @@ func filesWithoutHeader(logger logging.Logger) (paths []string, err error) {
 	return paths, nil
 }
 
-func fixFile(path string) error {
+func fixFile(path, header string, sheB bool) error {
 	file, err := os.OpenFile(path, os.O_RDWR, 0)
 	if err != nil {
-		return misc.Wrap(err, "opening")
+		return misc.Wrapfl(err)
 	}
 
 	defer file.Close()
 
 	content, err := io.ReadAll(file)
 	if err != nil {
-		return misc.Wrap(err, "reading")
+		return misc.Wrapfl(err)
 	}
 
 	var newFile string
 
-	if strings.Contains(path, ".go") {
-		newFile = configs.HeaderGo + "\n" + string(content)
-	} else if strings.Contains(path, ".sh") {
+	if sheB {
 		shebang, rest, found := strings.Cut(string(content), "\n")
 		if !found {
 			return fmt.Errorf("detecting shebang: %s", path)
 		}
 
-		newFile = shebang + "\n" + configs.HeaderSh + rest
+		newFile = shebang + "\n" + header + rest
 	} else {
-		return fmt.Errorf("unknown file type: %s", path)
+		newFile = header + "\n" + string(content)
 	}
 
 	_, err = file.WriteAt([]byte(newFile), 0)
 	if err != nil {
-		return misc.Wrap(err, "writing")
+		return misc.Wrapfl(err)
 	}
 
 	return nil
