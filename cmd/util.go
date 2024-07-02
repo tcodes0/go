@@ -8,10 +8,10 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"os/exec"
+	"path"
+	"path/filepath"
 	"regexp"
 	"slices"
-	"strings"
 
 	"github.com/samber/lo"
 	"github.com/tcodes0/go/logging"
@@ -20,35 +20,36 @@ import (
 
 var (
 	ignore      = regexp.MustCompile(`test$|\.local.*|cmd/template|^cmd$`)
+	globs       = []string{"*/*.go", "*/*/*.go"}
 	EnvColor    = "CMD_COLOR"
 	EnvLogLevel = "CMD_LOGLEVEL"
 )
 
 func FindModules(logger logging.Logger) ([]string, error) {
-	cmd := exec.Command("find", ".", "-mindepth", "2", "-maxdepth", "3", "-type", "f", "-name", "*.go", "-exec", "dirname", "{}", ";")
+	goFiles := make([]string, 0)
 
-	findOut, err := cmd.CombinedOutput()
-	if err != nil {
-		return nil, misc.Wrapf(err, "finding, %s", findOut)
+	for _, glob := range globs {
+		g, err := filepath.Glob(glob)
+		if err != nil {
+			return nil, misc.Wrapfl(err)
+		}
+
+		goFiles = append(goFiles, g...)
 	}
 
-	logger.Debug().Logf("find output: %s", findOut)
+	dirs := make([]string, 0, len(goFiles))
 
-	modules := strings.Split(string(findOut), "\n")
-	modules = lo.Uniq(modules)
+	for _, file := range goFiles {
+		dirs = append(dirs, path.Dir(file))
+	}
 
-	out := make([]string, 0, len(modules))
+	dirs = lo.Uniq(dirs)
+	out := make([]string, 0, len(dirs))
 
-	for _, module := range modules {
-		module = strings.Replace(module, "./", "", 1)
-
+	for _, module := range dirs {
 		if ignore.MatchString(module) {
 			logger.Debug().Logf("ignored %s", module)
 
-			continue
-		}
-
-		if module == "" {
 			continue
 		}
 
@@ -60,8 +61,8 @@ func FindModules(logger logging.Logger) ([]string, error) {
 	return out, nil
 }
 
-func WriteFile(path string, data []byte) error {
-	file, err := os.OpenFile(path, os.O_RDWR, 0)
+func WriteFile(filePath string, data []byte) error {
+	file, err := os.OpenFile(filePath, os.O_RDWR, 0)
 	if err != nil {
 		return misc.Wrap(err, "opening")
 	}
