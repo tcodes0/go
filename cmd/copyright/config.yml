@@ -1,7 +1,3 @@
-ignoreRaw: /?mock_.*|.local/.*
-findNames: "*.go,*.sh"
-commentSh: "# "
-commentGo: "// "
 header: |
   Copyright 2024 Raphael Thomazella. All rights reserved.
   Use of this source code is governed by the BSD-3-Clause
