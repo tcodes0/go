@@ -31,8 +31,8 @@ const (
 	LNone
 
 	debug string = "DEBUG "
-	info  string = "INFO  "
-	warn  string = "WARN  "
+	info  string = "INFO "
+	warn  string = "WARN "
 	erro  string = "ERROR "
 	fatal string = "FATAL "
 
@@ -40,7 +40,7 @@ const (
 	defaultFlags = log.LstdFlags | log.Lshortfile | log.LUTC
 
 	equals = "="
-	comma = ", "
+	comma  = ", "
 )
 
 type ContextKey struct{}
@@ -134,9 +134,11 @@ func Create(options ...CreateOptions) *Logger {
 	logger := &Logger{
 		l:        log.New(opts.writer, prefix, opts.flags),
 		color:    atomic.Bool{},
+		level:    atomic.Int32{},
 		exitFunc: opts.exit,
 	}
 	logger.color.Store(opts.color)
+	logger.level.Store(int32(opts.level))
 
 	return logger
 }
