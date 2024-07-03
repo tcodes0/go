@@ -38,6 +38,9 @@ const (
 
 	// UTC time with file and line of log message.
 	defaultFlags = log.LstdFlags | log.Lshortfile | log.LUTC
+
+	equals = "="
+	comma = ", "
 )
 
 type ContextKey struct{}

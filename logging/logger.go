@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"log"
 	"runtime"
+	"slices"
+	"strings"
 	"sync/atomic"
 
 	"github.com/tcodes0/go/hue"
@@ -37,12 +39,20 @@ func (logger *Logger) Infof(format string, args ...any) {
 	logger.out(LInfo, fmt.Sprintf(format, args...))
 }
 
+func (logger *Logger) InfoData(data map[string]any, msg ...any) {
+	logger.out(LInfo, slices.Concat([]any{logger.format(data)}, msg)...)
+}
+
 func (logger *Logger) Warn(msg ...any) {
 	logger.out(LWarn, msg...)
 }
 
 func (logger *Logger) Warnf(format string, args ...any) {
 	logger.out(LWarn, fmt.Sprintf(format, args...))
+}
+
+func (logger *Logger) WarnData(data map[string]any, msg ...any) {
+	logger.out(LWarn, slices.Concat([]any{logger.format(data)}, msg)...)
 }
 
 func (logger *Logger) Error(msg ...any) {
@@ -53,12 +63,20 @@ func (logger *Logger) Errorf(format string, args ...any) {
 	logger.out(LError, fmt.Sprintf(format, args...))
 }
 
+func (logger *Logger) ErrorData(data map[string]any, msg ...any) {
+	logger.out(LError, slices.Concat([]any{logger.format(data)}, msg)...)
+}
+
 func (logger *Logger) Debug(msg ...any) {
 	logger.out(LDebug, msg...)
 }
 
 func (logger *Logger) Debugf(format string, args ...any) {
 	logger.out(LDebug, fmt.Sprintf(format, args...))
+}
+
+func (logger *Logger) DebugData(data map[string]any, msg ...any) {
+	logger.out(LDebug, slices.Concat([]any{logger.format(data)}, msg)...)
 }
 
 func (logger *Logger) Fatal(msg ...any) {
@@ -69,6 +87,36 @@ func (logger *Logger) Fatal(msg ...any) {
 func (logger *Logger) Fatalf(format string, args ...any) {
 	logger.out(LFatal, fmt.Sprintf(format, args...))
 	logger.exit()
+}
+
+func (logger *Logger) FatalData(data map[string]any, msg ...any) {
+	logger.out(LFatal, slices.Concat([]any{logger.format(data)}, msg)...)
+}
+
+func (logger *Logger) format(data map[string]any) string {
+	if len(data) == 0 {
+		return ""
+	}
+
+	color := logger.color.Load()
+	dataMsg := ""
+
+	for key, val := range data {
+		sVal := fmt.Sprintf("%v", val)
+
+		if color {
+			dataMsg = hue.Printc(hue.Brown, key) + hue.Printc(hue.Gray, equals) +
+				hue.Printc(hue.Brown, sVal) + hue.Printc(hue.Gray, comma)
+		} else {
+			dataMsg = key + equals + sVal + comma
+		}
+	}
+
+	if color {
+		return strings.TrimSuffix(dataMsg, comma) + hue.End + " "
+	}
+
+	return "(" + strings.TrimSuffix(dataMsg, comma) + ")" + " "
 }
 
 func (logger *Logger) exit() {
@@ -147,24 +195,14 @@ func (logger *Logger) setPrefix(prefix string) {
 func (logger *Logger) Stacktrace(allGoroutines bool) {
 	var stackBuffer bytes.Buffer
 
-	// Create a slice to hold stack trace info
 	stack := make([]byte, 4096)
 	n := runtime.Stack(stack, allGoroutines)
 	stackBuffer.Write(stack[:n])
 
-	// Print to standard error (default logger output point)
 	logger.out(LError, stackBuffer.String())
 }
 
 // set the level of the logger, messages < Logger.level will be ignored.
 func (logger *Logger) SetLevel(level Level) {
 	logger.atmLevel.Store(int32(level))
-}
-
-// append metadata to all future messages,
-// metadata is formated in key value pairs;
-// see Wipe.
-// TODO: implement metadata.
-func (logger *Logger) Metadata(key string, val any) *Logger {
-	return logger
 }
