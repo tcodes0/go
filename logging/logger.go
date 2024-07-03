@@ -29,44 +29,44 @@ func (logger *Logger) WithContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, contextKey, logger)
 }
 
-func (logger *Logger) InfoLog(msg ...any) {
+func (logger *Logger) Info(msg ...any) {
 	logger.out(LInfo, msg...)
 }
 
-func (logger *Logger) InfoLogf(format string, args ...any) {
+func (logger *Logger) Infof(format string, args ...any) {
 	logger.out(LInfo, fmt.Sprintf(format, args...))
 }
 
-func (logger *Logger) WarnLog(msg ...any) {
+func (logger *Logger) Warn(msg ...any) {
 	logger.out(LWarn, msg...)
 }
 
-func (logger *Logger) WarnLogf(format string, args ...any) {
+func (logger *Logger) Warnf(format string, args ...any) {
 	logger.out(LWarn, fmt.Sprintf(format, args...))
 }
 
-func (logger *Logger) ErrorLog(msg ...any) {
+func (logger *Logger) Error(msg ...any) {
 	logger.out(LError, msg...)
 }
 
-func (logger *Logger) ErrorLogf(format string, args ...any) {
+func (logger *Logger) Errorf(format string, args ...any) {
 	logger.out(LError, fmt.Sprintf(format, args...))
 }
 
-func (logger *Logger) DebugLog(msg ...any) {
+func (logger *Logger) Debug(msg ...any) {
 	logger.out(LDebug, msg...)
 }
 
-func (logger *Logger) DebugLogf(format string, args ...any) {
+func (logger *Logger) Debugf(format string, args ...any) {
 	logger.out(LDebug, fmt.Sprintf(format, args...))
 }
 
-func (logger *Logger) FatalLog(msg ...any) {
+func (logger *Logger) Fatal(msg ...any) {
 	logger.out(LFatal, msg...)
 	logger.exit()
 }
 
-func (logger *Logger) FatalLogf(format string, args ...any) {
+func (logger *Logger) Fatalf(format string, args ...any) {
 	logger.out(LFatal, fmt.Sprintf(format, args...))
 	logger.exit()
 }
@@ -159,4 +159,12 @@ func (logger *Logger) Stacktrace(allGoroutines bool) {
 // set the level of the logger, messages < Logger.level will be ignored.
 func (logger *Logger) SetLevel(level Level) {
 	logger.atmLevel.Store(int32(level))
+}
+
+// append metadata to all future messages,
+// metadata is formated in key value pairs;
+// see Wipe.
+// TODO: implement metadata.
+func (logger *Logger) Metadata(key string, val any) *Logger {
+	return logger
 }

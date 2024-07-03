@@ -167,10 +167,10 @@ func filesWithoutHeader(findExpr string, ignore *regexp.Regexp) (paths []string,
 		}
 
 		filesFound := strings.Split(string(findOut), "\n")
-		logger.Debug().Logf("find: '%s', count %d, files: %s", findName, len(filesFound), filesFound)
+		logger.Debugf("find: '%s', count %d, files: %s", findName, len(filesFound), filesFound)
 
 		if len(filesFound) == 0 {
-			logger.Warn().Logf("no matches: %s", findName)
+			logger.Warnf("no matches: %s", findName)
 
 			continue
 		}
@@ -181,7 +181,7 @@ func filesWithoutHeader(findExpr string, ignore *regexp.Regexp) (paths []string,
 			}
 
 			if ignore.MatchString(filePath) {
-				logger.Debug().Logf("ignored %s", filePath)
+				logger.Debugf("ignored %s", filePath)
 
 				continue
 			}
@@ -193,7 +193,7 @@ func filesWithoutHeader(findExpr string, ignore *regexp.Regexp) (paths []string,
 
 			// not specific on purpose, header may change if file is from another oss project
 			if strings.Contains(string(fileHeader), "Copyright") {
-				logger.Debug().Logf("ok: %s", filePath)
+				logger.Debugf("ok: %s", filePath)
 
 				continue
 			}

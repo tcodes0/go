@@ -31,19 +31,19 @@ func (r Roundtrip) RoundTrip(req *http.Request) (*http.Response, error) {
 		r.Logger = &logging.Logger{}
 	}
 
-	r.Logger.Debug().
+	r.Logger.
 		Metadata("method", req.Method).
 		Metadata("url", req.URL.String()).
 		Metadata("headers", req.Header).
-		Log("req")
+		Debug("req")
 
 	res, err := r.Transport.RoundTrip(req)
 
-	r.Logger.Debug().
+	r.Logger.
 		Metadata("status", res.StatusCode).
 		Metadata("length", res.ContentLength).
 		Metadata("headers", res.Header).
-		Log("res")
+		Debug("res")
 
 	return res, misc.Wrap(err, "http roundtrip")
 }

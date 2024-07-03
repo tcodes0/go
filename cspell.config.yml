@@ -24,6 +24,7 @@ words:
   - cweill
   - davecgh
   - debg
+  - Debugf
   - erro
   - fatih
   - fatl
@@ -52,6 +53,7 @@ words:
   - httpflush
   - ifaceassert
   - iname
+  - Infof
   - inpackage
   - inplace
   - joho
@@ -88,6 +90,7 @@ words:
   - unmarshalling
   - unmarshals
   - uudashr
+  - Warnf
   - wrapf
   - Wrapfl
   - xerrors

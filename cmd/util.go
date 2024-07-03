@@ -25,7 +25,7 @@ var (
 	EnvLogLevel = "CMD_LOGLEVEL"
 )
 
-func FindModules(logger logging.Logger) ([]string, error) {
+func FindModules(logger *logging.Logger) ([]string, error) {
 	goFiles := make([]string, 0)
 
 	for _, glob := range globs {
@@ -48,7 +48,7 @@ func FindModules(logger logging.Logger) ([]string, error) {
 
 	for _, module := range dirs {
 		if ignore.MatchString(module) {
-			logger.Debug().Logf("ignored %s", module)
+			logger.Debugf("ignored %s", module)
 
 			continue
 		}

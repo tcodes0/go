@@ -215,7 +215,7 @@ func link(source, link string, dryrun bool) error {
 
 	_, err = os.Stat(linkDir)
 	if err != nil {
-		logger.Logf("try: mkdir -p %s", linkDir)
+		logger.Infof("try: mkdir -p %s", linkDir)
 
 		return misc.Wrapf(err, "stat dir")
 	}
@@ -223,13 +223,13 @@ func link(source, link string, dryrun bool) error {
 	// do not follow symlinks!
 	lStat, err := os.Lstat(link)
 	if err == nil {
-		logger.Warn().Logf("skip: file exists %s", link)
+		logger.Warnf("skip: file exists %s", link)
 
 		if lStat.Mode()&os.ModeSymlink != 0 {
 			_, err = os.Stat(link)
 			if err != nil {
-				logger.Error().Logf("broken link %s", link)
-				logger.Logf("try: unlink %s", link)
+				logger.Errorf("broken link %s", link)
+				logger.Infof("try: unlink %s", link)
 			}
 		}
 
@@ -239,7 +239,7 @@ func link(source, link string, dryrun bool) error {
 	if dryrun {
 		_, err = fmt.Printf("link %s -> %s\n", link, source)
 		if err != nil {
-			logger.Error().Logf("println: %v", err)
+			logger.Errorf("println: %v", err)
 		}
 
 		return nil
@@ -256,7 +256,7 @@ func link(source, link string, dryrun bool) error {
 func remove(target string, dryrun bool) error {
 	stat, err := os.Stat(target)
 	if err != nil {
-		logger.Warn().Logf("skip: file not found %s", target)
+		logger.Warnf("skip: file not found %s", target)
 
 		//nolint:nilerr // func about removing files
 		return nil
@@ -269,8 +269,8 @@ func remove(target string, dryrun bool) error {
 		}
 
 		if len(entries) > 0 {
-			logger.Warn().Logf("skip: directory not empty %s", target)
-			logger.Logf("try: rm -fr %s", target)
+			logger.Warnf("skip: directory not empty %s", target)
+			logger.Infof("try: rm -fr %s", target)
 
 			return nil
 		}
@@ -279,7 +279,7 @@ func remove(target string, dryrun bool) error {
 	if dryrun {
 		_, err = fmt.Printf("remove %s\n", target)
 		if err != nil {
-			logger.Error().Logf("println: %v", err)
+			logger.Errorf("println: %v", err)
 		}
 
 		return nil
@@ -298,7 +298,7 @@ func backup(target string, dryrun bool) (err error) {
 
 	_, err = os.Stat(bakFile)
 	if err == nil {
-		logger.Warn().Logf("skip: file exists %s", bakFile)
+		logger.Warnf("skip: file exists %s", bakFile)
 
 		return nil
 	}
@@ -309,8 +309,8 @@ func backup(target string, dryrun bool) (err error) {
 	}
 
 	if fileStat.IsDir() {
-		logger.Warn().Logf("skip: directory %s", target)
-		logger.Logf("try: cp %s %s.bak", target, target)
+		logger.Warnf("skip: directory %s", target)
+		logger.Infof("try: cp %s %s.bak", target, target)
 
 		return nil
 	}
@@ -318,7 +318,7 @@ func backup(target string, dryrun bool) (err error) {
 	if dryrun {
 		_, err = fmt.Printf("create %s.bak\n", target)
 		if err != nil {
-			logger.Error().Logf("println: %v", err)
+			logger.Errorf("println: %v", err)
 		}
 
 		return nil

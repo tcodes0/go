@@ -92,7 +92,7 @@ func (c Client) Request(ctx context.Context, method, resource string, body any, 
 
 	logger := logging.FromContext(ctx)
 
-	logger.Debug().Logf("headers %v", req.Header)
+	logger.Debugf("headers %v", req.Header)
 
 	res, err := c.httpClient.Do(req)
 	if err != nil {
@@ -100,7 +100,7 @@ func (c Client) Request(ctx context.Context, method, resource string, body any, 
 	}
 	defer res.Body.Close()
 
-	logger.Debug().Logf("status %d", res.StatusCode)
+	logger.Debugf("status %d", res.StatusCode)
 
 	if res.StatusCode >= http.StatusMultipleChoices {
 		return res, nil, fmt.Errorf("status code: %d", res.StatusCode)
@@ -111,7 +111,7 @@ func (c Client) Request(ctx context.Context, method, resource string, body any, 
 		return res, nil, misc.Wrap(err, "reading response body")
 	}
 
-	logger.Debug().Logf("response %s", string(data))
+	logger.Debugf("response %s", string(data))
 
 	return res, data, nil
 }
@@ -119,7 +119,7 @@ func (c Client) Request(ctx context.Context, method, resource string, body any, 
 func makeRequest(ctx context.Context, method, url string, body any) (*http.Request, error) {
 	logger := logging.FromContext(ctx)
 
-	logger.Debug().Logf("url %s", url)
+	logger.Debugf("url %s", url)
 
 	if body == nil {
 		req, err := http.NewRequestWithContext(ctx, method, url, http.NoBody)
@@ -135,7 +135,7 @@ func makeRequest(ctx context.Context, method, url string, body any) (*http.Reque
 		return nil, misc.Wrap(err, "marshalling body")
 	}
 
-	logger.Debug().Logf("body %v", body)
+	logger.Debugf("body %v", body)
 
 	reader, writer := io.Pipe()
 	go func() {
