@@ -10,7 +10,7 @@ import (
 	"io"
 	"log"
 	"os"
-	"sync"
+	"sync/atomic"
 
 	"github.com/tcodes0/go/hue"
 )
@@ -38,14 +38,19 @@ const (
 
 	// UTC time with file and line of log message.
 	defaultFlags = log.LstdFlags | log.Lshortfile | log.LUTC
-	// necessary for log.Lshortfile to show correctly
-	// controls stack frames to pop when showing file:line.
-	defaultCalldepth = 2
 )
 
 type ContextKey struct{}
 
-var contextKey = ContextKey{}
+var (
+	contextKey = ContextKey{}
+	infoColor  = hue.Printc(hue.Gray, info)
+	// warn and higher: hue.Gray is added to color the log line information.
+	warnColor  = hue.Printc(hue.Yellow, warn, hue.End) + hue.Printc(hue.Gray)
+	erroColor  = hue.Printc(hue.Red, erro, hue.End) + hue.Printc(hue.Gray)
+	fatalColor = hue.Printc(hue.BrightRed, fatal, hue.End) + hue.Printc(hue.Gray)
+	debugColor = hue.Printc(hue.Blue, debug, hue.End) + hue.Printc(hue.Gray)
+)
 
 // retrieves a logger from a context, see Logger.WithContext.
 func FromContext(ctx context.Context) *Logger {
@@ -120,16 +125,15 @@ func Create(options ...CreateOptions) *Logger {
 
 	prefix := info
 	if opts.color {
-		prefix = hue.Cprint(hue.Gray, info)
+		prefix = hue.Printc(hue.Gray, info)
 	}
 
-	return &Logger{
-		l:         log.New(opts.writer, prefix, opts.flags),
-		mu:        &sync.Mutex{},
-		level:     opts.level,
-		color:     opts.color,
-		msgLevel:  LInfo,
-		calldepth: defaultCalldepth,
-		exit:      opts.exit,
+	logger := &Logger{
+		l:        log.New(opts.writer, prefix, opts.flags),
+		color:    atomic.Bool{},
+		exitFunc: opts.exit,
 	}
+	logger.color.Store(opts.color)
+
+	return logger
 }
