@@ -154,7 +154,7 @@ func run(inputs ...string) error {
 			command.Env = append(command.Env, envs...)
 		}
 
-		logger.Debug("env: " + strings.Join(command.Env, " "))
+		logger.Debugf("env: %s", strings.Join(command.Env, " "))
 
 		stderrBuffer := bytes.Buffer{}
 		command.Stderr = &stderrBuffer
@@ -192,7 +192,7 @@ func envVarMapper(inputs []string) func(pair string, _ int) string {
 
 			val, ok := os.LookupEnv(key)
 			if !ok {
-				logger.Debugf("env value inherited is empty: " + key)
+				logger.Debugf("env value inherited is empty: %s", key)
 			}
 
 			return strings.Replace(pair, varInherit, val, 1)
