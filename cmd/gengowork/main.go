@@ -21,13 +21,31 @@ import (
 	"github.com/tcodes0/go/misc"
 )
 
-var flagset = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+var (
+	flagset  = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	logger   = &logging.Logger{}
+	errUsage = errors.New("see usage")
+)
 
 func main() {
-	err := flagset.Parse(os.Args[1:])
-	if err != nil {
-		usageExit(err)
-	}
+	var err error
+
+	// first deferred func will run last
+	defer func() {
+		if msg := recover(); msg != nil {
+			logger.Fatalf("%v", msg)
+		}
+
+		if err != nil {
+			if errors.Is(err, errUsage) {
+				usage(err)
+			}
+
+			logger.Fatalf("%s", err.Error())
+		}
+	}()
+
+	misc.DotEnv(".env", false /*noisy*/)
 
 	fColor := misc.LookupEnv(cmd.EnvColor, false)
 	fLogLevel := misc.LookupEnv(cmd.EnvLogLevel, int(logging.LInfo))
@@ -37,34 +55,36 @@ func main() {
 		opts = append(opts, logging.OptColor())
 	}
 
-	logger := logging.Create(opts...)
+	logger = logging.Create(opts...)
 
-	err = genGoWork(*logger)
+	err = flagset.Parse(os.Args[1:])
 	if err != nil {
-		logger.Fatalf("fatal: %v", err)
+		err = errors.Join(err, errUsage)
+
+		return
 	}
+
+	err = genGoWork()
 }
 
-func usageExit(err error) {
+func usage(err error) {
+	if errors.Is(err, flag.ErrHelp) {
+		fmt.Println()
+	}
+
 	fmt.Println()
 	fmt.Println("generates go.work file")
 	fmt.Println()
 	fmt.Println(cmd.EnvVarUsage())
-
-	if err != nil && !errors.Is(err, flag.ErrHelp) {
-		fmt.Printf("error: %v\n", err)
-	}
-
-	os.Exit(1)
 }
 
-func genGoWork(logger logging.Logger) error {
+func genGoWork() error {
 	version, err := parseGoVersion()
 	if err != nil {
 		return misc.Wrap(err, "parseGoVersion")
 	}
 
-	mods, err := findModules(logger)
+	mods, err := findModules()
 	if err != nil {
 		return misc.Wrap(err, "FindModules")
 	}
@@ -112,7 +132,7 @@ func parseGoVersion() (string, error) {
 	return "", errors.New("parsing")
 }
 
-func findModules(logger logging.Logger) ([]string, error) {
+func findModules() ([]string, error) {
 	modules, err := cmd.FindModules(logger)
 	if err != nil {
 		return nil, misc.Wrap(err, "FindModules")
