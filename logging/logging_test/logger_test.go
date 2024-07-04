@@ -169,8 +169,8 @@ func TestLoggerData(t *testing.T) {
 		out := &bytes.Buffer{}
 		logger := logging.Create(logging.OptWriter(out), logging.OptExit(func(int) {}), logging.OptColor())
 		testRun(assert, "errorData color", logger, []any{"ErrorData", mockMap, "testing"}, out, regexp.MustCompile(
-			rawANSI+erro+rawANSI+rawFlags+": "+rawANSI+"hello"+rawANSI+"="+rawANSI+"world"+
-				rawANSI+", "+rawANSI+"foo"+rawANSI+"="+rawANSI+"bar"+rawANSI+" testing",
+			rawANSI+erro+rawANSI+rawFlags+": "+rawANSI+"hello|foo"+rawANSI+"="+rawANSI+"world|bar"+
+				rawANSI+", "+rawANSI+"foo|hello"+rawANSI+"="+rawANSI+"bar|world"+rawANSI+" testing",
 		))
 	})
 }
