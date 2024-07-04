@@ -20,10 +20,10 @@ func Recoverer(next http.Handler) http.Handler {
 			if msg := recover(); msg != nil && msg != http.ErrAbortHandler {
 				logger := logging.FromContext(req.Context())
 
-				logger.Error().
-					Metadata("recover", msg).
-					Metadata("stacktrace", debug.Stack()).
-					Log("panic")
+				logger.ErrorData(map[string]any{
+					"recover":    msg,
+					"stacktrace": debug.Stack(),
+				}, "panic")
 
 				http.Error(writer, "{\"error\": \"ERROR\"}", http.StatusInternalServerError)
 			}

@@ -34,7 +34,7 @@ type Task struct {
 }
 
 // validate <module or input1> ...inputs.
-func (task *Task) Validate(logger logging.Logger, inputs ...string) error {
+func (task *Task) Validate(logger *logging.Logger, inputs ...string) error {
 	_, help := lo.Find(inputs, func(input string) bool { return input == "-h" || input == "--help" })
 	if help {
 		return nil
@@ -88,7 +88,7 @@ func checkOnline() error {
 	return nil
 }
 
-func (task *Task) ValidateModule(logger logging.Logger, inputs ...string) error {
+func (task *Task) ValidateModule(logger *logging.Logger, inputs ...string) error {
 	if !task.Module {
 		return nil
 	}

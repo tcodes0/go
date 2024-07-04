@@ -24,6 +24,7 @@ words:
   - cweill
   - davecgh
   - debg
+  - Debugf
   - erro
   - fatih
   - fatl
@@ -31,6 +32,7 @@ words:
   - gengowork
   - genvscodetasks
   - gger
+  - gocognit
   - gocritic
   - godotenv
   - gofmt
@@ -52,6 +54,7 @@ words:
   - httpflush
   - ifaceassert
   - iname
+  - Infof
   - inpackage
   - inplace
   - joho
@@ -69,6 +72,7 @@ words:
   - objx
   - ogger
   - pmezard
+  - Printc
   - ramya
   - ribeiro
   - samber
@@ -87,6 +91,7 @@ words:
   - unmarshalling
   - unmarshals
   - uudashr
+  - Warnf
   - wrapf
   - Wrapfl
   - xerrors

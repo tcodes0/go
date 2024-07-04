@@ -76,7 +76,7 @@ func main() {
 		return
 	}
 
-	err = run(*logger, os.Args[1:]...)
+	err = run(os.Args[1:]...)
 }
 
 func usage(err error) {
@@ -107,7 +107,7 @@ func usage(err error) {
 		fmt.Println(line)
 	}
 
-	modules, e := cmd.FindModules(logging.Logger{})
+	modules, e := cmd.FindModules(logger)
 	if e != nil {
 		fmt.Printf("finding modules: error: %v\n", e)
 	}
@@ -122,7 +122,7 @@ func usage(err error) {
 }
 
 // run <task> <module or input1> ...inputs.
-func run(logger logging.Logger, inputs ...string) error {
+func run(inputs ...string) error {
 	if len(inputs) == 0 {
 		return misc.Wrap(runner.ErrUsage, "task is required")
 	}
@@ -147,14 +147,14 @@ func run(logger logging.Logger, inputs ...string) error {
 		//nolint:gosec // has validation
 		command := exec.Command(cmdInput[0], cmdInput[1:]...)
 
-		logger.Log(line)
+		logger.Info(line)
 
 		if len(theTask.Env) > 0 {
-			envs := lo.Map(theTask.Env, envVarMapper(logger, inputs))
+			envs := lo.Map(theTask.Env, envVarMapper(inputs))
 			command.Env = append(command.Env, envs...)
 		}
 
-		logger.Debug().Log("env: " + strings.Join(command.Env, " "))
+		logger.Debugf("env: %s", strings.Join(command.Env, " "))
 
 		stderrBuffer := bytes.Buffer{}
 		command.Stderr = &stderrBuffer
@@ -165,13 +165,13 @@ func run(logger logging.Logger, inputs ...string) error {
 		}
 
 		if stderrBuffer.Len() > 0 {
-			logger.Log(stderrBuffer.String())
+			logger.Info(stderrBuffer.String())
 		}
 
 		if err != nil {
 			exitErr, ok := (err).(*exec.ExitError)
 			if ok && len(exitErr.Stderr) > 0 {
-				logger.Error().Log("stderr: " + string(exitErr.Stderr))
+				logger.Errorf("stderr: %s", string(exitErr.Stderr))
 			}
 
 			return misc.Wrapf(err, "command '%s'", line)
@@ -181,7 +181,7 @@ func run(logger logging.Logger, inputs ...string) error {
 	return nil
 }
 
-func envVarMapper(logger logging.Logger, inputs []string) func(pair string, _ int) string {
+func envVarMapper(inputs []string) func(pair string, _ int) string {
 	return func(pair string, _ int) string {
 		if strings.Contains(pair, varModule) {
 			return strings.Replace(pair, varModule, inputs[1], 1)
@@ -192,7 +192,7 @@ func envVarMapper(logger logging.Logger, inputs []string) func(pair string, _ in
 
 			val, ok := os.LookupEnv(key)
 			if !ok {
-				logger.Debug().Logf("env value inherited is empty: " + key)
+				logger.Debugf("env value inherited is empty: %s", key)
 			}
 
 			return strings.Replace(pair, varInherit, val, 1)
