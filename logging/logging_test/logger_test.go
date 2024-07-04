@@ -27,17 +27,16 @@ var (
 
 	// sequences of control chars to end or start formatting
 	// matches one sequence after the other.
-	ctrlSeqRE  = `[0-9;\033\[m]+`
-	reDate     = `\d{4}/\d{2}/\d{2}`
-	reTime     = `\d{2}:\d{2}:\d{2}`
-	reFileLine = `[a-z_]+\.go:\d+`
-	fullRE     = reDate + " " + reTime + " " + reFileLine
+	rawANSI = `[0-9;\033\[m]+`
+	// date, time, file:line.
+	rawFlags = `\d{4}/\d{2}/\d{2}` + " " + `\d{2}:\d{2}:\d{2}` + " " + `[a-z_]+\.go:\d+`
 
-	outREDebug = regexp.MustCompile(debug + fullRE + ": testing\n")
-	outREInfo  = regexp.MustCompile(info + fullRE + ": testing\n")
-	outREWarn  = regexp.MustCompile(warn + fullRE + ": testing\n")
-	outREError = regexp.MustCompile(erro + fullRE + ": testing\n")
-	outREFatal = regexp.MustCompile(fatal + fullRE + ": testing\n")
+	matchEmpty = regexp.MustCompile("^$")
+	matchDebug = regexp.MustCompile(debug + rawFlags + ": testing\n")
+	matchInfo  = regexp.MustCompile(info + rawFlags + ": testing\n")
+	matchWarn  = regexp.MustCompile(warn + rawFlags + ": testing\n")
+	matchError = regexp.MustCompile(erro + rawFlags + ": testing\n")
+	matchFatal = regexp.MustCompile(fatal + rawFlags + ": testing\n")
 )
 
 func TestLoggerRace(t *testing.T) {
@@ -70,7 +69,6 @@ func TestLoggerRace(t *testing.T) {
 	require.NoError(t, group.Wait(), "wait")
 }
 
-//nolint:funlen // test
 func TestLoggerOutput(t *testing.T) {
 	t.Parallel()
 
@@ -85,25 +83,25 @@ func TestLoggerOutput(t *testing.T) {
 
 	for callN, call := range testCalls {
 		name := fmt.Sprintf("[%d] %s", callN, call[0])
-		expected := []*regexp.Regexp{outREDebug, outREInfo, outREWarn, outREError, outREFatal}
+		expected := []*regexp.Regexp{matchDebug, matchInfo, matchWarn, matchError, matchFatal}
 
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			out := &bytes.Buffer{}
 			logger := logging.Create(logging.OptWriter(out), logging.OptExit(func(int) {}), logging.OptLevel(logging.LDebug))
-			testRun(assert, name, logger, call, out, expected[callN], nil)
+			testRun(assert, name, logger, call, out, expected[callN])
 		})
 	}
 
 	for callN, call := range testCalls {
 		name := fmt.Sprintf("[%d] color %s", callN, call[0])
 		expected := []*regexp.Regexp{
-			regexp.MustCompile(ctrlSeqRE + debug + ctrlSeqRE + fullRE + ": " + ctrlSeqRE + "testing\n"),
-			regexp.MustCompile(ctrlSeqRE + info + fullRE + ": " + ctrlSeqRE + "testing\n"),
-			regexp.MustCompile(ctrlSeqRE + warn + ctrlSeqRE + fullRE + ": " + ctrlSeqRE + "testing\n"),
-			regexp.MustCompile(ctrlSeqRE + erro + ctrlSeqRE + fullRE + ": " + ctrlSeqRE + "testing\n"),
-			regexp.MustCompile(ctrlSeqRE + fatal + ctrlSeqRE + fullRE + ": " + ctrlSeqRE + "testing\n"),
+			regexp.MustCompile(rawANSI + debug + rawANSI + rawFlags + ": " + rawANSI + "testing\n"),
+			regexp.MustCompile(rawANSI + info + rawFlags + ": " + rawANSI + "testing\n"),
+			regexp.MustCompile(rawANSI + warn + rawANSI + rawFlags + ": " + rawANSI + "testing\n"),
+			regexp.MustCompile(rawANSI + erro + rawANSI + rawFlags + ": " + rawANSI + "testing\n"),
+			regexp.MustCompile(rawANSI + fatal + rawANSI + rawFlags + ": " + rawANSI + "testing\n"),
 		}
 
 		t.Run(name, func(t *testing.T) {
@@ -111,7 +109,7 @@ func TestLoggerOutput(t *testing.T) {
 
 			out := &bytes.Buffer{}
 			logger := logging.Create(logging.OptWriter(out), logging.OptExit(func(int) {}), logging.OptLevel(logging.LDebug), logging.OptColor())
-			testRun(assert, name, logger, call, out, expected[callN], nil)
+			testRun(assert, name, logger, call, out, expected[callN])
 		})
 	}
 
@@ -120,12 +118,12 @@ func TestLoggerOutput(t *testing.T) {
 
 		out := &bytes.Buffer{}
 		logger := &logging.Logger{}
-		testRun(assert, "noop logger", logger, []any{"Info", "testing"}, out, regexp.MustCompile("^$"), nil)
+		testRun(assert, "noop logger", logger, []any{"Info", "testing"}, out, matchEmpty)
 	})
 }
 
 func testRun(
-	assert *require.Assertions, name string, logger *logging.Logger, call []any, out *bytes.Buffer, reg, notReg *regexp.Regexp,
+	assert *require.Assertions, name string, logger *logging.Logger, call []any, out *bytes.Buffer, reg *regexp.Regexp,
 ) {
 	//nolint:forcetypeassert // test
 	method := reflect.ValueOf(logger).MethodByName((call[0]).(string))
@@ -144,10 +142,6 @@ func testRun(
 	if reg != nil {
 		assert.Regexp(reg, out.String(), "expected output on '%s'", name)
 	}
-
-	if notReg != nil {
-		assert.NotRegexp(notReg, out.String(), "unexpected output on '%s'", name)
-	}
 }
 
 func TestLoggerData(t *testing.T) {
@@ -165,8 +159,8 @@ func TestLoggerData(t *testing.T) {
 		out := &bytes.Buffer{}
 		logger := logging.Create(logging.OptWriter(out), logging.OptExit(func(int) {}))
 		testRun(assert, "infoData", logger, []any{"InfoData", mockMap, "testing"}, out, regexp.MustCompile(
-			info+fullRE+": "+`\(hello|foo=world|bar, hello|foo=world|bar\) `+"testing\n",
-		), nil)
+			info+rawFlags+": "+`\(hello|foo=world|bar, hello|foo=world|bar\) `+"testing\n",
+		))
 	})
 
 	t.Run("errorData color", func(t *testing.T) {
@@ -175,9 +169,9 @@ func TestLoggerData(t *testing.T) {
 		out := &bytes.Buffer{}
 		logger := logging.Create(logging.OptWriter(out), logging.OptExit(func(int) {}), logging.OptColor())
 		testRun(assert, "errorData color", logger, []any{"ErrorData", mockMap, "testing"}, out, regexp.MustCompile(
-			ctrlSeqRE+erro+ctrlSeqRE+fullRE+": "+ctrlSeqRE+"hello"+ctrlSeqRE+"="+ctrlSeqRE+"world"+
-				ctrlSeqRE+", "+ctrlSeqRE+"foo"+ctrlSeqRE+"="+ctrlSeqRE+"bar"+ctrlSeqRE+" testing",
-		), nil)
+			rawANSI+erro+rawANSI+rawFlags+": "+rawANSI+"hello"+rawANSI+"="+rawANSI+"world"+
+				rawANSI+", "+rawANSI+"foo"+rawANSI+"="+rawANSI+"bar"+rawANSI+" testing",
+		))
 	})
 }
 
@@ -192,20 +186,12 @@ func TestLoggerLevel(t *testing.T) {
 		{"Fatal", "testing"},
 	}
 	expected := [][]*regexp.Regexp{
-		/* 1 Debug*/ {outREDebug, outREInfo, outREWarn, outREError, outREFatal},
-		/* 2 Info*/ {nil, outREInfo, outREWarn, outREError, outREFatal},
-		/* 3 Warn */ {nil, nil, outREWarn, outREError, outREFatal},
-		/* 4 Error*/ {nil, nil, nil, outREError, outREFatal},
-		/* 5 Fatal*/ {nil, nil, nil, nil, outREFatal},
-		/* 6 None*/ {nil, nil, nil, nil, nil},
-	}
-	notExpected := [][]*regexp.Regexp{
-		/* 1 Debug*/ {nil, nil, nil, nil, nil},
-		/* 2 Info*/ {outREDebug, nil, nil, nil, nil},
-		/* 3 Warn */ {outREDebug, outREInfo, nil, nil, nil},
-		/* 4 Error*/ {outREDebug, outREInfo, outREWarn, nil, nil},
-		/* 5 Fatal*/ {outREDebug, outREInfo, outREWarn, outREError, nil},
-		/* 6 None*/ {outREDebug, outREInfo, outREWarn, outREError, outREFatal},
+		/* 1 Debug*/ {matchDebug, matchInfo, matchWarn, matchError, matchFatal},
+		/* 2 Info*/ {matchEmpty, matchInfo, matchWarn, matchError, matchFatal},
+		/* 3 Warn */ {matchEmpty, matchEmpty, matchWarn, matchError, matchFatal},
+		/* 4 Error*/ {matchEmpty, matchEmpty, matchEmpty, matchError, matchFatal},
+		/* 5 Fatal*/ {matchEmpty, matchEmpty, matchEmpty, matchEmpty, matchFatal},
+		/* 6 None*/ {matchEmpty, matchEmpty, matchEmpty, matchEmpty, matchEmpty},
 	}
 
 	for i := range int(logging.LNone) {
@@ -219,7 +205,7 @@ func TestLoggerLevel(t *testing.T) {
 				name := fmt.Sprintf("call [%d] level %d", callN, level)
 				out := &bytes.Buffer{}
 				logger := logging.Create(logging.OptWriter(out), logging.OptExit(func(int) {}), logging.OptLevel(logging.Level(level)))
-				testRun(require.New(t), name, logger, call, out, expected[i][callN], notExpected[i][callN])
+				testRun(require.New(t), name, logger, call, out, expected[i][callN])
 			}
 		})
 	}
