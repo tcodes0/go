@@ -10,8 +10,10 @@ import (
 	"fmt"
 	"net/http"
 	"os/exec"
+	"slices"
 	"strings"
 
+	"github.com/lithammer/fuzzysearch/fuzzy"
 	"github.com/samber/lo"
 	"github.com/tcodes0/go/cmd"
 	"github.com/tcodes0/go/logging"
@@ -104,7 +106,10 @@ func (task *Task) ValidateModule(logger *logging.Logger, inputs ...string) error
 
 	_, found := lo.Find(mods, func(m string) bool { return m == inputs[0] })
 	if !found {
-		DidYouMean(inputs[0])
+		meant, ok := DidYouMean(inputs[0], mods)
+		if ok {
+			return misc.Wrapf(ErrUsage, "%s: unknown module, %s", inputs[0], meant)
+		}
 
 		return misc.Wrapf(ErrUsage, "%s: unknown module", inputs[0])
 	}
@@ -112,4 +117,57 @@ func (task *Task) ValidateModule(logger *logging.Logger, inputs ...string) error
 	return nil
 }
 
-func DidYouMean(input string) {}
+func DidYouMean(input string, candidates []string) (string, bool) {
+	type match struct {
+		word  string
+		score int
+	}
+
+	input = strings.ToLower(input)
+	limit := 5
+	matches := make([]match, 0, len(candidates))
+
+	for i := range len(input) {
+		matches = lo.FilterMap(candidates, func(w string, _ int) (match, bool) {
+			m := match{word: w, score: fuzzy.RankMatch(input, w)}
+			if m.score == -1 {
+				return m, false
+			}
+
+			return m, true
+		})
+
+		if len(matches) == 0 {
+			// slice the last or first character until we match
+			if i%2 == 0 {
+				input = input[:len(input)-1]
+			} else {
+				input = input[1:]
+			}
+
+			continue
+		}
+
+		if len(matches) > limit {
+			matches = matches[:limit]
+		}
+
+		break
+	}
+
+	if len(matches) == 0 {
+		return "", false
+	}
+
+	slices.SortFunc(matches, func(a, b match) int {
+		return b.score - a.score
+	})
+
+	return lo.Reduce(matches, func(agg string, item match, i int) string {
+		if i == len(matches)-1 {
+			return agg + "'" + item.word + "'?"
+		}
+
+		return agg + "'" + item.word + "'" + ", "
+	}, "did you mean: "), true
+}

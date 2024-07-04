@@ -129,7 +129,12 @@ func run(inputs ...string) error {
 
 	theTask, found := lo.Find(tasks, func(t *runner.Task) bool { return t.Name == inputs[0] })
 	if !found {
-		runner.DidYouMean(inputs[0])
+		taskNames := lo.Map(tasks, func(t *runner.Task, _ int) string { return t.Name })
+
+		meant, ok := runner.DidYouMean(inputs[0], taskNames)
+		if ok {
+			return misc.Wrapf(runner.ErrUsage, "%s: unknown task, %s", inputs[0], meant)
+		}
 
 		return misc.Wrapf(runner.ErrUsage, "%s: unknown task", inputs[0])
 	}
