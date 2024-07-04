@@ -171,7 +171,7 @@ func run(inputs ...string) error {
 		if err != nil {
 			exitErr, ok := (err).(*exec.ExitError)
 			if ok && len(exitErr.Stderr) > 0 {
-				logger.Error("stderr: " + string(exitErr.Stderr))
+				logger.Errorf("stderr: %s", string(exitErr.Stderr))
 			}
 
 			return misc.Wrapf(err, "command '%s'", line)

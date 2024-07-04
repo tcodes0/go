@@ -118,7 +118,7 @@ func TestLoggerOutput(t *testing.T) {
 
 		out := &bytes.Buffer{}
 		logger := &logging.Logger{}
-		testRun(assert, "noop logger", logger, []any{"Info", "testing"}, out, matchEmpty)
+		testRun(assert, "noop logger", logger, []any{"Fatal", "testing"}, out, matchEmpty)
 	})
 }
 
