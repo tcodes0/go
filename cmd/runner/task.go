@@ -144,11 +144,15 @@ func DidYouMean(input string, candidates []string) (string, bool) {
 			} else {
 				input = input[1:]
 			}
+
+			continue
 		}
 
 		if len(matches) > limit {
 			matches = matches[:limit]
 		}
+
+		break
 	}
 
 	if len(matches) == 0 {
