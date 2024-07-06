@@ -124,7 +124,7 @@ func usage(err error) {
 
 	fmt.Println()
 	fmt.Println("recursively finds and reports files missing boilerplate header")
-	fmt.Println("-fix writes the header")
+	fmt.Println("-h to see required flags")
 	fmt.Println()
 	fmt.Println(cmd.EnvVarUsage())
 }
