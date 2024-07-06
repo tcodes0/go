@@ -23,6 +23,7 @@ jobs:
       modCmdCopyright: ${{ steps.list-changed-files.outputs.cmd_copyright_all_changed_files }}
       modCmdGenGoWork: ${{ steps.list-changed-files.outputs.cmd_gen_go_work_all_changed_files }}
       modCmdFiler: ${{ steps.list-changed-files.outputs.cmd_filer_all_changed_files }}
+      modCmdChangelog: ${{ steps.list-changed-files.outputs.cmd_changelog_all_changed_files }}
       # others
       anyGoMod: ${{ steps.list-changed-files.outputs.any_go_mod_all_changed_files }}
       rootGoMod: ${{ steps.list-changed-files.outputs.root_go_mod_all_changed_files }}
@@ -334,3 +335,12 @@ jobs:
     with:
       goVersion: 1.22
       modulePath: cmd/filer
+
+  cmd-changelog:
+    name: cmd/changelog
+    needs: changed-files
+    if: needs.changed-files.outputs.modCmdChangelog
+    uses: ./.github/workflows/module-pr.yml
+    with:
+      goVersion: 1.22
+      modulePath: cmd/changelog
