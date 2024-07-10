@@ -215,9 +215,7 @@ func link(source, link string, dryrun bool) error {
 
 	_, err = os.Stat(linkDir)
 	if err != nil {
-		logger.Infof("try: mkdir -p %s", linkDir)
-
-		return misc.Wrapf(err, "stat dir")
+		return misc.Wrapf(err, "try: mkdir -p %s", linkDir)
 	}
 
 	// do not follow symlinks!
@@ -228,8 +226,7 @@ func link(source, link string, dryrun bool) error {
 		if lStat.Mode()&os.ModeSymlink != 0 {
 			_, err = os.Stat(link)
 			if err != nil {
-				logger.Errorf("broken link %s", link)
-				logger.Infof("try: unlink %s", link)
+				logger.Errorf("broken link; try: unlink %s", link)
 			}
 		}
 
@@ -269,8 +266,7 @@ func remove(target string, dryrun bool) error {
 		}
 
 		if len(entries) > 0 {
-			logger.Warnf("skip: directory not empty %s", target)
-			logger.Infof("try: rm -fr %s", target)
+			logger.Warnf("skip: directory not empty; try: rm -fr %s", target)
 
 			return nil
 		}
@@ -309,8 +305,7 @@ func backup(target string, dryrun bool) (err error) {
 	}
 
 	if fileStat.IsDir() {
-		logger.Warnf("skip: directory %s", target)
-		logger.Infof("try: cp %s %s.bak", target, target)
+		logger.Warnf("skip: directory; try: cp %s %s.bak", target, target)
 
 		return nil
 	}
