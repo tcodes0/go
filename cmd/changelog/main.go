@@ -72,7 +72,8 @@ func main() {
 	}
 
 	logger = logging.Create(opts...)
-	_ = flagset.Bool("pizza", true, "pepperoni or mozzarella!. (default TRUE)")
+	cfg := flagset.String("config", ".commitlintrc.yml", "path to commitlint config file")
+	URL := flagset.String("url", "https://github.com/tcodes0/go", "github repository URL to generate commit links")
 
 	err = flagset.Parse(os.Args[1:])
 	if err != nil {
@@ -88,7 +89,7 @@ func main() {
 		return
 	}
 
-	err = changelog()
+	err = changelog(*cfg, *URL)
 }
 
 func usage(err error) {
@@ -101,13 +102,13 @@ func usage(err error) {
 	fmt.Println(cmd.EnvVarUsage())
 }
 
-func changelog() error {
-	logLines, types, err := prepare()
+func changelog(cfg, url string) error {
+	logLines, types, err := prepare(cfg)
 	if err != nil {
 		return misc.Wrapfl(err)
 	}
 
-	builder, otherBuilder := buildChanges(types, logLines)
+	builder, otherBuilder := buildChanges(types, logLines, url)
 	if otherBuilder.Len() != 0 {
 		prettyType, ok := configs.Replace[tMisc]
 		if !ok {
@@ -125,13 +126,13 @@ func changelog() error {
 	return nil
 }
 
-func prepare() (logLines []string, types []any, err error) {
+func prepare(cfg string) (logLines []string, types []any, err error) {
 	byteLogLines, err := exec.Command("git", "log", "--oneline", "--decorate").Output()
 	if err != nil {
 		return nil, nil, misc.Wrapfl(err)
 	}
 
-	file, err := os.Open(".commitlintrc.yml")
+	file, err := os.Open(cfg)
 	if err != nil {
 		return nil, nil, misc.Wrapfl(err)
 	}
@@ -165,14 +166,14 @@ func prepare() (logLines []string, types []any, err error) {
 	return logLines, types, nil
 }
 
-func buildChanges(types []any, logLines []string) (builder, otherBuilder *strings.Builder) {
+func buildChanges(types []any, logLines []string, url string) (builder, otherBuilder *strings.Builder) {
 	typeBuilder := &strings.Builder{}
 	builder = &strings.Builder{}
 	otherBuilder = &strings.Builder{}
 
 	for _, t := range types {
 		typ, _ := t.(string)
-		scoped, scopeless := parseLine(logLines, typ)
+		scoped, scopeless := parseLine(logLines, typ, url)
 		isOther := typ == tMisc || typ == "chore"
 
 		if len(scoped) != 0 {
@@ -217,7 +218,7 @@ func buildChanges(types []any, logLines []string) (builder, otherBuilder *string
 	return builder, otherBuilder
 }
 
-func parseLine(lines []string, typ string) (scoped, scopeless []string) {
+func parseLine(lines []string, typ, url string) (scoped, scopeless []string) {
 	scopeless = make([]string, 0, len(lines))
 	scoped = make([]string, 0, len(lines))
 
@@ -237,9 +238,9 @@ func parseLine(lines []string, typ string) (scoped, scopeless []string) {
 		}
 
 		if scope != "" {
-			scoped = append(scoped, md("li", md("b", scope)+": "+description)+fmt.Sprintf(" (%s)\n", commitLink(commitHash)))
+			scoped = append(scoped, md("li", md("b", scope)+": "+description)+fmt.Sprintf(" (%s)\n", commitLink(url, commitHash)))
 		} else {
-			scopeless = append(scopeless, md("li", description)+fmt.Sprintf(" (%s)\n", commitLink(commitHash)))
+			scopeless = append(scopeless, md("li", description)+fmt.Sprintf(" (%s)\n", commitLink(url, commitHash)))
 		}
 	}
 
@@ -265,6 +266,6 @@ func md(tag, text string) string {
 	return text
 }
 
-func commitLink(hash string) string {
-	return fmt.Sprintf("[%s](%s)", hash, configs.URL+"/commit/"+hash)
+func commitLink(url, hash string) string {
+	return fmt.Sprintf("[%s](%s)", hash, url+"/commit/"+hash)
 }

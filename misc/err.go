@@ -7,6 +7,7 @@ package misc
 
 import (
 	"fmt"
+	"path/filepath"
 	"runtime"
 	"strconv"
 )
@@ -39,8 +40,8 @@ func Wrapfl(err error) error {
 
 	_, f, il, ok := runtime.Caller(1)
 	if ok {
-		file, line = f, strconv.Itoa(il)
+		file, line = filepath.Base(f), strconv.Itoa(il)
 	}
 
-	return fmt.Errorf("(%s:%s) %w", file, line, err)
+	return fmt.Errorf("%s:%s: %w", file, line, err)
 }
