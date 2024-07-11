@@ -23,9 +23,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const tMisc = "misc"
+
 type config struct {
-	Command string `yaml:"command"`
-	URL     string `yaml:"url"`
+	Replace map[string]string `yaml:"replace"`
+	Command string            `yaml:"command"`
+	URL     string            `yaml:"url"`
 }
 
 var (
@@ -119,6 +122,7 @@ f3bbf73 feat(tooling): Improve tooling (#9)
 af91878 feat(module): httpflush (#1)
 992f6ec feat(ci): Github Workflows (#7)
 3cc055c chore(repo): Reset main to remove test commits (#4)
+3cc055c misc(repo): Reset main to remove test commits (#4)
 `
 
 	file, err := os.Open(".commitlintrc.yml")
@@ -142,8 +146,9 @@ af91878 feat(module): httpflush (#1)
 
 	types, _ := (commitlintrc.Rules["type-enum"][2]).([]any)
 	split := strings.Split(logLines, "\n")
-	clBuilder := strings.Builder{}
+	builder := strings.Builder{}
 	typeBuilder := strings.Builder{}
+	otherBuilder := strings.Builder{}
 	scopeless := make([]string, 0, len(split))
 	scoped := make([]string, 0, len(split))
 
@@ -172,11 +177,17 @@ af91878 feat(module): httpflush (#1)
 			}
 		}
 
+		isOther := typ == tMisc || typ == "chore"
+
 		if len(scoped) != 0 {
 			slices.Sort(scoped)
 
 			for _, s := range scoped {
-				typeBuilder.WriteString(s)
+				if isOther {
+					otherBuilder.WriteString(s)
+				} else {
+					typeBuilder.WriteString(s)
+				}
 			}
 
 			clear(scoped)
@@ -184,21 +195,42 @@ af91878 feat(module): httpflush (#1)
 
 		if len(scopeless) != 0 {
 			for _, s := range scopeless {
-				typeBuilder.WriteString(s)
+				if isOther {
+					otherBuilder.WriteString(s)
+				} else {
+					typeBuilder.WriteString(s)
+				}
 			}
 
 			clear(scopeless)
 		}
 
 		if typeBuilder.Len() != 0 {
-			clBuilder.WriteString(md("h2", typ) + "\n")
-			clBuilder.WriteString(typeBuilder.String())
-			clBuilder.WriteString("\n")
+			prettyType, ok := configs.Replace[typ]
+			if !ok {
+				prettyType = typ
+			}
+
+			builder.WriteString(md("h2", prettyType) + "\n")
+			builder.WriteString(typeBuilder.String())
+			builder.WriteString("\n")
 			typeBuilder.Reset()
 		}
 	}
 
-	fmt.Print(clBuilder.String())
+	if otherBuilder.Len() != 0 {
+		prettyType, ok := configs.Replace[tMisc]
+		if !ok {
+			prettyType = tMisc
+		}
+
+		builder.WriteString(md("h3", prettyType) + "\n")
+		builder.WriteString(otherBuilder.String())
+		builder.WriteString("\n")
+		otherBuilder.Reset()
+	}
+
+	fmt.Print(builder.String())
 
 	return nil
 }

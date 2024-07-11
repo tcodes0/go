@@ -1,2 +1,15 @@
 command: git log --oneline
 url: https://github.com/tcodes0/go
+replace:
+  feat: New Features
+  fix: Bug Fixes
+  perf: Performance
+  refactor: Improvements
+  docs: Documentation
+  build: Build
+  ci: CI
+  revert: Revert
+  style: Styling
+  test: Tests
+  misc: Miscellaneous
+  chore: Miscellaneous
