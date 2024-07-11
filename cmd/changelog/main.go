@@ -17,6 +17,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/tcodes0/go/cmd"
 	"github.com/tcodes0/go/logging"
@@ -79,6 +80,9 @@ func main() {
 	logger = logging.Create(opts...)
 	cfg := flagset.String("config", ".commitlintrc.yml", "path to commitlint config file")
 	URL := flagset.String("url", "https://github.com/tcodes0/go", "github repository URL to generate commit links")
+	title := flagset.String("title", "", "changelog title, date will be appended (optional)")
+	tag := flagset.String("tag", "", "current tag (optional)")
+	oldTag := flagset.String("old-tag", "", "previous tag (optional)")
 
 	err = flagset.Parse(os.Args[1:])
 	if err != nil {
@@ -94,7 +98,7 @@ func main() {
 		return
 	}
 
-	err = changelog(*cfg, *URL)
+	err = changelog(*cfg, *URL, *title, *tag, *oldTag)
 }
 
 func usage(err error) {
@@ -107,13 +111,23 @@ func usage(err error) {
 	fmt.Println(cmd.EnvVarUsage())
 }
 
-func changelog(cfg, url string) error {
+func changelog(cfg, url, title, tag, oldTag string) error {
 	logLines, types, err := prepare(cfg)
 	if err != nil {
 		return misc.Wrapfl(err)
 	}
 
-	builder, otherBuilder := buildChanges(types, logLines, url)
+	builder := &strings.Builder{}
+
+	if title != "" {
+		builder.WriteString(md("h1", time.Now().Format("2006-01-02")+" "+title) + "\n\n")
+	}
+
+	if tag != "" && oldTag != "" {
+		builder.WriteString(md("h3", compareLink(url, tag, oldTag)) + "\n\n")
+	}
+
+	otherBuilder := buildChanges(types, logLines, url, builder)
 	if otherBuilder.Len() != 0 {
 		prettyType, ok := configs.Replace[tMisc]
 		if !ok {
@@ -175,10 +189,9 @@ func prepare(cfg string) (logLines []string, types []any, err error) {
 	return logLines, types, nil
 }
 
-func buildChanges(types []any, logLines []string, url string) (builder, otherBuilder *strings.Builder) {
+func buildChanges(types []any, logLines []string, url string, builder *strings.Builder) *strings.Builder {
 	typeBuilder := &strings.Builder{}
-	builder = &strings.Builder{}
-	otherBuilder = &strings.Builder{}
+	miscBuilder := &strings.Builder{}
 
 	for _, t := range types {
 		typ, _ := t.(string)
@@ -186,11 +199,11 @@ func buildChanges(types []any, logLines []string, url string) (builder, otherBui
 
 		if len(scoped) != 0 {
 			slices.SortFunc(scoped, sortFn)
-			writeLines(scoped, typ, typeBuilder, otherBuilder)
+			writeLines(scoped, typ, typeBuilder, miscBuilder)
 		}
 
 		if len(scopeless) != 0 {
-			writeLines(scopeless, typ, typeBuilder, otherBuilder)
+			writeLines(scopeless, typ, typeBuilder, miscBuilder)
 		}
 
 		if len(breakings) != 0 {
@@ -216,7 +229,7 @@ func buildChanges(types []any, logLines []string, url string) (builder, otherBui
 		}
 	}
 
-	return builder, otherBuilder
+	return miscBuilder
 }
 
 func sortFn(i, j changelogLine) int {
@@ -309,5 +322,9 @@ func md(tag, text string) string {
 }
 
 func commitLink(url, hash string) string {
-	return fmt.Sprintf("[%s](%s)", hash, url+"/commit/"+hash)
+	return fmt.Sprintf("[%s](%s/commit/%s)", hash, url, hash)
+}
+
+func compareLink(url, tag1, tag2 string) string {
+	return fmt.Sprintf("[Diff with %s](%s/compare/%s..%s)", tag2, url, tag2, tag1)
 }
