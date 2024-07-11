@@ -159,6 +159,10 @@ func prepare(cfg string) (logLines []string, types []any, err error) {
 	types, _ = (commitlintrc.Rules["type-enum"][2]).([]any)
 	logLines = strings.Split(string(byteLogLines), "\n")
 
+	if len(types) == 0 {
+		return nil, nil, fmt.Errorf("empty type-enum[2]: %s", cfg)
+	}
+
 	for i, line := range logLines {
 		if match := RELogLine.FindStringSubmatch(line); match != nil {
 			if match[2] != "" && strings.Contains(match[2], "main") {
@@ -248,7 +252,7 @@ func parseLines(lines []string, typ, url string) (scoped, scopeless, breakings [
 		match := RELogLine.FindStringSubmatch(line)
 		if match == nil {
 			if line != "" {
-				logger.Warnf("no match: %s", line)
+				logger.Errorf("skip, no match: %s", line)
 			}
 
 			continue
