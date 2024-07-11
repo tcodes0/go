@@ -1,7 +1,6 @@
-command: git log --oneline
 url: https://github.com/tcodes0/go
 replace:
-  feat: New Features
+  feat: Added
   fix: Bug Fixes
   perf: Performance
   refactor: Improvements

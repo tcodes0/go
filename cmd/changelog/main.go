@@ -13,6 +13,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"regexp"
 	"slices"
 	"strings"
@@ -27,18 +28,18 @@ const tMisc = "misc"
 
 type config struct {
 	Replace map[string]string `yaml:"replace"`
-	Command string            `yaml:"command"`
 	URL     string            `yaml:"url"`
 }
 
 var (
 	//go:embed config.yml
-	raw       []byte
-	configs   config
-	flagset   = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	logger    = &logging.Logger{}
-	errUsage  = errors.New("see usage")
-	RELogLine = regexp.MustCompile(`(?P<hash>[0-9a-f]+)\s+(?P<type>[a-zA-Z]+)(?:\((?P<scope>[^)]+)\))?:\s+(?P<description>.+)$`)
+	raw      []byte
+	configs  config
+	flagset  = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	logger   = &logging.Logger{}
+	errUsage = errors.New("see usage")
+	//nolint:lll // long regex
+	RELogLine = regexp.MustCompile(`(?P<hash>[0-9a-f]+)\s(?P<paren>\([^)]*\))?\s?(?P<type>[a-zA-Z]+)(?:\((?P<scope>[^)]+)\))?:\s(?P<description>.+)$`)
 )
 
 func main() {
@@ -113,7 +114,7 @@ func changelog() error {
 			prettyType = tMisc
 		}
 
-		builder.WriteString(md("h3", prettyType) + "\n")
+		builder.WriteString(md("h4", prettyType) + "\n")
 		builder.WriteString(otherBuilder.String())
 		builder.WriteString("\n")
 		otherBuilder.Reset()
@@ -125,29 +126,10 @@ func changelog() error {
 }
 
 func prepare() (logLines []string, types []any, err error) {
-	raw := `e0f4ee2 refactor(logging): threadsafety (#37)
-933a1b2 refactor(cmd): remove exec (#36)
-8cffa22 refactor(cmd/copyright): replace hardcoded configs with flags (#35)
-d16eb9c feat: filer cmd (#29)
-64535f1 refactor: re-write scripts in go (#28)
-594740e refactor(copyright): use go cmd instead of script (#27)
-fcc9cbb feat(license): automate copyright boilerplate header (#25)
-50ae48b feat(ci): new checks & improvements to commitlint (#23)
-dbed6c2 ci(commitlint): CI Commit lint job (#20)
-4c40212 feat(modules): Add Modules (#13)
-a2ddb28 feat(scripts): Tag script (#12)
-332d5da docs: Update readme (#11)
-5733201 docs(readme): Update readme (#6)
-f3bbf73 feat(tooling): Improve tooling (#9)
-af91878 feat(module): httpflush (#1)
-992f6ec feat(ci): Github Workflows (#7)
-3cc055c chore(repo): Reset main to remove test commits (#4)
-3cc055c misc(repo): Reset main to remove test commits (#4)
-`
-	// logLines, err := exec.Command(configs.Command).CombinedOutput()
-	// if err != nil {
-	// 	return misc.Wrapfl(err)
-	// }
+	byteLogLines, err := exec.Command("git", "log", "--oneline", "--decorate").Output()
+	if err != nil {
+		return nil, nil, misc.Wrapfl(err)
+	}
 
 	file, err := os.Open(".commitlintrc.yml")
 	if err != nil {
@@ -169,8 +151,18 @@ af91878 feat(module): httpflush (#1)
 	}
 
 	types, _ = (commitlintrc.Rules["type-enum"][2]).([]any)
+	logLines = strings.Split(string(byteLogLines), "\n")
 
-	return strings.Split(raw, "\n"), types, nil
+	for i, line := range logLines {
+		if match := RELogLine.FindStringSubmatch(line); match != nil {
+			if match[2] != "" && strings.Contains(match[2], "main") {
+				// return lines for current branch only, stop at main
+				return logLines[:i], types, nil
+			}
+		}
+	}
+
+	return logLines, types, nil
 }
 
 func buildChanges(types []any, logLines []string) (builder, otherBuilder *strings.Builder) {
@@ -233,13 +225,13 @@ func parseLine(lines []string, typ string) (scoped, scopeless []string) {
 		match := RELogLine.FindStringSubmatch(line)
 		if match == nil {
 			if line != "" {
-				logger.Warnf("log line does not match: %s", line)
+				logger.Warnf("no match: %s", line)
 			}
 
 			continue
 		}
 
-		commitHash, lineType, scope, description := match[1], match[2], match[3], match[4]
+		commitHash, _, lineType, scope, description := match[1], match[2], match[3], match[4], match[5]
 		if lineType != typ {
 			continue
 		}
