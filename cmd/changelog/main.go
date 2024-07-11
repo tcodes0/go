@@ -101,11 +101,31 @@ func usage(err error) {
 }
 
 func changelog() error {
-	// logLines, err := exec.Command(configs.Command).CombinedOutput()
-	// if err != nil {
-	// 	return misc.Wrapfl(err)
-	// }
-	logLines := `e0f4ee2 refactor(logging): threadsafety (#37)
+	logLines, types, err := prepare()
+	if err != nil {
+		return misc.Wrapfl(err)
+	}
+
+	builder, otherBuilder := buildChanges(types, logLines)
+	if otherBuilder.Len() != 0 {
+		prettyType, ok := configs.Replace[tMisc]
+		if !ok {
+			prettyType = tMisc
+		}
+
+		builder.WriteString(md("h3", prettyType) + "\n")
+		builder.WriteString(otherBuilder.String())
+		builder.WriteString("\n")
+		otherBuilder.Reset()
+	}
+
+	fmt.Print(builder.String())
+
+	return nil
+}
+
+func prepare() (logLines []string, types []any, err error) {
+	raw := `e0f4ee2 refactor(logging): threadsafety (#37)
 933a1b2 refactor(cmd): remove exec (#36)
 8cffa22 refactor(cmd/copyright): replace hardcoded configs with flags (#35)
 d16eb9c feat: filer cmd (#29)
@@ -124,15 +144,19 @@ af91878 feat(module): httpflush (#1)
 3cc055c chore(repo): Reset main to remove test commits (#4)
 3cc055c misc(repo): Reset main to remove test commits (#4)
 `
+	// logLines, err := exec.Command(configs.Command).CombinedOutput()
+	// if err != nil {
+	// 	return misc.Wrapfl(err)
+	// }
 
 	file, err := os.Open(".commitlintrc.yml")
 	if err != nil {
-		return misc.Wrapfl(err)
+		return nil, nil, misc.Wrapfl(err)
 	}
 
 	fileContent, err := io.ReadAll(file)
 	if err != nil {
-		return misc.Wrapfl(err)
+		return nil, nil, misc.Wrapfl(err)
 	}
 
 	commitlintrc := &struct {
@@ -141,42 +165,22 @@ af91878 feat(module): httpflush (#1)
 
 	err = yaml.Unmarshal(fileContent, &commitlintrc)
 	if err != nil {
-		return misc.Wrapfl(err)
+		return nil, nil, misc.Wrapfl(err)
 	}
 
-	types, _ := (commitlintrc.Rules["type-enum"][2]).([]any)
-	split := strings.Split(logLines, "\n")
-	builder := strings.Builder{}
-	typeBuilder := strings.Builder{}
-	otherBuilder := strings.Builder{}
-	scopeless := make([]string, 0, len(split))
-	scoped := make([]string, 0, len(split))
+	types, _ = (commitlintrc.Rules["type-enum"][2]).([]any)
+
+	return strings.Split(raw, "\n"), types, nil
+}
+
+func buildChanges(types []any, logLines []string) (builder, otherBuilder *strings.Builder) {
+	typeBuilder := &strings.Builder{}
+	builder = &strings.Builder{}
+	otherBuilder = &strings.Builder{}
 
 	for _, t := range types {
 		typ, _ := t.(string)
-
-		for _, logLine := range split {
-			match := RELogLine.FindStringSubmatch(logLine)
-			if match == nil {
-				if logLine != "" {
-					logger.Warnf("log line does not match: %s", logLine)
-				}
-
-				continue
-			}
-
-			commitHash, lineType, scope, description := match[1], match[2], match[3], match[4]
-			if lineType != typ {
-				continue
-			}
-
-			if scope != "" {
-				scoped = append(scoped, md("li", md("b", scope)+": "+description)+fmt.Sprintf(" (%s)\n", commitLink(commitHash)))
-			} else {
-				scopeless = append(scopeless, md("li", description)+fmt.Sprintf(" (%s)\n", commitLink(commitHash)))
-			}
-		}
-
+		scoped, scopeless := parseLine(logLines, typ)
 		isOther := typ == tMisc || typ == "chore"
 
 		if len(scoped) != 0 {
@@ -218,21 +222,36 @@ af91878 feat(module): httpflush (#1)
 		}
 	}
 
-	if otherBuilder.Len() != 0 {
-		prettyType, ok := configs.Replace[tMisc]
-		if !ok {
-			prettyType = tMisc
+	return builder, otherBuilder
+}
+
+func parseLine(lines []string, typ string) (scoped, scopeless []string) {
+	scopeless = make([]string, 0, len(lines))
+	scoped = make([]string, 0, len(lines))
+
+	for _, line := range lines {
+		match := RELogLine.FindStringSubmatch(line)
+		if match == nil {
+			if line != "" {
+				logger.Warnf("log line does not match: %s", line)
+			}
+
+			continue
 		}
 
-		builder.WriteString(md("h3", prettyType) + "\n")
-		builder.WriteString(otherBuilder.String())
-		builder.WriteString("\n")
-		otherBuilder.Reset()
+		commitHash, lineType, scope, description := match[1], match[2], match[3], match[4]
+		if lineType != typ {
+			continue
+		}
+
+		if scope != "" {
+			scoped = append(scoped, md("li", md("b", scope)+": "+description)+fmt.Sprintf(" (%s)\n", commitLink(commitHash)))
+		} else {
+			scopeless = append(scopeless, md("li", description)+fmt.Sprintf(" (%s)\n", commitLink(commitHash)))
+		}
 	}
 
-	fmt.Print(builder.String())
-
-	return nil
+	return scoped, scopeless
 }
 
 func md(tag, text string) string {
