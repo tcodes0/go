@@ -31,6 +31,11 @@ type config struct {
 	URL     string            `yaml:"url"`
 }
 
+type changelogLine struct {
+	Text     string
+	Breaking bool
+}
+
 var (
 	//go:embed config.yml
 	raw      []byte
@@ -39,7 +44,7 @@ var (
 	logger   = &logging.Logger{}
 	errUsage = errors.New("see usage")
 	//nolint:lll // long regex
-	RELogLine = regexp.MustCompile(`(?P<hash>[0-9a-f]+)\s(?P<paren>\([^)]*\))?\s?(?P<type>[a-zA-Z]+)(?:\((?P<scope>[^)]+)\))?:\s(?P<description>.+)$`)
+	RELogLine = regexp.MustCompile(`(?P<hash>[0-9a-f]+)\s(?P<paren>\([^)]*\))?\s?(?P<type>[a-zA-Z]+)(?P<breaking1>!)?(?:\((?P<scope>[^)]+)\))?(?P<breaking2>!)?:\s(?P<description>.+)$`)
 )
 
 func main() {
@@ -173,33 +178,25 @@ func buildChanges(types []any, logLines []string, url string) (builder, otherBui
 
 	for _, t := range types {
 		typ, _ := t.(string)
-		scoped, scopeless := parseLine(logLines, typ, url)
-		isOther := typ == tMisc || typ == "chore"
+		scoped, scopeless, breakings := parseLines(logLines, typ, url)
 
 		if len(scoped) != 0 {
-			slices.Sort(scoped)
-
-			for _, s := range scoped {
-				if isOther {
-					otherBuilder.WriteString(s)
-				} else {
-					typeBuilder.WriteString(s)
-				}
-			}
-
-			clear(scoped)
+			slices.SortFunc(scoped, sortFn)
+			writeLines(scoped, typ, typeBuilder, otherBuilder)
 		}
 
 		if len(scopeless) != 0 {
-			for _, s := range scopeless {
-				if isOther {
-					otherBuilder.WriteString(s)
-				} else {
-					typeBuilder.WriteString(s)
-				}
+			writeLines(scopeless, typ, typeBuilder, otherBuilder)
+		}
+
+		if len(breakings) != 0 {
+			builder.WriteString(md("h2", "Breaking Changes") + "\n")
+
+			for _, b := range breakings {
+				builder.WriteString(b.Text)
 			}
 
-			clear(scopeless)
+			builder.WriteString("\n")
 		}
 
 		if typeBuilder.Len() != 0 {
@@ -218,9 +215,34 @@ func buildChanges(types []any, logLines []string, url string) (builder, otherBui
 	return builder, otherBuilder
 }
 
-func parseLine(lines []string, typ, url string) (scoped, scopeless []string) {
-	scopeless = make([]string, 0, len(lines))
-	scoped = make([]string, 0, len(lines))
+func sortFn(i, j changelogLine) int {
+	if i.Text < j.Text {
+		return -1
+	} else if i.Text > j.Text {
+		return 1
+	}
+
+	return 0
+}
+
+func writeLines(lines []changelogLine, typ string, typeBuilder, otherBuilder *strings.Builder) {
+	isOther := typ == tMisc || typ == "chore"
+
+	for _, s := range lines {
+		if isOther {
+			otherBuilder.WriteString(s.Text)
+		} else {
+			typeBuilder.WriteString(s.Text)
+		}
+	}
+
+	clear(lines)
+}
+
+func parseLines(lines []string, typ, url string) (scoped, scopeless, breakings []changelogLine) {
+	scopeless = make([]changelogLine, 0, len(lines))
+	scoped = make([]changelogLine, 0, len(lines))
+	breakings = make([]changelogLine, 0, len(lines))
 
 	for _, line := range lines {
 		match := RELogLine.FindStringSubmatch(line)
@@ -232,19 +254,35 @@ func parseLine(lines []string, typ, url string) (scoped, scopeless []string) {
 			continue
 		}
 
-		commitHash, _, lineType, scope, description := match[1], match[2], match[3], match[4], match[5]
+		commitHash, _, lineType, breaking1, scope, breaking2, description := match[1], match[2], match[3], match[4], match[5], match[6], match[7]
 		if lineType != typ {
 			continue
 		}
 
+		cline := changelogLine{}
+
+		if breaking1 != "" || breaking2 != "" {
+			cline.Breaking = true
+		}
+
 		if scope != "" {
-			scoped = append(scoped, md("li", md("b", scope)+": "+description)+fmt.Sprintf(" (%s)\n", commitLink(url, commitHash)))
+			cline.Text = md("li", md("b", scope)+": "+description) + fmt.Sprintf(" (%s)\n", commitLink(url, commitHash))
+			if !cline.Breaking {
+				scoped = append(scoped, cline)
+			}
 		} else {
-			scopeless = append(scopeless, md("li", description)+fmt.Sprintf(" (%s)\n", commitLink(url, commitHash)))
+			cline.Text = md("li", description) + fmt.Sprintf(" (%s)\n", commitLink(url, commitHash))
+			if !cline.Breaking {
+				scopeless = append(scopeless, cline)
+			}
+		}
+
+		if cline.Breaking {
+			breakings = append(breakings, cline)
 		}
 	}
 
-	return scoped, scopeless
+	return scoped, scopeless, breakings
 }
 
 func md(tag, text string) string {
