@@ -1,1 +1,2 @@
-food: pizza
+command: git log --oneline
+url: https://github.com/tcodes0/go
