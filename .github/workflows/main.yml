@@ -240,7 +240,9 @@ jobs:
           go-version: 1.22
 
       - name: Run Copyright
-        run: go run ./cmd/copyright
+        run: |
+          go run ./cmd/copyright -find '*.go'
+          go run ./cmd/copyright -find '*.sh'
 
   ###########
   # modules #
