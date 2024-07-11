@@ -127,17 +127,17 @@ func changelog(cfg, url, title, tag, oldTag string) error {
 		builder.WriteString(md("h3", compareLink(url, tag, oldTag)) + "\n\n")
 	}
 
-	otherBuilder := buildChanges(types, logLines, url, builder)
-	if otherBuilder.Len() != 0 {
+	miscBuilder := changes(types, logLines, url, builder)
+	if miscBuilder.Len() != 0 {
 		prettyType, ok := configs.Replace[tMisc]
 		if !ok {
 			prettyType = tMisc
 		}
 
 		builder.WriteString(md("h4", prettyType) + "\n")
-		builder.WriteString(otherBuilder.String())
+		builder.WriteString(miscBuilder.String())
 		builder.WriteString("\n")
-		otherBuilder.Reset()
+		miscBuilder.Reset()
 	}
 
 	fmt.Print(builder.String())
@@ -189,7 +189,7 @@ func prepare(cfg string) (logLines []string, types []any, err error) {
 	return logLines, types, nil
 }
 
-func buildChanges(types []any, logLines []string, url string, builder *strings.Builder) *strings.Builder {
+func changes(types []any, logLines []string, url string, builder *strings.Builder) *strings.Builder {
 	typeBuilder := &strings.Builder{}
 	miscBuilder := &strings.Builder{}
 
@@ -232,10 +232,10 @@ func buildChanges(types []any, logLines []string, url string, builder *strings.B
 	return miscBuilder
 }
 
-func sortFn(i, j changelogLine) int {
-	if i.Text < j.Text {
+func sortFn(a, b changelogLine) int {
+	if a.Text < b.Text {
 		return -1
-	} else if i.Text > j.Text {
+	} else if a.Text > b.Text {
 		return 1
 	}
 
@@ -243,10 +243,8 @@ func sortFn(i, j changelogLine) int {
 }
 
 func writeLines(lines []changelogLine, typ string, typeBuilder, otherBuilder *strings.Builder) {
-	isOther := typ == tMisc || typ == "chore"
-
 	for _, s := range lines {
-		if isOther {
+		if typ == tMisc || typ == "chore" {
 			otherBuilder.WriteString(s.Text)
 		} else {
 			typeBuilder.WriteString(s.Text)
