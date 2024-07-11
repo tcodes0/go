@@ -1,0 +1,13 @@
+replace:
+  feat: New
+  fix: Bug Fixes
+  perf: Performance
+  refactor: Improvements
+  docs: Documentation
+  build: Build
+  ci: CI
+  revert: Revert
+  style: Styling
+  test: Tests
+  misc: Miscellaneous
+  chore: Miscellaneous

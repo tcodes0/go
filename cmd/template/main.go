@@ -62,7 +62,7 @@ func main() {
 	}
 
 	logger = logging.Create(opts...)
-	_ = flagset.Bool("pizza", true, "pepperoni or mozzarella!. (default TRUE)")
+	_ = flagset.Bool("pizza", true, "pepperoni or mozzarella!")
 
 	err = flagset.Parse(os.Args[1:])
 	if err != nil {

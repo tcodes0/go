@@ -91,7 +91,7 @@ exitShowProblems "missing basic gnu/linux binaries; please install for your plat
 
 # programming languages, package managers
 
-setup manual 'see https://nodejs.org/en/download/package-manager/' node javascript runtime built on top of v8
+setup manual 'see https://github.com/nvm-sh/nvm?tab=readme-ov-file#installing-and-updating then run "nvm install node"' node javascript runtime built on top of v8
 setup manual 'see https://go.dev/doc/install' go a static, compiled, minimalistic, garbage collected language
 
 exitShowProblems "install the programming languages then run this script again"

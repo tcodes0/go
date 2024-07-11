@@ -47,13 +47,13 @@ rules:
   type-enum:
     - 2
     - always
-    - - build
-      - ci
-      - docs
-      - feat
+    - - feat
       - fix
       - perf
       - refactor
+      - docs
+      - build
+      - ci
       - revert
       - style
       - test

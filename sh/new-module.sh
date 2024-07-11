@@ -50,25 +50,32 @@ module="github.com/tcodes0/go/$name"
 format=""
 
 if [[ "$*" =~ -cmd ]]; then
-  mkdir -p "cmd/$name"
-  cd "cmd/$name"
-  printf "package main\n" >"main.go"
-  touch config.yml
+  command cp -RH cmd/template "cmd/$name"
   format=$formatCmd
 else
-  mkdir -p "$name/${name}_test"
-  cd "$name"
+  command mkdir -p "$name/${name}_test"
+  command cd "$name"
   go mod init "$module"
   printf "package %s\n" "$name" >"$name.go"
   format=$formatMod
+  command cd -
 fi
-
-\cd -
 
 # shellcheck disable=SC2059 # format variable
 printf "$format" "$name" "$name" "$name" >>.github/workflows/main.yml
 
+files_entry=""
+
+if [[ "$*" =~ -cmd ]]; then
+  files_entry=$name
+  printf "cmd_%s:\n  - cmd/%s/**.go\n" "$name" "$name" >>.github/workflows/files.yml
+else
+  files_entry="cmd_$name"
+  printf "%s:\n  - %s/**.go\n  - go.mod\n  - go.sum\n" "$name" "$name" >>.github/workflows/main.yml
+fi
+
+go run cmd/gengowork/main.go
+go run cmd/copyright/main.go -fix -find "*.go" -comment '// '
+
 msgln "todo:
-  - ./run <generate go work task>
-  - ./run <copyright task>
-  - edit github workflows"
+  - edit .github/workflows/main.yml to fix TODOs and add $files_entry output"
