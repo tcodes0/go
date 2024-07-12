@@ -1,0 +1,59 @@
+name: release
+run-name: release ${{ github.ref }}@${{ github.sha }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      module:
+        description: Module to release
+        required: true
+        type: string
+      newVersion:
+        description: New version
+        required: true
+        type: string
+      oldVersion:
+        description: Previous version
+        type: string
+
+jobs:
+  release:
+    name: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate branch
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo expected main: ${{ github.ref }} && exit 1
+
+      - name: Validate new version
+        run: |
+          [[ ${{ inputs.newVersion }} =~ [[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+ ]] || (echo expected match \'1.1.1\': ${{ inputs.newVersion }} && exit 1)
+
+      - name: Validate old version
+        run: |
+          [ ${{ inputs.oldVersion }} ] && [[ ${{ inputs.oldVersion }} =~ [[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+ ]] || (echo expected match \'1.1.1\': ${{ inputs.oldVersion }} && exit 1)
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.22
+
+      - name: Update changelog
+        shell: bash
+        run: ./changelog.sh ${{ inputs.module }} ${{ inputs.newVersion }} ${{ inputs.oldVersion }}
+
+      - name: Open pr
+        uses: peter-evans/create-pull-request@v6.1.0
+        with:
+          commit-message: "chore: release ${{ inputs.module }}/v${{ inputs.newVersion }}"
+          title: "chore: release ${{ inputs.module }}/v${{ inputs.newVersion }}"
+          add-paths: .
+          body: ""
+          committer: release-workflow <41898282+github-actions[bot]@users.noreply.github.com>
+          branch: release-${{ inputs.module }}/v${{ inputs.newVersion }}
+          branch-suffix: random
+          labels: release
