@@ -1,5 +1,5 @@
 replace:
-  feat: New
+  feat: Features
   fix: Bug Fixes
   perf: Performance
   refactor: Improvements
@@ -9,5 +9,5 @@ replace:
   revert: Revert
   style: Styling
   test: Tests
-  misc: Miscellaneous
-  chore: Miscellaneous
+  misc: Other
+  chore: Other

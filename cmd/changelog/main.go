@@ -123,6 +123,8 @@ func usage(err error) {
 	}
 
 	fmt.Println("generate a markdown changelog from git log")
+	fmt.Println("a prior tag with format module/vX.Y.Z must exist")
+	fmt.Println("unstable tags (0.x.x) will not be promoted to 1.0.0 automaticall, do it manually")
 	fmt.Println()
 	fmt.Println(cmd.EnvVarUsage())
 }
@@ -143,7 +145,7 @@ func changelog(cfg, url, module string) error {
 	}
 
 	builder := &strings.Builder{}
-	title := fmt.Sprintf("%s %s/v%s\n\n", time.Now().Format("2006-01-02"), module, newVer)
+	title := fmt.Sprintf("%s: v%s %s\n\n", module, newVer, md("i", "("+time.Now().Format("2006-01-02")+")"))
 	builder.WriteString(md("h1", title))
 
 	if newVer != "" && oldVer != "" {
@@ -216,8 +218,25 @@ func parseGitLog(module string) (logLines []string, versionOld, versionNew strin
 		}
 	}
 
+	newVer := versionUp(oldVer, oldVer[0] == 0, breaking, minor)
+
+	return branchLogLines, oldVer.String(), newVer.String(), nil
+}
+
+func versionUp(current semver, unstable, breaking, minor bool) semver {
 	newVer := make(semver, semverLen)
-	copy(newVer, oldVer)
+	copy(newVer, current)
+
+	if unstable {
+		if breaking {
+			newVer[1]++
+			newVer[2] = 0
+		} else {
+			newVer[2]++
+		}
+
+		return newVer
+	}
 
 	if breaking {
 		newVer[0]++
@@ -230,7 +249,7 @@ func parseGitLog(module string) (logLines []string, versionOld, versionNew strin
 		newVer[2]++
 	}
 
-	return branchLogLines, oldVer.String(), newVer.String(), nil
+	return newVer
 }
 
 func parseConfig(cfg string) (types []any, err error) {
@@ -387,6 +406,8 @@ func md(tag, text string) string {
 		return "- " + text
 	case "b":
 		return "**" + text + "**"
+	case "i":
+		return "*" + text + "*"
 	}
 
 	return text
