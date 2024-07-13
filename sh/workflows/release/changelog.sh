@@ -7,7 +7,7 @@
 set -euo pipefail
 shopt -s globstar
 # shellcheck disable=SC1091
-# source "$PWD/sh/lib.sh"
+source "$PWD/sh/lib.sh"
 trap 'err $LINENO' ERR
 
 ### vars and functions ###
@@ -16,7 +16,7 @@ changelog_file=CHANGELOG.md
 
 validate() {
   if [ ! -f "$changelog_file" ]; then
-    echo "$changelog_file" not found
+    err $LINENO "$changelog_file" not found
     return 1
   fi
 }
@@ -34,7 +34,7 @@ updateChangelog() {
 
   changes=$(go run ./cmd/changelog/main.go "${flags[@]}")
   if [ ! "$changes" ]; then
-    echo "empty changes"
+    err $LINENO "empty changes"
     return 1
   fi
 

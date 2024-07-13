@@ -44,7 +44,7 @@ jobs:
 
       - name: Update changelog
         shell: bash
-        run: ./changelog.sh ${{ inputs.module }} ${{ inputs.newVersion }} ${{ inputs.oldVersion }}
+        run: ./sh/workflows/release/changelog.sh ${{ inputs.module }} ${{ inputs.newVersion }} ${{ inputs.oldVersion }}
 
       - name: Open pr
         uses: peter-evans/create-pull-request@v6.1.0
