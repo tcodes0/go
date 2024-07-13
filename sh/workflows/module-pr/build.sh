@@ -35,7 +35,18 @@ if [[ "$*" =~ -install ]]; then
 fi
 
 # building tests without regular .go files will fail
-if ! [[ "$MOD_PATH" =~ test$ ]]; then
-  mkdir -p "$buildDir"
-  go $command "${flags[@]}" "../$MOD_PATH"
+if [[ "$MOD_PATH" =~ test$ ]]; then
+  exit 0
 fi
+
+# module has a directory for main.go, adjust build flags
+# flags are relative to buildDir, MODPATH is not
+if [ -d "$MOD_PATH/main" ]; then
+  flags+=(-o "$(basename "$MOD_PATH")")
+  flags+=("../$MOD_PATH/main")
+else
+  flags+=("../$MOD_PATH")
+fi
+
+mkdir -p "$buildDir"
+go $command "${flags[@]}"
