@@ -16,6 +16,7 @@ import (
 	"os/exec"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -39,14 +40,25 @@ type changelogLine struct {
 
 var (
 	//go:embed config.yml
-	raw      []byte
-	configs  config
-	flagset  = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	logger   = &logging.Logger{}
-	errUsage = errors.New("see usage")
+	raw       []byte
+	configs   config
+	flagset   = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	logger    = &logging.Logger{}
+	errUsage  = errors.New("see usage")
+	semverLen = 3
 	//nolint:lll // long regex
 	RELogLine = regexp.MustCompile(`(?P<hash>[0-9a-f]+)\s(?P<paren>\([^)]*\))?\s?(?P<type>[a-zA-Z]+)(?P<breaking1>!)?(?:\((?P<scope>[^)]+)\))?(?P<breaking2>!)?:\s(?P<description>.+)$`)
 )
+
+type semver []uint8
+
+func (sv semver) String() string {
+	if len(sv) < semverLen {
+		return ""
+	}
+
+	return fmt.Sprintf("%d.%d.%d", sv[0], sv[1], sv[2])
+}
 
 func main() {
 	var err error
@@ -80,13 +92,17 @@ func main() {
 	logger = logging.Create(opts...)
 	cfg := flagset.String("config", ".commitlintrc.yml", "path to commitlint config file")
 	URL := flagset.String("url", "https://github.com/tcodes0/go", "github repository URL to generate commit links")
-	title := flagset.String("title", "", "changelog title, date will be appended (optional)")
-	tag := flagset.String("tag", "", "current tag (optional)")
-	oldTag := flagset.String("old-tag", "", "previous tag (optional)")
+	module := flagset.String("module", "", "module changed, used for changelog title (required)")
 
 	err = flagset.Parse(os.Args[1:])
 	if err != nil {
 		err = errors.Join(err, errUsage)
+
+		return
+	}
+
+	if *module == "" {
+		err = errors.Join(errors.New("module required"), errUsage)
 
 		return
 	}
@@ -98,7 +114,7 @@ func main() {
 		return
 	}
 
-	err = changelog(*cfg, *URL, *title, *tag, *oldTag)
+	err = changelog(*cfg, *URL, *module)
 }
 
 func usage(err error) {
@@ -111,20 +127,27 @@ func usage(err error) {
 	fmt.Println(cmd.EnvVarUsage())
 }
 
-func changelog(cfg, url, title, tag, oldTag string) error {
-	logLines, types, err := prepare(cfg)
+func changelog(cfg, url, module string) error {
+	logLines, oldVer, newVer, err := parseGitLog(module)
+	if err != nil {
+		return misc.Wrapfl(err)
+	}
+
+	if oldVer == "" || newVer == "" {
+		return misc.Wrapfl(fmt.Errorf("malformed version: old: %s, new: %s", oldVer, newVer))
+	}
+
+	types, err := parseConfig(cfg)
 	if err != nil {
 		return misc.Wrapfl(err)
 	}
 
 	builder := &strings.Builder{}
+	title := fmt.Sprintf("%s %s/v%s\n\n", time.Now().Format("2006-01-02"), module, newVer)
+	builder.WriteString(md("h1", title))
 
-	if title != "" {
-		builder.WriteString(md("h1", time.Now().Format("2006-01-02")+" "+title) + "\n\n")
-	}
-
-	if tag != "" && oldTag != "" {
-		builder.WriteString(md("h3", compareLink(url, tag, oldTag)) + "\n\n")
+	if newVer != "" && oldVer != "" {
+		builder.WriteString(md("h3", compareLink(url, newVer, oldVer)) + "\n\n")
 	}
 
 	miscBuilder := changes(types, logLines, url, builder)
@@ -145,20 +168,80 @@ func changelog(cfg, url, title, tag, oldTag string) error {
 	return nil
 }
 
-func prepare(cfg string) (logLines []string, types []any, err error) {
+//nolint:gocognit,gocyclo // refactor later
+func parseGitLog(module string) (logLines []string, versionOld, versionNew string, err error) {
 	byteLogLines, err := exec.Command("git", "log", "--oneline", "--decorate").Output()
 	if err != nil {
-		return nil, nil, misc.Wrapfl(err)
+		return nil, "", "", misc.Wrapfl(err)
 	}
 
+	logLines = strings.Split(string(byteLogLines), "\n")
+	branchLogLines := make([]string, 0, len(logLines))
+	breaking, minor := false, false
+	oldVer := make(semver, 0, semverLen)
+	REReleaseTag := regexp.MustCompile("tag: " + module + `\/v(?P<version>\d+\.\d+\.\d+)`)
+	REMinor := regexp.MustCompile(`feat:|feat\(\w+\):`)
+
+	for i, line := range logLines {
+		if match := RELogLine.FindStringSubmatch(line); match != nil {
+			if len(branchLogLines) == 0 && match[2] != "" && strings.Contains(match[2], "main") {
+				// seeing "main" means the current branch log ended
+				branchLogLines = logLines[:i]
+			}
+
+			if !breaking && (match[4] != "" || match[6] != "") {
+				breaking = true
+			}
+		}
+
+		if len(oldVer) == 0 {
+			if match := REReleaseTag.FindStringSubmatch(line); match != nil {
+				for _, versionN := range strings.Split(match[1], ".") {
+					version, err := strconv.ParseInt(versionN, 10, 8)
+					if err != nil {
+						return nil, "", "", misc.Wrapfl(err)
+					}
+
+					oldVer = append(oldVer, uint8(version))
+				}
+			}
+		}
+
+		if !minor && !breaking {
+			minor = REMinor.MatchString(line)
+		}
+
+		if len(branchLogLines) != 0 && len(oldVer) != 0 {
+			break
+		}
+	}
+
+	newVer := make(semver, semverLen)
+	copy(newVer, oldVer)
+
+	if breaking {
+		newVer[0]++
+		newVer[1] = 0
+		newVer[2] = 0
+	} else if minor {
+		newVer[1]++
+		newVer[2] = 0
+	} else {
+		newVer[2]++
+	}
+
+	return branchLogLines, oldVer.String(), newVer.String(), nil
+}
+
+func parseConfig(cfg string) (types []any, err error) {
 	file, err := os.Open(cfg)
 	if err != nil {
-		return nil, nil, misc.Wrapfl(err)
+		return nil, misc.Wrapfl(err)
 	}
 
 	fileContent, err := io.ReadAll(file)
 	if err != nil {
-		return nil, nil, misc.Wrapfl(err)
+		return nil, misc.Wrapfl(err)
 	}
 
 	commitlintrc := &struct {
@@ -167,26 +250,16 @@ func prepare(cfg string) (logLines []string, types []any, err error) {
 
 	err = yaml.Unmarshal(fileContent, &commitlintrc)
 	if err != nil {
-		return nil, nil, misc.Wrapfl(err)
+		return nil, misc.Wrapfl(err)
 	}
 
 	types, _ = (commitlintrc.Rules["type-enum"][2]).([]any)
-	logLines = strings.Split(string(byteLogLines), "\n")
 
 	if len(types) == 0 {
-		return nil, nil, fmt.Errorf("empty type-enum[2]: %s", cfg)
+		return nil, fmt.Errorf("empty %s.type-enum[2]", cfg)
 	}
 
-	for i, line := range logLines {
-		if match := RELogLine.FindStringSubmatch(line); match != nil {
-			if match[2] != "" && strings.Contains(match[2], "main") {
-				// return lines for current branch only, stop at main
-				return logLines[:i], types, nil
-			}
-		}
-	}
-
-	return logLines, types, nil
+	return types, nil
 }
 
 func changes(types []any, logLines []string, url string, builder *strings.Builder) *strings.Builder {
