@@ -130,10 +130,13 @@ func usage(err error) {
 }
 
 func changelog(cfg, url, module string) error {
-	logLines, oldVer, newVer, err := parseGitLog(module)
+	byteLogLines, err := exec.Command("git", "log", "--oneline", "--decorate").Output()
 	if err != nil {
 		return misc.Wrapfl(err)
 	}
+
+	logLines := strings.Split(string(byteLogLines), "\n")
+	logLines, oldVer, newVer := parseGitLog(module, logLines)
 
 	if oldVer == "" || newVer == "" {
 		return misc.Wrapfl(fmt.Errorf("malformed version: old: %s, new: %s", oldVer, newVer))
@@ -171,24 +174,18 @@ func changelog(cfg, url, module string) error {
 }
 
 //nolint:gocognit,gocyclo // refactor later
-func parseGitLog(module string) (logLines []string, versionOld, versionNew string, err error) {
-	byteLogLines, err := exec.Command("git", "log", "--oneline", "--decorate").Output()
-	if err != nil {
-		return nil, "", "", misc.Wrapfl(err)
-	}
-
-	logLines = strings.Split(string(byteLogLines), "\n")
-	branchLogLines := make([]string, 0, len(logLines))
+func parseGitLog(module string, allLogLines []string) (branchLogLines []string, versionOld, versionNew string) {
+	branchLogLines = make([]string, 0, len(allLogLines))
 	breaking, minor := false, false
 	oldVer := make(semver, 0, semverLen)
 	REReleaseTag := regexp.MustCompile("tag: " + module + `\/v(?P<version>\d+\.\d+\.\d+)`)
 	REMinor := regexp.MustCompile(`feat:|feat\(\w+\):`)
 
-	for i, line := range logLines {
+	for i, line := range allLogLines {
 		if match := RELogLine.FindStringSubmatch(line); match != nil {
 			if len(branchLogLines) == 0 && match[2] != "" && strings.Contains(match[2], "main") {
 				// seeing "main" means the current branch log ended
-				branchLogLines = logLines[:i]
+				branchLogLines = allLogLines[:i]
 			}
 
 			if !breaking && (match[4] != "" || match[6] != "") {
@@ -201,7 +198,7 @@ func parseGitLog(module string) (logLines []string, versionOld, versionNew strin
 				for _, versionN := range strings.Split(match[1], ".") {
 					version, err := strconv.ParseInt(versionN, 10, 8)
 					if err != nil {
-						return nil, "", "", misc.Wrapfl(err)
+						panic(err)
 					}
 
 					oldVer = append(oldVer, uint8(version))
@@ -220,7 +217,7 @@ func parseGitLog(module string) (logLines []string, versionOld, versionNew strin
 
 	newVer := versionUp(oldVer, oldVer[0] == 0, breaking, minor)
 
-	return branchLogLines, oldVer.String(), newVer.String(), nil
+	return branchLogLines, oldVer.String(), newVer.String()
 }
 
 func versionUp(current semver, unstable, breaking, minor bool) semver {
