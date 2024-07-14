@@ -11,10 +11,15 @@
   exec:
     - ./sh/workflows/module-pr/build.sh
 
-- name: lint
+- name: go-lint
   module: true
   exec:
     - "golangci-lint run --timeout 10s --print-issued-lines=false"
+
+- name: lint-fix
+  module: true
+  exec:
+    - "./sh/lint-fix.sh <module>"
 
 - name: format
   module: true
