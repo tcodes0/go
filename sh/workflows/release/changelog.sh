@@ -22,15 +22,10 @@ validate() {
 }
 
 updateChangelog() {
-  local module=$1 version=$2 old_version=$3 changes changelog flags=()
+  local module=$1 changes changelog flags=()
 
   changelog=$(cat "$changelog_file")
-  flags+=(-title "$module: v$version")
-  flags+=(-tag "$module/v$version")
-
-  if [ "$old_version" ]; then
-    flags+=(-old-tag "$module/v$old_version")
-  fi
+  flags+=(-module "$module")
 
   changes=$(go run ./cmd/changelog/main.go "${flags[@]}")
   if [ ! "$changes" ]; then
@@ -45,8 +40,6 @@ updateChangelog() {
 ### script ###
 
 module=$1
-version=$2
-old_version=$3
 
 validate
-updateChangelog "$module" "$version" "$old_version"
+updateChangelog "$module"

@@ -8,13 +8,6 @@ on:
         description: Module to release
         required: true
         type: string
-      newVersion:
-        description: New version
-        required: true
-        type: string
-      oldVersion:
-        description: Previous version
-        type: string
 
 jobs:
   release:
@@ -26,14 +19,6 @@ jobs:
         run: |
           echo expected main: ${{ github.ref }} && exit 1
 
-      - name: Validate new version
-        run: |
-          [[ ${{ inputs.newVersion }} =~ [[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+ ]] || (echo expected match \'1.1.1\': ${{ inputs.newVersion }} && exit 1)
-
-      - name: Validate old version
-        run: |
-          [ ${{ inputs.oldVersion }} ] && [[ ${{ inputs.oldVersion }} =~ [[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+ ]] || (echo expected match \'1.1.1\': ${{ inputs.oldVersion }} && exit 1)
-
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -44,16 +29,15 @@ jobs:
 
       - name: Update changelog
         shell: bash
-        run: ./sh/workflows/release/changelog.sh ${{ inputs.module }} ${{ inputs.newVersion }} ${{ inputs.oldVersion }}
+        run: ./sh/workflows/release/changelog.sh ${{ inputs.module }}
 
       - name: Open pr
         uses: peter-evans/create-pull-request@v6.1.0
         with:
-          commit-message: "chore: release ${{ inputs.module }}/v${{ inputs.newVersion }}"
-          title: "chore: release ${{ inputs.module }}/v${{ inputs.newVersion }}"
+          commit-message: "chore: release ${{ inputs.module }}"
+          title: "chore: release ${{ inputs.module }}"
           add-paths: .
           body: ""
           committer: release-workflow <41898282+github-actions[bot]@users.noreply.github.com>
-          branch: release-${{ inputs.module }}/v${{ inputs.newVersion }}
+          branch: release-${{ inputs.module }}
           branch-suffix: random
-          labels: release
