@@ -1,5 +1,5 @@
 name: release-pr
-run-name: release ${{ github.ref }}@${{ github.sha }}
+run-name: release PR ${{ github.ref }}@${{ github.sha }}
 
 on:
   workflow_dispatch:
@@ -29,9 +29,9 @@ jobs:
 
       - name: Update changelog
         shell: bash
-        run: ./sh/workflows/release-pr/changelog.sh ${{ inputs.module }}
+        run: ./sh/workflows/release/changelog.sh ${{ inputs.module }}
 
-      - name: Open pr
+      - name: Open PR
         uses: peter-evans/create-pull-request@v6.1.0
         with:
           commit-message: "chore: release ${{ inputs.module }}"
