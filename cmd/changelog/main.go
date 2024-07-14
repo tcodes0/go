@@ -123,7 +123,7 @@ func usage(err error) {
 	}
 
 	fmt.Println("generate a markdown changelog from git log")
-	fmt.Println("a prior tag with format module/vX.Y.Z must exist")
+	fmt.Println("a prior tag with format module/vX.Y.Z must exist on main")
 	fmt.Println("unstable tags (0.x.x) will not be promoted to 1.0.0 automaticall, do it manually")
 	fmt.Println()
 	fmt.Println(cmd.EnvVarUsage())
@@ -136,7 +136,11 @@ func changelog(cfg, url, module string) error {
 	}
 
 	logLines := strings.Split(string(byteLogLines), "\n")
-	logLines, oldVer, newVer := parseGitLog(module, logLines)
+
+	logLines, oldVer, newVer, err := parseGitLog(module, logLines)
+	if err != nil {
+		return misc.Wrapfl(err)
+	}
 
 	if oldVer == "" || newVer == "" {
 		return misc.Wrapfl(fmt.Errorf("malformed version: old: %s, new: %s", oldVer, newVer))
@@ -173,51 +177,53 @@ func changelog(cfg, url, module string) error {
 	return nil
 }
 
-//nolint:gocognit,gocyclo // refactor later
-func parseGitLog(module string, allLogLines []string) (branchLogLines []string, versionOld, versionNew string) {
-	branchLogLines = make([]string, 0, len(allLogLines))
-	breaking, minor := false, false
+func parseGitLog(module string, allLogLines []string) (branchLogLines []string, versionOld, versionNew string, err error) {
 	oldVer := make(semver, 0, semverLen)
 	REReleaseTag := regexp.MustCompile("tag: " + module + `\/v(?P<version>\d+\.\d+\.\d+)`)
-	REMinor := regexp.MustCompile(`feat:|feat\(\w+\):`)
+
+	for _, line := range allLogLines {
+		if match := REReleaseTag.FindStringSubmatch(line); match != nil {
+			for _, versionN := range strings.Split(match[1], ".") {
+				version, err := strconv.ParseInt(versionN, 10, 8)
+				if err != nil {
+					return nil, "", "", misc.Wrapfl(err)
+				}
+
+				oldVer = append(oldVer, uint8(version))
+			}
+		}
+	}
+
+	if len(oldVer) == 0 {
+		return nil, "", "", misc.Wrapfl(fmt.Errorf("tag not found: %s/vx.x.x", module))
+	}
+
+	REMinor := regexp.MustCompile(`feat:|feat\(.+\):`)
+	branchLogLines = make([]string, 0, len(allLogLines))
+	breaking, minor := false, false
 
 	for i, line := range allLogLines {
 		if match := RELogLine.FindStringSubmatch(line); match != nil {
 			if len(branchLogLines) == 0 && match[2] != "" && strings.Contains(match[2], "main") {
 				// seeing "main" means the current branch log ended
 				branchLogLines = allLogLines[:i]
+
+				break
 			}
 
-			if !breaking && (match[4] != "" || match[6] != "") {
-				breaking = true
+			if !breaking {
+				breaking = match[4] != "" || match[6] != ""
 			}
-		}
 
-		if len(oldVer) == 0 {
-			if match := REReleaseTag.FindStringSubmatch(line); match != nil {
-				for _, versionN := range strings.Split(match[1], ".") {
-					version, err := strconv.ParseInt(versionN, 10, 8)
-					if err != nil {
-						panic(err)
-					}
-
-					oldVer = append(oldVer, uint8(version))
-				}
+			if !minor && !breaking {
+				minor = REMinor.MatchString(line)
 			}
-		}
-
-		if !minor && !breaking {
-			minor = REMinor.MatchString(line)
-		}
-
-		if len(branchLogLines) != 0 && len(oldVer) != 0 {
-			break
 		}
 	}
 
 	newVer := versionUp(oldVer, oldVer[0] == 0, breaking, minor)
 
-	return branchLogLines, oldVer.String(), newVer.String()
+	return branchLogLines, oldVer.String(), newVer.String(), nil
 }
 
 func versionUp(current semver, unstable, breaking, minor bool) semver {
