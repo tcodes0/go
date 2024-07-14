@@ -68,11 +68,20 @@
   exec:
     - ./sh/new-module.sh
 
-- name: copyright
+- name: copyright-fix-go
   env:
     - PATH=<inherit>
     - HOME=<inherit>
     - CMD_COLOR=<inherit>
     - CMD_LOGLEVEL=<inherit>
   exec:
-    - go run cmd/copyright/main.go
+    - go run cmd/copyright/main.go -check '*.go' -fix -comment '// '
+
+- name: copyright-fix-sh
+  env:
+    - PATH=<inherit>
+    - HOME=<inherit>
+    - CMD_COLOR=<inherit>
+    - CMD_LOGLEVEL=<inherit>
+  exec:
+    - go run cmd/copyright/main.go -check '*.sh' -fix -comment '# ' -shebang
