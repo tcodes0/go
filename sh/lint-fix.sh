@@ -25,6 +25,7 @@ linters=(
 )
 
 if requestedHelp "$*"; then
+  msgln "fixes for a few standalone linters"
   msgln "Inputs:"
   msgln "<module>\t lint fix the module\t (required)"
   exit 1
