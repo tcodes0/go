@@ -241,8 +241,8 @@ jobs:
 
       - name: Run Copyright
         run: |
-          go run ./cmd/copyright -find '*.go'
-          go run ./cmd/copyright -find '*.sh'
+          go run ./cmd/copyright -check '*.go'
+          go run ./cmd/copyright -check '*.sh'
 
   ###########
   # modules #
