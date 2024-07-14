@@ -101,6 +101,8 @@ func main() {
 	}
 
 	header := ""
+	// formatter adds a newline that we don't want
+	cfg.Header = strings.TrimSuffix(cfg.Header, "\n")
 
 	for _, line := range strings.Split(cfg.Header, "\n") {
 		header += *fComment + line + "\n"
