@@ -1,4 +1,4 @@
-name: release
+name: release-pr
 run-name: release ${{ github.ref }}@${{ github.sha }}
 
 on:
@@ -10,8 +10,8 @@ on:
         type: string
 
 jobs:
-  release:
-    name: release
+  release-pr:
+    name: release PR
     runs-on: ubuntu-latest
     steps:
       - name: Validate branch
@@ -29,7 +29,7 @@ jobs:
 
       - name: Update changelog
         shell: bash
-        run: ./sh/workflows/release/changelog.sh ${{ inputs.module }}
+        run: ./sh/workflows/release-pr/changelog.sh ${{ inputs.module }}
 
       - name: Open pr
         uses: peter-evans/create-pull-request@v6.1.0
