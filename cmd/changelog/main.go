@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/samber/lo"
 	"github.com/tcodes0/go/cmd"
 	"github.com/tcodes0/go/logging"
 	"github.com/tcodes0/go/misc"
@@ -130,6 +131,16 @@ func usage(err error) {
 }
 
 func changelog(cfg, url, module string) error {
+	mods, err := cmd.FindModules(logger)
+	if err != nil {
+		return misc.Wrapfl(err)
+	}
+
+	_, found := lo.Find(mods, func(m string) bool { return m == module })
+	if !found {
+		return fmt.Errorf("unknown module: %s", module)
+	}
+
 	byteLogLines, err := exec.Command("git", "log", "--oneline", "--decorate").Output()
 	if err != nil {
 		return misc.Wrapfl(err)
@@ -143,7 +154,7 @@ func changelog(cfg, url, module string) error {
 	}
 
 	if oldVer == "" || newVer == "" {
-		return misc.Wrapfl(fmt.Errorf("malformed version: old: %s, new: %s", oldVer, newVer))
+		return fmt.Errorf("malformed version: old: %s, new: %s", oldVer, newVer)
 	}
 
 	types, err := parseConfig(cfg)
@@ -195,7 +206,7 @@ func parseGitLog(module string, allLogLines []string) (branchLogLines []string, 
 	}
 
 	if len(oldVer) == 0 {
-		return nil, "", "", misc.Wrapfl(fmt.Errorf("tag not found: %s/vx.x.x", module))
+		return nil, "", "", fmt.Errorf("tag not found: %s/vx.x.x", module)
 	}
 
 	REMinor := regexp.MustCompile(`feat:|feat\(.+\):`)
