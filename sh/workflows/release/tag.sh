@@ -12,8 +12,6 @@ trap 'err $LINENO' ERR
 
 ### vars and functions ###
 
-changelog_file="CHANGELOG.md"
-
 ### script ###
 
 if ! [[ $(git log --oneline --decorate | head -1) =~ chore:\ release ]]; then
@@ -21,7 +19,7 @@ if ! [[ $(git log --oneline --decorate | head -1) =~ chore:\ release ]]; then
   exit 0
 fi
 
-if ! [[ $(head -1 "$changelog_file") =~ \#\ ([[:alnum:]]+):\ (v.+\..+\.[[:digit:]]+) ]]; then
+if ! [[ $(head -1 "$CHANGELOG_FILE") =~ \#\ ([[:alnum:]]+):\ (v.+\..+\.[[:digit:]]+) ]]; then
   err "malformed changelog head"
   exit 1
 fi

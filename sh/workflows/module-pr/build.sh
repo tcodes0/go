@@ -34,7 +34,7 @@ if [[ "$*" =~ -install ]]; then
   command=install
 fi
 
-# building tests without regular .go files will fail
+# building tests will fail
 if [[ "$MOD_PATH" =~ test$ ]]; then
   exit 0
 fi

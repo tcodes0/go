@@ -124,8 +124,8 @@ func usage(err error) {
 	}
 
 	fmt.Println("generate a markdown changelog from git log")
-	fmt.Println("a prior tag with format module/vX.Y.Z must exist on main")
-	fmt.Println("unstable tags (0.x.x) will not be promoted to 1.0.0 automaticall, do it manually")
+	fmt.Println("a prior tag with format module/vx.x.x must exist on main")
+	fmt.Println("unstable tags (0.x.x) will not be promoted to 1.0.0 automatically, do it manually")
 	fmt.Println()
 	fmt.Println(cmd.EnvVarUsage())
 }
@@ -146,9 +146,9 @@ func changelog(cfg, url, module string) error {
 		return misc.Wrapfl(err)
 	}
 
-	logLines := strings.Split(string(byteLogLines), "\n")
+	splitLines := strings.Split(string(byteLogLines), "\n")
 
-	logLines, oldVer, newVer, err := parseGitLog(module, logLines)
+	branchLines, oldVer, newVer, err := parseGitLog(module, splitLines)
 	if err != nil {
 		return misc.Wrapfl(err)
 	}
@@ -170,7 +170,7 @@ func changelog(cfg, url, module string) error {
 		builder.WriteString(md("h3", compareLink(url, newVer, oldVer)) + "\n\n")
 	}
 
-	miscBuilder := changes(types, logLines, url, builder)
+	miscBuilder := changes(types, branchLines, url, builder)
 	if miscBuilder.Len() != 0 {
 		prettyType, ok := configs.Replace[tMisc]
 		if !ok {

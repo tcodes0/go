@@ -12,11 +12,9 @@ trap 'err $LINENO' ERR
 
 ### vars and functions ###
 
-changelog_file=CHANGELOG.md
-
 validate() {
-  if [ ! -f "$changelog_file" ]; then
-    err $LINENO "$changelog_file" not found
+  if [ ! -f "$CHANGELOG_FILE" ]; then
+    err $LINENO "$CHANGELOG_FILE" not found
     return 1
   fi
 }
@@ -24,7 +22,7 @@ validate() {
 updateChangelog() {
   local module=$1 changes changelog flags=()
 
-  changelog=$(cat "$changelog_file")
+  changelog=$(cat "$CHANGELOG_FILE")
   flags+=(-module "$module")
 
   changes=$(go run ./cmd/changelog/main.go "${flags[@]}")
@@ -33,8 +31,8 @@ updateChangelog() {
     return 1
   fi
 
-  printf %s "$changes" >"$changelog_file"
-  printf %s "$changelog" >>"$changelog_file"
+  printf %s "$changes" >"$CHANGELOG_FILE"
+  printf %s "$changelog" >>"$CHANGELOG_FILE"
 }
 
 ### script ###

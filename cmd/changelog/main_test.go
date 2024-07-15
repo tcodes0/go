@@ -15,12 +15,12 @@ import (
 func TestParseGitLog(t *testing.T) {
 	t.Parallel()
 
-	head := "4cd0e60 (HEAD -> my-branch) refactor(cmd/pizza): break up into functions"
+	head := "4cd0e60 (HEAD -> my-branch) refactor(cmd/pizza): spread ingredients more evenly across"
 	minor := "785c362 feat(cmd/pizza): add cheese"
-	breaking := "785c362 feat(cmd/pizza)!: add cheese"
-	main := "a34ccaf (origin/main, origin/HEAD, main) feat(kitchen): improve oven temperature"
-	tagUnstable := "78583a3 (tag: pizza/v0.1.1) misc: rework border crunchiness"
-	tagStable := "78583a3 (tag: pizza/v1.1.1) misc: rework border crunchiness"
+	breaking := "785c362 feat(cmd/pizza)!: add swiss cheese"
+	main := "a34ccaf (origin/main, origin/HEAD, main) feat(kitchen): new oven gets hotter!"
+	tagUnstable := "78583a3 (tag: pizza/v0.1.1) misc: improve border crunchiness"
+	tagStable := "78583a3 (tag: pizza/v1.1.1) misc: improve border crunchiness"
 	cases := []struct {
 		name  string
 		args  []string
