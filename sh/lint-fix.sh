@@ -6,7 +6,7 @@
 
 set -euo pipefail
 shopt -s globstar
-# shellcheck disable=SC1091
+# shellcheck source=lib.sh
 source "$PWD/sh/lib.sh"
 
 linters=(
