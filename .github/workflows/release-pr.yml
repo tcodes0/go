@@ -1,0 +1,43 @@
+name: release-pr
+run-name: release PR ${{ github.ref }}@${{ github.sha }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      module:
+        description: Module to release
+        required: true
+        type: string
+
+jobs:
+  release-pr:
+    name: release PR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate branch
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo expected main: ${{ github.ref }} && exit 1
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.22
+
+      - name: Update changelog
+        shell: bash
+        run: ./sh/workflows/release/changelog.sh ${{ inputs.module }}
+
+      - name: Open PR
+        uses: peter-evans/create-pull-request@v6.1.0
+        with:
+          commit-message: "chore: release ${{ inputs.module }}"
+          title: "chore: release ${{ inputs.module }}"
+          add-paths: .
+          body: ""
+          committer: release-workflow <41898282+github-actions[bot]@users.noreply.github.com>
+          branch: release-${{ inputs.module }}
+          branch-suffix: random

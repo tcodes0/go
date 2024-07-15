@@ -38,9 +38,9 @@ func Wrapfl(err error) error {
 
 	file, line := "?", "?"
 
-	_, f, il, ok := runtime.Caller(1)
+	_, f, l, ok := runtime.Caller(1)
 	if ok {
-		file, line = filepath.Base(f), strconv.Itoa(il)
+		file, line = filepath.Base(f), strconv.Itoa(l)
 	}
 
 	return fmt.Errorf("%s:%s: %w", file, line, err)

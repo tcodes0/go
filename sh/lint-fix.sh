@@ -6,7 +6,7 @@
 
 set -euo pipefail
 shopt -s globstar
-# shellcheck disable=SC1091
+# shellcheck source=lib.sh
 source "$PWD/sh/lib.sh"
 
 linters=(
@@ -25,6 +25,7 @@ linters=(
 )
 
 if requestedHelp "$*"; then
+  msgln "fixes for a few standalone linters"
   msgln "Inputs:"
   msgln "<module>\t lint fix the module\t (required)"
   exit 1

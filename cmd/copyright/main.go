@@ -70,7 +70,7 @@ func main() {
 	fFix := flagset.Bool("fix", false, "write header to files; requires -comment. (default false)")
 	fShebang := flagset.Bool("shebang", false, "preserve first line of file, append header after. (default false)")
 	fComment := flagset.String("comment", "", "comment token, prepended to header lines. (required if -fix)")
-	fFind := flagset.String("find", "", "asterisk glob to find files. (required)")
+	fFind := flagset.String("check", "", "asterisk glob to check files. (required)")
 	fIgnore := flagset.String("ignore", "", fmt.Sprintf("regexp match to ignore. (default %s)", defaultIgnore))
 
 	err = flagset.Parse(os.Args[1:])
@@ -101,6 +101,8 @@ func main() {
 	}
 
 	header := ""
+	// formatter adds a newline that we don't want
+	cfg.Header = strings.TrimSuffix(cfg.Header, "\n")
 
 	for _, line := range strings.Split(cfg.Header, "\n") {
 		header += *fComment + line + "\n"
