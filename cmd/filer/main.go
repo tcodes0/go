@@ -40,7 +40,6 @@ var (
 	}
 )
 
-//nolint:funlen // you shouldn't count blank lines!1!!
 func main() {
 	var err error
 
@@ -70,8 +69,7 @@ func main() {
 	}
 
 	logger = logging.Create(opts...)
-	fConfig := flagset.String("config", "", "path to newline separated list of files (required)")
-	fAction := flagset.String("action", "", "action to take on files (required)")
+	fConfig := flagset.String("config", "", "path to config file (required)")
 	fCommitL := flagset.Bool("commit", false, "apply changes (default: false)")
 	fCommitS := flagset.Bool("c", false, "apply changes (default: false)")
 
@@ -84,54 +82,48 @@ func main() {
 
 	fDryrun := !(*fCommitL || *fCommitS)
 
-	files, err := readConfig(*fConfig)
+	action, files, err := readConfig(*fConfig)
 	if err != nil {
 		err = errors.Join(err, errUsage)
 
 		return
 	}
 
-	if *fAction == "" {
-		err = misc.Wrap(errUsage, "empty action")
-
-		return
-	}
-
-	if _, found := lo.Find(actions, func(a string) bool { return a == *fAction }); !found {
-		err = misc.Wrapf(errUsage, "unknown action %s", *fAction)
-
-		return
-	}
-
 	files = envVarResolver(files)
-	err = filer(files, *fAction, fDryrun)
+	err = filer(files, action, fDryrun)
 }
 
-func readConfig(configPath string) ([]string, error) {
+func readConfig(configPath string) (action string, lines []string, err error) {
 	if configPath == "" {
-		return nil, errors.New("empty config")
+		return "", nil, errors.New("empty config")
 	}
 
 	cfgFile, err := os.Open(configPath)
 	if err != nil {
-		return nil, misc.Wrap(err, "open")
+		return "", nil, misc.Wrapfl(err)
 	}
 
 	raw, err := io.ReadAll(cfgFile)
 	if err != nil {
-		return nil, misc.Wrap(err, "read")
+		return "", nil, misc.Wrapfl(err)
 	}
 
-	files := strings.Split(string(raw), "\n")
-	files = lo.Filter(files, func(file string, _ int) bool {
+	lines = strings.Split(string(raw), "\n")
+	lines = lo.Filter(lines, func(file string, _ int) bool {
 		return file != "" && !strings.HasPrefix(file, "#")
 	})
 
-	if len(files) == 0 {
-		return nil, errors.New("empty config")
+	if len(lines) == 0 {
+		return "", nil, errors.New("empty config")
 	}
 
-	return files, nil
+	action, files := lines[0], lines[1:]
+
+	if _, found := lo.Find(actions, func(a string) bool { return a == action }); !found {
+		return "", nil, misc.Wrapf(errUsage, "unknown action %s", action)
+	}
+
+	return action, files, nil
 }
 
 func usage(err error) {
@@ -140,6 +132,7 @@ func usage(err error) {
 	}
 
 	fmt.Println("perform an action on a list of files")
+	fmt.Println("first line of config file should be the action")
 	fmt.Println("changes nothing by default, pass -commit")
 	fmt.Println("comments with # and newlines are ignored in config file")
 	fmt.Println()
