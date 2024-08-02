@@ -138,7 +138,8 @@ func DidYouMean(input string, candidates []string) (string, bool) {
 		})
 
 		if len(matches) == 0 {
-			// slice the last or first character until we match
+			// on even iterations slice the last
+			// on odd slice the first character; until we match
 			if i%2 == 0 {
 				input = input[:len(input)-1]
 			} else {
