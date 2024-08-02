@@ -84,9 +84,9 @@ func usage(err error) {
 		fmt.Println()
 	}
 
-	fmt.Println("miscellaneous automation tool")
-	fmt.Println("usage: ./run <task> <module?> <other args?> (run task)")
-	fmt.Println("usage: ./run <task> -h (task help)")
+	fmt.Println("runner: miscellaneous automation tool")
+	fmt.Println("run task: ./run <task> <module?> <other args?>")
+	fmt.Println("task help: ./run <task> -h")
 	fmt.Println()
 	fmt.Println("module tasks:")
 
@@ -114,7 +114,6 @@ func usage(err error) {
 
 	fmt.Println()
 	fmt.Println("modules:")
-	fmt.Println("- all (iterate all modules)")
 	fmt.Println("- " + strings.Join(modules, "\n- "))
 	fmt.Println()
 	fmt.Println(cmd.EnvVarUsage())
