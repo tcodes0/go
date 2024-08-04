@@ -167,7 +167,7 @@ func changelog(cfg, url, module string) error {
 	builder.WriteString(md("h1", title))
 
 	if newVer != "" && oldVer != "" {
-		builder.WriteString(md("h3", compareLink(url, newVer, oldVer)) + "\n\n")
+		builder.WriteString(md("h3", compareLink(url, tag(module, newVer), tag(module, oldVer))) + "\n\n")
 	}
 
 	miscBuilder := changes(types, branchLines, url, builder)
@@ -206,7 +206,7 @@ func parseGitLog(module string, allLogLines []string) (branchLogLines []string, 
 	}
 
 	if len(oldVer) == 0 {
-		return nil, "", "", fmt.Errorf("tag not found: %s/vx.x.x", module)
+		return nil, "", "", fmt.Errorf("tag not found: %s", tag(module, "x.x.x"))
 	}
 
 	REMinor := regexp.MustCompile(`feat:|feat\(.+\):`)
@@ -429,6 +429,10 @@ func md(tag, text string) string {
 
 func commitLink(url, hash string) string {
 	return fmt.Sprintf("[%s](%s/commit/%s)", hash, url, hash)
+}
+
+func tag(module, version string) string {
+	return module + "/v" + version
 }
 
 func compareLink(url, tag1, tag2 string) string {
