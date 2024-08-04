@@ -88,6 +88,9 @@ func DotEnv(path string, noisy bool) {
 			continue
 		}
 
-		os.Setenv(key, val)
+		if _, ok := os.LookupEnv(key); !ok {
+			// let environment variables take precedence over .env
+			os.Setenv(key, val)
+		}
 	}
 }

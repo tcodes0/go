@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	ignore      = regexp.MustCompile(`test$|\.local.*|cmd/template|^cmd$`)
+	ignore      = regexp.MustCompile(`test$|\.local.*|cmd/template`)
 	globs       = []string{"*/*.go", "*/*/*.go"}
 	EnvColor    = "CMD_COLOR"
 	EnvLogLevel = "CMD_LOGLEVEL"

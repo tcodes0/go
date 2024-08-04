@@ -36,7 +36,9 @@ type config struct {
 
 type changelogLine struct {
 	Text     string
+	Hash     string
 	Breaking bool
+	Minor    bool
 }
 
 var (
@@ -47,8 +49,8 @@ var (
 	logger    = &logging.Logger{}
 	errUsage  = errors.New("see usage")
 	semverLen = 3
-	//nolint:lll // long regex
-	RELogLine = regexp.MustCompile(`(?P<hash>[0-9a-f]+)\s(?P<paren>\([^)]*\))?\s?(?P<type>[a-zA-Z]+)(?P<breaking1>!)?(?:\((?P<scope>[^)]+)\))?(?P<breaking2>!)?:\s(?P<description>.+)$`)
+	//nolint:lll // regex
+	RECommitLine = regexp.MustCompile(`^(?P<asterisk>\*? ?)(?P<type>[a-zA-Z]+)(?P<breaking1>!)?(?:\((?P<scope>[^)]+)\))?(?P<breaking2>!)?:\s(?P<description>.+?)$`)
 )
 
 type semver []uint8
@@ -141,20 +143,17 @@ func changelog(cfg, url, module string) error {
 		return fmt.Errorf("unknown module: %s", module)
 	}
 
-	byteLogLines, err := exec.Command("git", "log", "--oneline", "--decorate").Output()
+	// format: hash\n (tags branches)\ncommit message and body in multiple lines\n
+	byteLogLines, err := exec.Command("git", "log", "--pretty=format:%H%n%d%n%B").Output()
 	if err != nil {
 		return misc.Wrapfl(err)
 	}
 
 	splitLines := strings.Split(string(byteLogLines), "\n")
 
-	branchLines, oldVer, newVer, err := parseGitLog(module, splitLines)
+	releaseLines, oldVer, err := parseGitLog(module, splitLines)
 	if err != nil {
 		return misc.Wrapfl(err)
-	}
-
-	if oldVer == "" || newVer == "" {
-		return fmt.Errorf("malformed version: old: %s, new: %s", oldVer, newVer)
 	}
 
 	types, err := parseConfig(cfg)
@@ -162,79 +161,87 @@ func changelog(cfg, url, module string) error {
 		return misc.Wrapfl(err)
 	}
 
-	builder := &strings.Builder{}
-	title := fmt.Sprintf("%s: v%s %s\n\n", module, newVer, md("i", "("+time.Now().Format("2006-01-02")+")"))
-	builder.WriteString(md("h1", title))
+	document := &strings.Builder{}
 
-	if newVer != "" && oldVer != "" {
-		builder.WriteString(md("h3", compareLink(url, newVer, oldVer)) + "\n\n")
+	newVer, body, footer := writeContent(types, releaseLines, oldVer, url)
+	title := fmt.Sprintf("%s: v%s %s\n\n", module, newVer, md("i", "("+time.Now().Format("2006-01-02")+")"))
+	document.WriteString(md("h1", title))
+	document.WriteString(md("h3", compareLink(url, tag(module, newVer.String()), tag(module, oldVer.String()))) + "\n\n")
+
+	if body.Len() != 0 {
+		document.WriteString(body.String())
+		body.Reset()
 	}
 
-	miscBuilder := changes(types, branchLines, url, builder)
-	if miscBuilder.Len() != 0 {
+	if footer.Len() != 0 {
 		prettyType, ok := configs.Replace[tMisc]
 		if !ok {
 			prettyType = tMisc
 		}
 
-		builder.WriteString(md("h4", prettyType) + "\n")
-		builder.WriteString(miscBuilder.String())
-		builder.WriteString("\n")
-		miscBuilder.Reset()
+		document.WriteString(md("h4", prettyType) + "\n")
+		document.WriteString(footer.String())
+		document.WriteString("\n")
+		footer.Reset()
 	}
 
-	fmt.Print(builder.String())
+	fmt.Print(document.String())
 
 	return nil
 }
 
-func parseGitLog(module string, allLogLines []string) (branchLogLines []string, versionOld, versionNew string, err error) {
+func parseGitLog(module string, allLogLines []string) (releaseLogLines []changelogLine, versionOld semver, err error) {
 	oldVer := make(semver, 0, semverLen)
+	releaseLogLines = make([]changelogLine, 0, len(allLogLines))
 	REReleaseTag := regexp.MustCompile("tag: " + module + `\/v(?P<version>\d+\.\d+\.\d+)`)
+	REHash := regexp.MustCompile(`^[abcdef0-9]+$`)
+	hash := ""
 
 	for _, line := range allLogLines {
+		line = strings.TrimSpace(line)
+
+		if line == "" {
+			continue
+		}
+
+		if match := REHash.FindString(line); match != "" {
+			// save the hash for the commit lines that follow
+			hash = match
+
+			continue
+		}
+
+		if match := RECommitLine.FindStringSubmatch(line); match != nil {
+			if match[1] /*asterisk*/ == "" {
+				// commit head has no asterisk, body lines do.
+				// commit head is repeated in the body, skip.
+				continue
+			}
+
+			releaseLogLines = append(releaseLogLines, changelogLine{Text: line, Hash: hash})
+		}
+
 		if match := REReleaseTag.FindStringSubmatch(line); match != nil {
 			for _, versionN := range strings.Split(match[1], ".") {
 				version, err := strconv.ParseInt(versionN, 10, 8)
 				if err != nil {
-					return nil, "", "", misc.Wrapfl(err)
+					return nil, nil, misc.Wrapfl(err)
 				}
 
 				oldVer = append(oldVer, uint8(version))
 			}
+
+			// seeing a module tag means it is the old tag,
+			// the release log ended and we are done
+			break
 		}
 	}
 
 	if len(oldVer) == 0 {
-		return nil, "", "", fmt.Errorf("tag not found: %s/vx.x.x", module)
+		return nil, nil, fmt.Errorf("tag not found: %s", tag(module, "x.x.x"))
 	}
 
-	REMinor := regexp.MustCompile(`feat:|feat\(.+\):`)
-	branchLogLines = make([]string, 0, len(allLogLines))
-	breaking, minor := false, false
-
-	for i, line := range allLogLines {
-		if match := RELogLine.FindStringSubmatch(line); match != nil {
-			if len(branchLogLines) == 0 && match[2] != "" && strings.Contains(match[2], "main") {
-				// seeing "main" means the current branch log ended
-				branchLogLines = allLogLines[:i]
-
-				break
-			}
-
-			if !breaking {
-				breaking = match[4] != "" || match[6] != ""
-			}
-
-			if !minor && !breaking {
-				minor = REMinor.MatchString(line)
-			}
-		}
-	}
-
-	newVer := versionUp(oldVer, oldVer[0] == 0, breaking, minor)
-
-	return branchLogLines, oldVer.String(), newVer.String(), nil
+	return releaseLogLines, oldVer, nil
 }
 
 func versionUp(current semver, unstable, breaking, minor bool) semver {
@@ -295,47 +302,97 @@ func parseConfig(cfg string) (types []any, err error) {
 	return types, nil
 }
 
-func changes(types []any, logLines []string, url string, builder *strings.Builder) *strings.Builder {
-	typeBuilder := &strings.Builder{}
-	miscBuilder := &strings.Builder{}
+func writeContent(types []any, logLines []changelogLine, oldVer semver, url string) (newVer semver, body, footer *strings.Builder) {
+	footer, body = &strings.Builder{}, &strings.Builder{}
+	minor, breaks := false, false
 
 	for _, t := range types {
+		var scoped, scopeless, breakings []changelogLine
+
 		typ, _ := t.(string)
-		scoped, scopeless, breakings := parseLines(logLines, typ, url)
+		paragraph := &strings.Builder{}
+		scoped, scopeless, breakings, minor = parseLines(logLines, typ, url)
 
 		if len(scoped) != 0 {
 			slices.SortFunc(scoped, sortFn)
-			writeLines(scoped, typ, typeBuilder, miscBuilder)
+			writeLines(scoped, typ, paragraph, footer)
 		}
 
 		if len(scopeless) != 0 {
-			writeLines(scopeless, typ, typeBuilder, miscBuilder)
+			writeLines(scopeless, typ, paragraph, footer)
 		}
 
 		if len(breakings) != 0 {
-			builder.WriteString(md("h2", "Breaking Changes") + "\n")
+			breaks = true
+
+			body.WriteString(md("h2", "Breaking Changes") + "\n")
 
 			for _, b := range breakings {
-				builder.WriteString(b.Text)
+				body.WriteString(b.Text)
 			}
 
-			builder.WriteString("\n")
+			body.WriteString("\n")
 		}
 
-		if typeBuilder.Len() != 0 {
+		if paragraph.Len() != 0 {
 			prettyType, ok := configs.Replace[typ]
 			if !ok {
 				prettyType = typ
 			}
 
-			builder.WriteString(md("h2", prettyType) + "\n")
-			builder.WriteString(typeBuilder.String())
-			builder.WriteString("\n")
-			typeBuilder.Reset()
+			body.WriteString(md("h2", prettyType) + "\n")
+			body.WriteString(paragraph.String())
+			body.WriteString("\n")
+			paragraph.Reset()
 		}
 	}
 
-	return miscBuilder
+	newVer = versionUp(oldVer, oldVer[0] == 0, breaks, minor)
+
+	return newVer, body, footer
+}
+
+func parseLines(lines []changelogLine, typ, url string) (scoped, scopeless, breakings []changelogLine, minor bool) {
+	scopeless = make([]changelogLine, 0, len(lines))
+	scoped = make([]changelogLine, 0, len(lines))
+	breakings = make([]changelogLine, 0, len(lines))
+
+	for _, line := range lines {
+		match := RECommitLine.FindStringSubmatch(line.Text)
+		if match == nil {
+			if line.Text != "" {
+				logger.Errorf("skip, no match: %s", line.Text)
+			}
+
+			continue
+		}
+
+		_, lineType, breaking1, scope, breaking2, description := match[1], match[2], match[3], match[4], match[5], match[6]
+		if lineType != typ {
+			continue
+		}
+
+		line.Breaking = breaking1 != "" || breaking2 != ""
+		line.Minor = lineType == "feat"
+
+		if scope != "" {
+			line.Text = md("li", md("b", scope)+": "+description) + fmt.Sprintf(" (%s)\n", commitLink(url, line.Hash))
+			if !line.Breaking {
+				scoped = append(scoped, line)
+			}
+		} else {
+			line.Text = md("li", description) + fmt.Sprintf(" (%s)\n", commitLink(url, line.Hash))
+			if !line.Breaking {
+				scopeless = append(scopeless, line)
+			}
+		}
+
+		if line.Breaking {
+			breakings = append(breakings, line)
+		}
+	}
+
+	return scoped, scopeless, breakings, minor
 }
 
 func sortFn(a, b changelogLine) int {
@@ -348,62 +405,16 @@ func sortFn(a, b changelogLine) int {
 	return 0
 }
 
-func writeLines(lines []changelogLine, typ string, typeBuilder, otherBuilder *strings.Builder) {
+func writeLines(lines []changelogLine, typ string, paragraph, footer *strings.Builder) {
 	for _, s := range lines {
 		if typ == tMisc || typ == "chore" {
-			otherBuilder.WriteString(s.Text)
+			footer.WriteString(s.Text)
 		} else {
-			typeBuilder.WriteString(s.Text)
+			paragraph.WriteString(s.Text)
 		}
 	}
 
 	clear(lines)
-}
-
-func parseLines(lines []string, typ, url string) (scoped, scopeless, breakings []changelogLine) {
-	scopeless = make([]changelogLine, 0, len(lines))
-	scoped = make([]changelogLine, 0, len(lines))
-	breakings = make([]changelogLine, 0, len(lines))
-
-	for _, line := range lines {
-		match := RELogLine.FindStringSubmatch(line)
-		if match == nil {
-			if line != "" {
-				logger.Errorf("skip, no match: %s", line)
-			}
-
-			continue
-		}
-
-		commitHash, _, lineType, breaking1, scope, breaking2, description := match[1], match[2], match[3], match[4], match[5], match[6], match[7]
-		if lineType != typ {
-			continue
-		}
-
-		cline := changelogLine{}
-
-		if breaking1 != "" || breaking2 != "" {
-			cline.Breaking = true
-		}
-
-		if scope != "" {
-			cline.Text = md("li", md("b", scope)+": "+description) + fmt.Sprintf(" (%s)\n", commitLink(url, commitHash))
-			if !cline.Breaking {
-				scoped = append(scoped, cline)
-			}
-		} else {
-			cline.Text = md("li", description) + fmt.Sprintf(" (%s)\n", commitLink(url, commitHash))
-			if !cline.Breaking {
-				scopeless = append(scopeless, cline)
-			}
-		}
-
-		if cline.Breaking {
-			breakings = append(breakings, cline)
-		}
-	}
-
-	return scoped, scopeless, breakings
 }
 
 func md(tag, text string) string {
@@ -428,7 +439,11 @@ func md(tag, text string) string {
 }
 
 func commitLink(url, hash string) string {
-	return fmt.Sprintf("[%s](%s/commit/%s)", hash, url, hash)
+	return fmt.Sprintf("[%s](%s/commit/%s)", hash[:8], url, hash)
+}
+
+func tag(module, version string) string {
+	return module + "/v" + version
 }
 
 func compareLink(url, tag1, tag2 string) string {
