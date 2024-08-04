@@ -194,7 +194,7 @@ func parseGitLog(module string, allLogLines []string) (branchLogLines []string, 
 
 	for _, line := range allLogLines {
 		if match := REReleaseTag.FindStringSubmatch(line); match != nil {
-			for _, versionN := range strings.Split(match[1], ".") {
+			for _, versionN := range strings.Split(match[1] /*version*/, ".") {
 				version, err := strconv.ParseInt(versionN, 10, 8)
 				if err != nil {
 					return nil, "", "", misc.Wrapfl(err)
@@ -215,7 +215,7 @@ func parseGitLog(module string, allLogLines []string) (branchLogLines []string, 
 
 	for i, line := range allLogLines {
 		if match := RELogLine.FindStringSubmatch(line); match != nil {
-			if len(branchLogLines) == 0 && match[2] != "" && strings.Contains(match[2], "main") {
+			if len(branchLogLines) == 0 && match[2] /*parenthesis after commit hash*/ != "" && strings.Contains(match[2], "main") {
 				// seeing "main" means the current branch log ended
 				branchLogLines = allLogLines[:i]
 
@@ -223,12 +223,14 @@ func parseGitLog(module string, allLogLines []string) (branchLogLines []string, 
 			}
 
 			if !breaking {
-				breaking = match[4] != "" || match[6] != ""
+				breaking = match[4] /*breaking1*/ != "" || match[6] /*breaking2*/ != ""
 			}
 
 			if !minor && !breaking {
 				minor = REMinor.MatchString(line)
 			}
+		} else {
+			logger.Warnf("skip, no match: %s", line)
 		}
 	}
 

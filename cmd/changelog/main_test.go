@@ -6,12 +6,12 @@
 package main
 
 import (
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
+//nolint:funlen // test
 func TestParseGitLog(t *testing.T) {
 	t.Parallel()
 
@@ -22,39 +22,53 @@ func TestParseGitLog(t *testing.T) {
 	tagUnstable := "78583a3 (tag: pizza/v0.1.1) misc: improve border crunchiness"
 	tagStable := "78583a3 (tag: pizza/v1.1.1) misc: improve border crunchiness"
 	cases := []struct {
-		name  string
-		args  []string
-		lines []string
+		name      string
+		wantOld   string
+		wantNew   string
+		lines     []string
+		wantLines int
 	}{
 		{
-			name:  "unstable major",
-			args:  []string{"0.1.1", "0.2.0", "2"},
-			lines: []string{head, breaking, main, tagUnstable},
+			name:      "unstable major",
+			wantOld:   "0.1.1",
+			wantNew:   "0.2.0",
+			wantLines: 2,
+			lines:     []string{head, breaking, main, tagUnstable},
 		},
 		{
-			name:  "unstable minor",
-			args:  []string{"0.1.1", "0.1.2", "2"},
-			lines: []string{head, minor, main, tagUnstable},
+			name:      "unstable minor",
+			wantOld:   "0.1.1",
+			wantNew:   "0.1.2",
+			wantLines: 2,
+			lines:     []string{head, minor, main, tagUnstable},
 		},
 		{
-			name:  "unstable patch",
-			args:  []string{"0.1.1", "0.1.2", "1"},
-			lines: []string{head, main, tagUnstable},
+			name:      "unstable patch",
+			wantOld:   "0.1.1",
+			wantNew:   "0.1.2",
+			wantLines: 1,
+			lines:     []string{head, main, tagUnstable},
 		},
 		{
-			name:  "stable major",
-			args:  []string{"1.1.1", "2.0.0", "2"},
-			lines: []string{head, breaking, main, tagStable},
+			name:      "stable major",
+			wantOld:   "1.1.1",
+			wantNew:   "2.0.0",
+			wantLines: 2,
+			lines:     []string{head, breaking, main, tagStable},
 		},
 		{
-			name:  "stable minor",
-			args:  []string{"1.1.1", "1.2.0", "2"},
-			lines: []string{head, minor, main, tagStable},
+			name:      "stable minor",
+			wantOld:   "1.1.1",
+			wantNew:   "1.2.0",
+			wantLines: 2,
+			lines:     []string{head, minor, main, tagStable},
 		},
 		{
-			name:  "stable patch",
-			args:  []string{"1.1.1", "1.1.2", "1"},
-			lines: []string{head, main, tagStable},
+			name:      "stable patch",
+			wantOld:   "1.1.1",
+			wantNew:   "1.1.2",
+			wantLines: 1,
+			lines:     []string{head, main, tagStable},
 		},
 	}
 
@@ -65,11 +79,10 @@ func TestParseGitLog(t *testing.T) {
 
 			lines, old, neu, err := parseGitLog("pizza", useCase.lines)
 			assert.NoError(err, useCase.name)
-			assert.Equal(useCase.args[0], old, useCase.name)
-			assert.Equal(useCase.args[1], neu, useCase.name)
 
-			l, _ := strconv.Atoi(useCase.args[2])
-			assert.Len(lines, l, useCase.name)
+			assert.Equal(useCase.wantOld, old, useCase.name)
+			assert.Equal(useCase.wantNew, neu, useCase.name)
+			assert.Len(lines, useCase.wantLines, useCase.name)
 		})
 	}
 }
