@@ -188,40 +188,15 @@ func changelog(cfg, url, module string) error {
 	return nil
 }
 
-func parseGitLog(module string, allLogLines []string) (branchLogLines []string, versionOld, versionNew string, err error) {
+func parseGitLog(module string, allLogLines []string) (releaseLogLines []string, versionOld, versionNew string, err error) {
 	oldVer := make(semver, 0, semverLen)
+	releaseLogLines = make([]string, 0, len(allLogLines))
 	REReleaseTag := regexp.MustCompile("tag: " + module + `\/v(?P<version>\d+\.\d+\.\d+)`)
-
-	for _, line := range allLogLines {
-		if match := REReleaseTag.FindStringSubmatch(line); match != nil {
-			for _, versionN := range strings.Split(match[1] /*version*/, ".") {
-				version, err := strconv.ParseInt(versionN, 10, 8)
-				if err != nil {
-					return nil, "", "", misc.Wrapfl(err)
-				}
-
-				oldVer = append(oldVer, uint8(version))
-			}
-		}
-	}
-
-	if len(oldVer) == 0 {
-		return nil, "", "", fmt.Errorf("tag not found: %s", tag(module, "x.x.x"))
-	}
-
 	REMinor := regexp.MustCompile(`feat:|feat\(.+\):`)
-	branchLogLines = make([]string, 0, len(allLogLines))
 	breaking, minor := false, false
 
 	for i, line := range allLogLines {
 		if match := RELogLine.FindStringSubmatch(line); match != nil {
-			if len(branchLogLines) == 0 && match[2] /*parenthesis after commit hash*/ != "" && strings.Contains(match[2], "main") {
-				// seeing "main" means the current branch log ended
-				branchLogLines = allLogLines[:i]
-
-				break
-			}
-
 			if !breaking {
 				breaking = match[4] /*breaking1*/ != "" || match[6] /*breaking2*/ != ""
 			}
@@ -230,13 +205,33 @@ func parseGitLog(module string, allLogLines []string) (branchLogLines []string, 
 				minor = REMinor.MatchString(line)
 			}
 		} else {
-			logger.Warnf("skip, no match: %s", line)
+			logger.Warnf("no match: %s", line)
 		}
+
+		if match := REReleaseTag.FindStringSubmatch(line); match != nil {
+			for _, versionN := range strings.Split(match[1], ".") {
+				version, err := strconv.ParseInt(versionN, 10, 8)
+				if err != nil {
+					return nil, "", "", misc.Wrapfl(err)
+				}
+
+				oldVer = append(oldVer, uint8(version))
+			}
+
+			// seeing the old tag means the release log ended
+			releaseLogLines = allLogLines[:i]
+
+			break
+		}
+	}
+
+	if len(oldVer) == 0 {
+		return nil, "", "", fmt.Errorf("tag not found: %s", tag(module, "x.x.x"))
 	}
 
 	newVer := versionUp(oldVer, oldVer[0] == 0, breaking, minor)
 
-	return branchLogLines, oldVer.String(), newVer.String(), nil
+	return releaseLogLines, oldVer.String(), newVer.String(), nil
 }
 
 func versionUp(current semver, unstable, breaking, minor bool) semver {
