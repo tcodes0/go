@@ -58,6 +58,11 @@ if requestedHelp "$*"; then
   exit 1
 fi
 
+if [ "$(basename "$PWD")" != "tcodes0-go" ]; then
+  msgln "run this script from project root"
+  exit 1
+fi
+
 # by order of priority
 
 # basic gnu/linux tools included by default, git, etc...
@@ -176,13 +181,28 @@ else
   pass 'build cmd/runner'
 fi
 
+if [ ! -d wiki/.git ]; then
+  fail 'local wiki' 'wiki is not cloned'
+  fixProblems+=("git clone git@github.com:tcodes0/go.wiki.git wiki")
+else
+  pass 'local wiki'
+fi
+
+if [ ! -f .env ]; then
+  fail '.env' '.env not copied'
+  fixProblems+=("cp .env-default .env")
+else
+  pass '.env'
+fi
+
+exitShowProblems "fix configuration issues:"
+
 # notes
 
-msgln note: \'act\' requires first time setup
+msgln
+msgln note: before using ./ci, run \'act\' once to set it up
 msgln note: run \'export CMD_COLOR=true\' to see colored output, or add to .env
 
 if [ "${NVM_DIR:-}" ]; then
   msgln note: when using nvm and upgrading node, global packages need to be reinstalled
 fi
-
-exitShowProblems "fix configuration issues"
