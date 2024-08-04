@@ -11,64 +11,53 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//nolint:funlen // test
-func TestParseGitLog(t *testing.T) {
+func TestVersionUp(t *testing.T) {
 	t.Parallel()
 
-	head := "4cd0e60 (HEAD -> my-branch) refactor(cmd/pizza): spread ingredients more evenly across"
-	minor := "785c362 feat(cmd/pizza): add cheese"
-	breaking := "785c362 feat(cmd/pizza)!: add swiss cheese"
-	main := "a34ccaf (origin/main, origin/HEAD, main) feat(kitchen): new oven gets hotter!"
-	tagUnstable := "78583a3 (tag: pizza/v0.1.1) misc: improve border crunchiness"
-	tagStable := "78583a3 (tag: pizza/v1.1.1) misc: improve border crunchiness"
 	cases := []struct {
-		name      string
-		wantOld   string
-		wantNew   string
-		lines     []string
-		wantLines int
+		name     string
+		version  semver
+		expected semver
+		unstable bool
+		breaking bool
+		minor    bool
 	}{
 		{
-			name:      "unstable major",
-			wantOld:   "0.1.1",
-			wantNew:   "0.2.0",
-			wantLines: 2,
-			lines:     []string{head, breaking, main, tagUnstable},
+			name:     "unstable major",
+			version:  semver{0, 1, 1},
+			expected: semver{0, 2, 0},
+			unstable: true,
+			breaking: true,
 		},
 		{
-			name:      "unstable minor",
-			wantOld:   "0.1.1",
-			wantNew:   "0.1.2",
-			wantLines: 2,
-			lines:     []string{head, minor, main, tagUnstable},
+			name:     "unstable minor",
+			version:  semver{0, 1, 1},
+			expected: semver{0, 1, 2},
+			unstable: true,
+			minor:    true,
 		},
 		{
-			name:      "unstable patch",
-			wantOld:   "0.1.1",
-			wantNew:   "0.1.2",
-			wantLines: 1,
-			lines:     []string{head, main, tagUnstable},
+			name:     "unstable patch",
+			version:  semver{0, 1, 1},
+			expected: semver{0, 1, 2},
+			unstable: true,
 		},
 		{
-			name:      "stable major",
-			wantOld:   "1.1.1",
-			wantNew:   "2.0.0",
-			wantLines: 2,
-			lines:     []string{head, breaking, main, tagStable},
+			name:     "stable major",
+			version:  semver{1, 1, 1},
+			expected: semver{2, 0, 0},
+			breaking: true,
 		},
 		{
-			name:      "stable minor",
-			wantOld:   "1.1.1",
-			wantNew:   "1.2.0",
-			wantLines: 2,
-			lines:     []string{head, minor, main, tagStable},
+			name:     "stable minor",
+			version:  semver{1, 1, 1},
+			expected: semver{1, 2, 0},
+			minor:    true,
 		},
 		{
-			name:      "stable patch",
-			wantOld:   "1.1.1",
-			wantNew:   "1.1.2",
-			wantLines: 1,
-			lines:     []string{head, main, tagStable},
+			name:     "stable patch",
+			version:  semver{1, 1, 1},
+			expected: semver{1, 1, 2},
 		},
 	}
 
@@ -77,12 +66,36 @@ func TestParseGitLog(t *testing.T) {
 			t.Parallel()
 			assert := require.New(t)
 
-			lines, old, neu, err := parseGitLog("pizza", useCase.lines)
-			assert.NoError(err, useCase.name)
-
-			assert.Equal(useCase.wantOld, old, useCase.name)
-			assert.Equal(useCase.wantNew, neu, useCase.name)
-			assert.Len(lines, useCase.wantLines, useCase.name)
+			neu := versionUp(useCase.version, useCase.unstable, useCase.breaking, useCase.minor)
+			assert.Equal(useCase.expected, neu, useCase.name)
 		})
+	}
+}
+
+func TestParseGitLog(t *testing.T) {
+	t.Parallel()
+
+	assert := require.New(t)
+	gitLog := []string{
+		"5974cb8f96fb6da96a5b917c5f43203daee1b431",
+		"fix: correct cheese to be creamy (#43)",
+		"* docs(pizza): document how to eat using hands",
+		"* fix: correct cheese to be creamy",
+		"884d9111c8f62a27c2185c45a1a0211db7277872",
+		" (tag: other/v0.1.4, tag: pizza/v0.1.4)",
+		"misc: update other (#42)",
+	}
+	expected := []changelogLine{
+		{Text: "* docs(pizza): document how to eat using hands", Hash: "5974cb8f96fb6da96a5b917c5f43203daee1b431"},
+		{Text: "* fix: correct cheese to be creamy", Hash: "5974cb8f96fb6da96a5b917c5f43203daee1b431"},
+	}
+
+	lines, oldVer, err := parseGitLog("pizza", gitLog)
+	assert.NoError(err)
+	assert.Equal(semver{0, 1, 4}, oldVer)
+	assert.Len(lines, len(expected))
+
+	for i, expect := range expected {
+		assert.Equal(expect, lines[i])
 	}
 }
