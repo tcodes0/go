@@ -31,3 +31,4 @@ coverage.html
 *pgdump
 .local/*
 .build/*
+wiki
