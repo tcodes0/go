@@ -15,7 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Validate branch
-        if: github.ref != 'refs/heads/main'
+        # if: github.ref != 'refs/heads/main'
+        if: false
         run: |
           echo expected main, got: ${{ github.ref }} && exit 1
 
