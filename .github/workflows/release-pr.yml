@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Validate branch
-        if: false
+        if: github.ref != 'refs/heads/main'
         run: |
           echo expected main, got: ${{ github.ref }} && exit 1
 
@@ -32,8 +32,6 @@ jobs:
 
       - name: Update changelog
         shell: bash
-        env:
-          CMD_LOGLEVEL: 1
         run: ./sh/workflows/release/changelog.sh ${{ inputs.module }}
 
       - name: Open PR

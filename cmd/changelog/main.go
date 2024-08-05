@@ -222,8 +222,6 @@ func parseGitLog(module string, allLogLines []string) (releaseLogLines []changel
 			releaseLogLines = append(releaseLogLines, changelogLine{Text: line, Hash: hash})
 		}
 
-		logger.Debug("attempting tag match")
-
 		if match := REReleaseTag.FindStringSubmatch(line); match != nil {
 			for _, versionN := range strings.Split(match[1], ".") {
 				version, err := strconv.ParseInt(versionN, 10, 8)
