@@ -15,19 +15,29 @@ trap 'err $LINENO' ERR
 release_re="chore:[ ]release"
 changelog_head_re="#[ ]([[:alnum:]]+):[ ](v.+\..+\.[[:digit:]]+)"
 
+validate() {
+  local main_head
+  main_head=$(git log --oneline --decorate | head -1)
+
+  if ! [[ $main_head =~ $release_re ]]; then
+    log "main head not a release commit: $main_head"
+    exit 0
+  fi
+}
+
+push_tag() {
+  if ! [[ $(head -1 "$CHANGELOG_FILE") =~ $changelog_head_re ]]; then
+    err "malformed changelog head, expected '# something: v0.1.2'"
+    exit 1
+  fi
+
+  tag="${BASH_REMATCH[1]}/${BASH_REMATCH[2]}"
+  msgln "$tag"
+  git tag "$tag" HEAD
+  git push origin --tags
+}
+
 ### script ###
 
-if ! [[ $(git log --oneline --decorate | head -1) =~ $release_re ]]; then
-  log "main head not a release commit"
-  exit 0
-fi
-
-if ! [[ $(head -1 "$CHANGELOG_FILE") =~ $changelog_head_re ]]; then
-  err "malformed changelog head, expected '# something: v0.1.2'"
-  exit 1
-fi
-
-tag="${BASH_REMATCH[1]}/${BASH_REMATCH[2]}"
-msgln "$tag"
-git tag "$tag" HEAD
-git push origin --tags
+validate
+push_tag
