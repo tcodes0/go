@@ -17,10 +17,13 @@ jobs:
       - name: Validate branch
         if: github.ref != 'refs/heads/main'
         run: |
-          echo expected main: ${{ github.ref }} && exit 1
+          echo expected main, got: ${{ github.ref }} && exit 1
 
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-tags: true
+          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@v5

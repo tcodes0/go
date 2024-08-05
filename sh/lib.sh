@@ -20,9 +20,18 @@ msgln() {
   msg "$*\\n"
 }
 
-# example: log warning!
+# internal, do not use
+__log() {
+  local level=$1 linenum=${2:?} msg=${*:3}
+
+  if [ "$msg" ]; then
+    echo -ne "$level ($0:$linenum) $msg\\n" >&2
+  fi
+}
+
+# example: log some information
 log() {
-  msg "$*\\n" >&2
+  __log INFO "$@"
 }
 
 # example: msg hello world
@@ -59,14 +68,27 @@ _sed() {
   sed "$@"
 }
 
-# err $LINENO "message" (default message: error)
-err() {
-  linenum=$1
-  msg=error
+# internal, do not use
+__e() {
+  local linenum=${1:?} funcname=$2 msg=ERROR
 
-  if [ "${*:2}" ]; then
-    msg=${*:2}
+  if [ "${*:3}" ]; then
+    msg=${*:3}
   fi
 
-  echo "$msg: $0":"$linenum" \("${FUNCNAME[1]}"\) >&2
+  echo -ne "$msg $0:$linenum ($funcname)" >&2
+}
+
+# usage: err $LINENO "message" (default message: error)
+err() {
+  __e "$1" "${FUNCNAME[1]}" "${*:2}"
+}
+
+#- - - - - - - - - - -
+
+# usage: fatal $LINENO "message" (default message: error)
+fatal() {
+  __e "$1" "${FUNCNAME[1]}" "FATAL: ${*:2}"
+
+  exit 1
 }

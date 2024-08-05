@@ -17,8 +17,9 @@ passingJobs=()
 ciPid=""
 
 usageExit() {
-  msgln "Usage: $0 "
-  msgln "Usage: $0 push"
+  msgln "Usage: $0 (run main, module_pr and release workflows on pull_request)"
+  msgln "Usage: $0 push (same as above, but on push)"
+  msgln "Usage: $0 dispatch pizza (run release-pr with inputs module=pizza)"
   exit 1
 }
 
@@ -60,27 +61,21 @@ printJobProgress() {
 
 # script args
 validate() {
-  if [ $# -gt 1 ]; then
-    err $LINENO "Invalid arguments: $*"
-    usageExit
-  fi
-
   if [ "$(git status -s)" ]; then
-    err $LINENO "please commit or stash all changes"
-    return 1
+    fatal $LINENO "please commit or stash all changes"
   fi
 
   if ! ping -c 1 1.1.1.1 >/dev/null; then
-    err $LINENO "please check your internet connection"
-    return 1
+    fatal $LINENO "please check your internet connection"
   fi
 }
 
-# $1 "push" or empty for PR
 prepareLogs() {
-  local gitLocalBranch
+  local gitLocalBranch prJson eventJson pushJson releasePrJson
+  local event="${1-}" module="${2-}" eventJsonFile ciLog eventType
+
   gitLocalBranch=$(git branch --show-current)
-  local prJson="
+  prJson="
 {
   \"pull_request\": {
     \"title\": \"feat(ci): add PR title to act event\",
@@ -94,7 +89,7 @@ prepareLogs() {
   \"local\": true
 }
 "
-  local pushJson="
+  pushJson="
 {
   \"push\": {
     \"base_ref\": \"refs/heads/main\"
@@ -102,11 +97,29 @@ prepareLogs() {
   \"local\": true
 }
 "
-  local eventJson="$prJson" eventJsonFile ciLog
+  releasePrJson="
+{
+  \"inputs\": {
+    \"module\": \"$module\"
+  },
+  \"local\": true
+}
+"
 
-  if [ "$1" == "push" ]; then
+  case "$event" in
+  "push")
     eventJson="$pushJson"
-  fi
+    eventType=push
+    ;;
+  "dispatch")
+    eventJson="$releasePrJson"
+    eventType=workflow_dispatch
+    ;;
+  *)
+    eventJson="$prJson"
+    eventType=pull_request
+    ;;
+  esac
 
   eventJsonFile=$(mktemp /tmp/ci-event-json-XXXXXX)
   ciLog=$(mktemp /tmp/ci-log-json-XXXXXX)
@@ -114,8 +127,7 @@ prepareLogs() {
   printf "event json:" >"$ciLog"
   printf %s "$eventJson" >>"$ciLog"
   printf %s "$eventJson" >"$eventJsonFile"
-
-  printf "%s %s" "$ciLog" "$eventJsonFile"
+  printf "%s %s %s" "$eventType" "$ciLog" "$eventJsonFile"
 }
 
 # $1 logfile
@@ -154,11 +166,16 @@ postCi() {
 
 ### script ###
 
+if requestedHelp "$*"; then
+  usageExit
+fi
+
 validate "$@"
-read -rs logFile eventJsonFile <<<"$(prepareLogs "${1:-}")"
+read -rs type logFile eventJsonFile <<<"$(prepareLogs "$@")"
 
 ciCommand="act"
-ciCommandArgs=(-e "$eventJsonFile")
+ciCommandArgs=("$type")
+ciCommandArgs+=(-e "$eventJsonFile")
 ciCommandArgs+=(-s GITHUB_TOKEN="$(gh auth token)")
 ciCommandArgs+=(--container-architecture linux/amd64)
 
@@ -166,7 +183,7 @@ $ciCommand "${ciCommandArgs[@]}" >>"$logFile" 2>&1 || true &
 ciPid=$!
 
 printf "\e[H\e[2J" # move 1-1, clear whole screen
-msgln "   running ci..."
+msgln "    running ci..."
 
 while ps -p "$ciPid" >/dev/null; do
   printf "\e[H" # move 1-1
