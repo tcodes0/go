@@ -61,23 +61,15 @@ printJobProgress() {
 
 # script args
 validate() {
-  if [ $# -gt 1 ]; then
-    err $LINENO "Invalid arguments: $*"
-    usageExit
-  fi
-
   if [ "$(git status -s)" ]; then
-    err $LINENO "please commit or stash all changes"
-    return 1
+    fatal $LINENO "please commit or stash all changes"
   fi
 
   if ! ping -c 1 1.1.1.1 >/dev/null; then
-    err $LINENO "please check your internet connection"
-    return 1
+    fatal $LINENO "please check your internet connection"
   fi
 }
 
-# $1 "push" or empty for PR
 prepareLogs() {
   local gitLocalBranch
   gitLocalBranch=$(git branch --show-current)
