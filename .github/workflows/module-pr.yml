@@ -1,4 +1,4 @@
-name: module_pr
+name: module-pr
 run-name: ${{ inputs.modulePath }}@${{ github.sha }}
 
 on:
