@@ -12,22 +12,79 @@ trap 'err $LINENO' ERR
 
 ### vars and functions ###
 
-release_re="chore:[ ]release"
-changelog_head_re="#[ ]([[:alnum:]]+):[ ](v.+\..+\.[[:digit:]]+)"
+release_re="chore:[[:blank:]]+release"
+changelog_h1_re="#[[:blank:]]+([[:alnum:]]+):[[:blank:]]+(v[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)[[:blank:]]+\*\(([[:digit:]]+-[[:digit:]]+-[[:digit:]]+)"
+
+validate() {
+  local main_head
+  main_head=$(git log --oneline --decorate | head -1)
+
+  if ! [[ $main_head =~ $release_re ]]; then
+    log "main head not a release commit: $main_head"
+    exit 0
+  fi
+}
+
+parse_changelog() {
+  local tags=() newest_date module version date
+
+  while read -r line; do
+    if ! [[ "$line" =~ $changelog_h1_re ]]; then
+      # want only release lines, h1 in md
+      # one or more lines with modules to release
+      continue
+    fi
+
+    module="${BASH_REMATCH[1]}"
+    version="${BASH_REMATCH[2]}"
+    date="${BASH_REMATCH[3]}"
+
+    if [ ! "${newest_date:-}" ]; then
+      # want to push tags for the newest release only
+      # which will be in the top of the changelog
+      newest_date=$date
+    fi
+
+    if [ "$date" != "$newest_date" ]; then
+      # newest release is over
+      break
+    fi
+
+    tags+=("$module/$version")
+  done <"$CHANGELOG_FILE"
+
+  printf %s "${tags[*]}"
+}
+
+validate_tags() {
+  local tags=("$@")
+
+  if [ ${#tags[@]} == 0 ]; then
+    fatal "no tags found"
+  fi
+
+  for tag in "${tags[@]}"; do
+    echo "$tag"
+    if git rev-parse --verify "$tag" >/dev/null; then
+      fatal "tag already exists: $tag"
+    fi
+  done
+}
+
+push_tags() {
+  for tag in "$@"; do
+    msgln "$tag"
+    git tag "$tag" HEAD
+  done
+
+  git push origin --tags
+}
 
 ### script ###
 
-if ! [[ $(git log --oneline --decorate | head -1) =~ $release_re ]]; then
-  log "main head not a release commit"
-  exit 0
-fi
-
-if ! [[ $(head -1 "$CHANGELOG_FILE") =~ $changelog_head_re ]]; then
-  err "malformed changelog head, expected '# something: v0.1.2'"
-  exit 1
-fi
-
-tag="${BASH_REMATCH[1]}/${BASH_REMATCH[2]}"
-msgln "$tag"
-git tag "$tag" HEAD
-git push origin --tags
+validate
+parsed_tags="$(parse_changelog)"
+# shellcheck disable=SC2068 # intentional splitting
+validate_tags ${parsed_tags[@]}
+# shellcheck disable=SC2068 # intentional splitting
+push_tags ${parsed_tags[@]}
