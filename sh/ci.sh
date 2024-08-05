@@ -17,8 +17,9 @@ passingJobs=()
 ciPid=""
 
 usageExit() {
-  msgln "Usage: $0 "
-  msgln "Usage: $0 push"
+  msgln "Usage: $0 (run main, module_pr and release workflows on pull_request)"
+  msgln "Usage: $0 push (same as above, but on push)"
+  msgln "Usage: $0 dispatch pizza (run release-pr with inputs module=pizza)"
   exit 1
 }
 
@@ -153,6 +154,10 @@ postCi() {
 }
 
 ### script ###
+
+if requestedHelp "$*"; then
+  usageExit
+fi
 
 validate "$@"
 read -rs logFile eventJsonFile <<<"$(prepareLogs "${1:-}")"

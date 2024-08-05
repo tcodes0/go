@@ -17,7 +17,7 @@ jobs:
       - name: Validate branch
         if: github.ref != 'refs/heads/main'
         run: |
-          echo expected main: ${{ github.ref }} && exit 1
+          echo expected main, got: ${{ github.ref }} && exit 1
 
       - name: Checkout
         uses: actions/checkout@v4
