@@ -199,6 +199,7 @@ func parseGitLog(module string, allLogLines []string) (releaseLogLines []changel
 
 	for _, line := range allLogLines {
 		line = strings.TrimSpace(line)
+		logger.Debugf("line=%s", line)
 
 		if line == "" {
 			continue
@@ -221,6 +222,8 @@ func parseGitLog(module string, allLogLines []string) (releaseLogLines []changel
 			releaseLogLines = append(releaseLogLines, changelogLine{Text: line, Hash: hash})
 		}
 
+		logger.Debug("attempting tag match")
+
 		if match := REReleaseTag.FindStringSubmatch(line); match != nil {
 			for _, versionN := range strings.Split(match[1], ".") {
 				version, err := strconv.ParseInt(versionN, 10, 8)
@@ -238,7 +241,7 @@ func parseGitLog(module string, allLogLines []string) (releaseLogLines []changel
 	}
 
 	if len(oldVer) == 0 {
-		return nil, nil, fmt.Errorf("tag not found: %s", tag(module, "x.x.x"))
+		return nil, nil, fmt.Errorf("tag not found: %s", tag(module, "?.?.?"))
 	}
 
 	return releaseLogLines, oldVer, nil
