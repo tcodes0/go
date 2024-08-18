@@ -272,12 +272,12 @@ func linkOne(source, link string, dryrun bool) (count int, err error) {
 	return 1, nil
 }
 
-func remove(action string, targets []string, dryrun bool) (count int, errs []error) {
+func remove(action string, files []string, dryrun bool) (count int, errs []error) {
 	if action != actionRemove {
 		return 0, nil
 	}
 
-	for _, file := range targets {
+	for _, file := range files {
 		c, err := removeOne(file, dryrun)
 		if err != nil {
 			errs = append(errs, err)
@@ -326,12 +326,12 @@ func removeOne(target string, dryrun bool) (count int, err error) {
 	return 1, nil
 }
 
-func backup(action string, targets []string, dryrun bool) (count int, errs []error) {
+func backup(action string, files []string, dryrun bool) (count int, errs []error) {
 	if action != actionBackup {
 		return 0, nil
 	}
 
-	for _, file := range targets {
+	for _, file := range files {
 		c, err := backupOne(file, dryrun)
 		if err != nil {
 			errs = append(errs, err)
