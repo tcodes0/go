@@ -187,13 +187,16 @@ func filer(files []string, action string, dryrun bool) error {
 	}
 
 	if count == 0 {
-		fmt.Println("files ok")
+		fmt.Printf("files ok")
 
 		return nil
 	}
 
 	if dryrun {
-		fmt.Printf("to commit %d changes run: %s -commit", count, strings.Join(os.Args, " "))
+		fmt.Println()
+		fmt.Printf("use '%s -commit' to commit %d", strings.Join(os.Args, " "), count)
+	} else {
+		fmt.Printf("committed %d", count)
 	}
 
 	return nil
