@@ -159,52 +159,31 @@ func envVarResolver(files []string) []string {
 }
 
 func filer(files []string, action string, dryrun bool) error {
-	errs, count := []error{}, 0
+	var (
+		count int
+		errs  []error
+	)
 
-	switch action {
-	case actionLink:
-		if len(files)%2 != 0 {
-			return fmt.Errorf("link: file count not even: %d", len(files))
-		}
+	// filerFns should do nothing if called with the wrong action.
+	// Return patterns:
+	// 0, nil: no changes.
+	// len []error > 0: errors processing.
+	// int > 0: changes made.
+	type filerFn func(string, []string, bool) (int, []error)
 
-		for i, file := range files {
-			if i%2 != 0 {
-				continue
+	for _, fn := range []filerFn{link, remove, backup} {
+		count, errs = fn(action, files, dryrun)
+		if len(errs) > 0 {
+			for _, err := range errs {
+				logger.Errorf("%s", err.Error())
 			}
 
-			c, err := link(file, files[i+1], dryrun)
-			if err != nil {
-				errs = append(errs, err)
-			}
-
-			count += c
-		}
-	case actionRemove:
-		for _, file := range files {
-			c, err := remove(file, dryrun)
-			if err != nil {
-				errs = append(errs, err)
-			}
-
-			count += c
-		}
-	case actionBackup:
-		for _, file := range files {
-			c, err := backup(file, dryrun)
-			if err != nil {
-				errs = append(errs, err)
-			}
-
-			count += c
-		}
-	}
-
-	if len(errs) > 0 {
-		for _, err := range errs {
-			logger.Errorf("%s", err.Error())
+			return errs[0]
 		}
 
-		return errs[0]
+		if count > 0 {
+			break
+		}
 	}
 
 	if count == 0 {
@@ -220,7 +199,32 @@ func filer(files []string, action string, dryrun bool) error {
 	return nil
 }
 
-func link(source, link string, dryrun bool) (count int, err error) {
+func link(action string, files []string, dryrun bool) (count int, errs []error) {
+	if action != actionLink {
+		return 0, nil
+	}
+
+	if len(files)%2 != 0 {
+		return 0, []error{fmt.Errorf("link: file count not even: %d", len(files))}
+	}
+
+	for i, file := range files {
+		if i%2 != 0 {
+			continue
+		}
+
+		c, err := linkOne(file, files[i+1], dryrun)
+		if err != nil {
+			errs = append(errs, err)
+		}
+
+		count += c
+	}
+
+	return count, errs
+}
+
+func linkOne(source, link string, dryrun bool) (count int, err error) {
 	_, err = os.Stat(source)
 	if err != nil {
 		return 0, misc.Wrapf(err, "stat")
@@ -265,7 +269,24 @@ func link(source, link string, dryrun bool) (count int, err error) {
 	return 1, nil
 }
 
-func remove(target string, dryrun bool) (count int, err error) {
+func remove(action string, targets []string, dryrun bool) (count int, errs []error) {
+	if action != actionRemove {
+		return 0, nil
+	}
+
+	for _, file := range targets {
+		c, err := removeOne(file, dryrun)
+		if err != nil {
+			errs = append(errs, err)
+		}
+
+		count += c
+	}
+
+	return count, errs
+}
+
+func removeOne(target string, dryrun bool) (count int, err error) {
 	stat, err := os.Stat(target)
 	if err != nil {
 		logger.Debugf("skip: file not found %s", target)
@@ -302,7 +323,24 @@ func remove(target string, dryrun bool) (count int, err error) {
 	return 1, nil
 }
 
-func backup(target string, dryrun bool) (count int, err error) {
+func backup(action string, targets []string, dryrun bool) (count int, errs []error) {
+	if action != actionBackup {
+		return 0, nil
+	}
+
+	for _, file := range targets {
+		c, err := backupOne(file, dryrun)
+		if err != nil {
+			errs = append(errs, err)
+		}
+
+		count += c
+	}
+
+	return count, errs
+}
+
+func backupOne(target string, dryrun bool) (count int, err error) {
 	bakFile := target + ".bak"
 
 	_, err = os.Stat(bakFile)
