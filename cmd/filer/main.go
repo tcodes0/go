@@ -159,7 +159,7 @@ func envVarResolver(files []string) []string {
 }
 
 func filer(files []string, action string, dryrun bool) error {
-	errs := []error{}
+	errs, count := []error{}, 0
 
 	switch action {
 	case actionLink:
@@ -172,24 +172,30 @@ func filer(files []string, action string, dryrun bool) error {
 				continue
 			}
 
-			err := link(file, files[i+1], dryrun)
+			c, err := link(file, files[i+1], dryrun)
 			if err != nil {
 				errs = append(errs, err)
 			}
+
+			count += c
 		}
 	case actionRemove:
 		for _, file := range files {
-			err := remove(file, dryrun)
+			c, err := remove(file, dryrun)
 			if err != nil {
 				errs = append(errs, err)
 			}
+
+			count += c
 		}
 	case actionBackup:
 		for _, file := range files {
-			err := backup(file, dryrun)
+			c, err := backup(file, dryrun)
 			if err != nil {
 				errs = append(errs, err)
 			}
+
+			count += c
 		}
 	}
 
@@ -201,24 +207,30 @@ func filer(files []string, action string, dryrun bool) error {
 		return errs[0]
 	}
 
+	if count == 0 {
+		fmt.Println("files ok")
+
+		return nil
+	}
+
 	if dryrun {
-		fmt.Printf("to apply changes run: %s -commit", strings.Join(os.Args, " "))
+		fmt.Printf("to commit %d changes run: %s -commit", count, strings.Join(os.Args, " "))
 	}
 
 	return nil
 }
 
-func link(source, link string, dryrun bool) error {
-	_, err := os.Stat(source)
+func link(source, link string, dryrun bool) (count int, err error) {
+	_, err = os.Stat(source)
 	if err != nil {
-		return misc.Wrapf(err, "stat")
+		return 0, misc.Wrapf(err, "stat")
 	}
 
 	linkDir := filepath.Dir(link)
 
 	_, err = os.Stat(linkDir)
 	if err != nil {
-		return misc.Wrapf(err, "try: mkdir -p %s", linkDir)
+		return 0, misc.Wrapf(err, "try: mkdir -p %s", linkDir)
 	}
 
 	// do not follow symlinks!
@@ -233,7 +245,7 @@ func link(source, link string, dryrun bool) error {
 			}
 		}
 
-		return nil
+		return 0, nil
 	}
 
 	if dryrun {
@@ -242,34 +254,34 @@ func link(source, link string, dryrun bool) error {
 			logger.Errorf("println: %v", err)
 		}
 
-		return nil
+		return 1, nil
 	}
 
 	err = os.Symlink(source, link)
 	if err != nil {
-		return misc.Wrapf(err, "symlink")
+		return 0, misc.Wrapf(err, "symlink")
 	}
 
-	return nil
+	return 1, nil
 }
 
-func remove(target string, dryrun bool) error {
+func remove(target string, dryrun bool) (count int, err error) {
 	stat, err := os.Stat(target)
 	if err != nil {
 		logger.Debugf("skip: file not found %s", target)
 
 		//nolint:nilerr // func about removing files
-		return nil
+		return 0, nil
 	}
 
 	if stat.IsDir() {
 		entries, e := os.ReadDir(target)
 		if e != nil {
-			return misc.Wrap(e, "read dir")
+			return 0, misc.Wrap(e, "read dir")
 		}
 
 		if len(entries) > 0 {
-			return fmt.Errorf("directory not empty; try: rm -fr %s", target)
+			return 0, fmt.Errorf("directory not empty; try: rm -fr %s", target)
 		}
 	}
 
@@ -279,34 +291,34 @@ func remove(target string, dryrun bool) error {
 			logger.Errorf("println: %v", err)
 		}
 
-		return nil
+		return 1, nil
 	}
 
 	err = os.Remove(target)
 	if err != nil {
-		return misc.Wrap(err, "remove")
+		return 0, misc.Wrap(err, "remove")
 	}
 
-	return nil
+	return 1, nil
 }
 
-func backup(target string, dryrun bool) (err error) {
+func backup(target string, dryrun bool) (count int, err error) {
 	bakFile := target + ".bak"
 
 	_, err = os.Stat(bakFile)
 	if err == nil {
 		logger.Debugf("skip: file exists %s", bakFile)
 
-		return nil
+		return 0, nil
 	}
 
 	fileStat, err := os.Stat(target)
 	if err != nil {
-		return misc.Wrap(err, "stat")
+		return 0, misc.Wrap(err, "stat")
 	}
 
 	if fileStat.IsDir() {
-		return fmt.Errorf("not a file; try: cp %s %s.bak", target, target)
+		return 0, fmt.Errorf("not a file; try: cp %s %s.bak", target, target)
 	}
 
 	if dryrun {
@@ -315,23 +327,23 @@ func backup(target string, dryrun bool) (err error) {
 			logger.Errorf("println: %v", err)
 		}
 
-		return nil
+		return 1, nil
 	}
 
 	backup, err := os.OpenFile(bakFile, os.O_CREATE|os.O_WRONLY, fileStat.Mode())
 	if err != nil {
-		return misc.Wrap(err, "open bak")
+		return 0, misc.Wrap(err, "open bak")
 	}
 
 	file, err := os.Open(target)
 	if err != nil {
-		return misc.Wrap(err, "open")
+		return 0, misc.Wrap(err, "open")
 	}
 
 	_, err = io.Copy(backup, file)
 	if err != nil {
-		return misc.Wrap(err, "copy")
+		return 0, misc.Wrap(err, "copy")
 	}
 
-	return nil
+	return 1, nil
 }
