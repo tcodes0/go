@@ -14,6 +14,17 @@ shopt -s globstar
 
 export LIB_COLOR_PASS="\e[7;38;05;242m PASS \e[0m" LIB_COLOR_FAIL="\e[2;7;38;05;197;47m FAIL \e[0m"
 export LIB_VISUAL_END="\e[0m" LIB_FORMAT_DIM="\e[2m" CHANGELOG_FILE="CHANGELOG.md"
+# wrapper var to avoid macos sed incompatibilities
+export SED=sed
+
+# example: if macos;
+macos() {
+  [ "$(uname)" == "Darwin" ]
+}
+
+if macos; then
+  SED=gsed
+fi
 
 # example: msgln hello world
 msgln() {
@@ -51,21 +62,6 @@ requestedHelp() {
   if ! [[ "$*" =~ -h|--help|help ]]; then
     return 1
   fi
-}
-
-# example: if macos;
-macos() {
-  [ "$(uname)" == "Darwin" ]
-}
-
-# wrapper to avoid macos sed incompatibilities
-_sed() {
-  if macos; then
-    gsed "$@"
-    return
-  fi
-
-  sed "$@"
 }
 
 # internal, do not use

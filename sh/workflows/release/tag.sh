@@ -17,7 +17,13 @@ changelog_h1_re="#[[:blank:]]+([[:alnum:]]+):[[:blank:]]+(v[[:digit:]]+\.[[:digi
 
 validate() {
   local main_head
-  main_head=$(git log --oneline --decorate | head -1)
+
+  while read -r commit_line; do
+    main_head="$commit_line"
+    # unusual way to obtain the head of the main branch...
+    # fix for SIGPIPE errors arrising from piping git log into head -1
+    break
+  done < <(git log --oneline --decorate)
 
   if ! [[ $main_head =~ $release_re ]]; then
     log "main head not a release commit: $main_head"
