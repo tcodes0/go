@@ -55,7 +55,7 @@ go test "${flags[@]}" "$testDir" >"$testOutputJson" || true
 
 # delete lines not parseable as json output from 'go test'
 regExpPrefixGo="^go:"
-_sed --in-place --regexp-extended -e "/$regExpPrefixGo/d" "$testOutputJson"
+$SED --in-place --regexp-extended -e "/$regExpPrefixGo/d" "$testOutputJson"
 
 gotestfmt -input "$testOutputJson"
 
