@@ -20,7 +20,7 @@ validate() {
 
   while read -r commit_line; do
     main_head="$commit_line"
-    # meant to only run once
+    # unusual way to obtain the head of the main branch...
     # fix for SIGPIPE errors arrising from piping git log into head -1
     break
   done < <(git log --oneline --decorate)
