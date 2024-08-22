@@ -32,6 +32,7 @@ const tMisc = "misc"
 type config struct {
 	Replace map[string]string `yaml:"replace"`
 	URL     string            `yaml:"url"`
+	Version string            `yaml:"version"`
 }
 
 type changelogLine struct {
@@ -51,6 +52,7 @@ var (
 	semverLen = 3
 	//nolint:lll // regex
 	RECommitLine = regexp.MustCompile(`^(?P<asterisk>\*? ?)(?P<type>[a-zA-Z]+)(?P<breaking1>!)?(?:\((?P<scope>[^)]+)\))?(?P<breaking2>!)?:\s(?P<description>.+?)$`)
+	errFinal     error
 )
 
 type semver []uint8
@@ -64,22 +66,8 @@ func (sv semver) String() string {
 }
 
 func main() {
-	var err error
-
-	// first deferred func will run last
 	defer func() {
-		if msg := recover(); msg != nil {
-			logger.Stacktrace(true)
-			logger.Fatalf("%v", msg)
-		}
-
-		if err != nil {
-			if errors.Is(err, errUsage) {
-				usage(err)
-			}
-
-			logger.Fatalf("%s", err.Error())
-		}
+		passAway(errFinal)
 	}()
 
 	misc.DotEnv(".env", false /* noisy */)
@@ -96,28 +84,53 @@ func main() {
 	cfg := flagset.String("config", ".commitlintrc.yml", "path to commitlint config file")
 	URL := flagset.String("url", "https://github.com/tcodes0/go", "github repository URL to generate commit links")
 	module := flagset.String("module", "", "module changed, used for changelog title (required)")
+	fVerShort := flagset.Bool("v", false, "print version and exit")
+	fVerLong := flagset.Bool("version", false, "print version and exit")
 
-	err = flagset.Parse(os.Args[1:])
+	err := flagset.Parse(os.Args[1:])
 	if err != nil {
-		err = errors.Join(err, errUsage)
-
-		return
-	}
-
-	if *module == "" {
-		err = errors.Join(errors.New("module required"), errUsage)
+		errFinal = errors.Join(err, errUsage)
 
 		return
 	}
 
 	err = yaml.Unmarshal(raw, &configs)
 	if err != nil {
-		err = errors.Join(err, errUsage)
+		errFinal = errors.Join(err, errUsage)
 
 		return
 	}
 
-	err = changelog(*cfg, *URL, *module)
+	if *fVerShort || *fVerLong {
+		fmt.Println(configs.Version)
+
+		return
+	}
+
+	if *module == "" {
+		errFinal = errors.Join(errors.New("module required"), errUsage)
+
+		return
+	}
+
+	errFinal = changelog(*cfg, *URL, *module)
+}
+
+// Defer from main() very early; the first deferred function will run last.
+// Gracefully handles panics and fatal errors. Replaces os.exit(1).
+func passAway(fatal error) {
+	if msg := recover(); msg != nil {
+		logger.Stacktrace(true)
+		logger.Fatalf("%v", msg)
+	}
+
+	if fatal != nil {
+		if errors.Is(fatal, errUsage) || errors.Is(fatal, flag.ErrHelp) {
+			usage(fatal)
+		}
+
+		logger.Fatalf("%s", fatal.Error())
+	}
 }
 
 func usage(err error) {
