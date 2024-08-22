@@ -6,6 +6,7 @@
 package main
 
 import (
+	_ "embed"
 	"errors"
 	"flag"
 	"fmt"
@@ -19,6 +20,7 @@ import (
 	"github.com/tcodes0/go/cmd"
 	"github.com/tcodes0/go/logging"
 	"github.com/tcodes0/go/misc"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -27,11 +29,18 @@ const (
 	actionBackup = "backup"
 )
 
+type config struct {
+	Version string `yaml:"version"`
+}
+
 var (
+	//go:embed config.yml
+	raw          string
 	logger       = &logging.Logger{}
 	flagset      = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 	actions      = []string{actionLink, actionRemove, actionBackup}
 	errUsage     = errors.New("see usage")
+	errFinal     error
 	descriptions = []string{
 		"create symbolic link; provide files in pairs, one per line, first is source, second is link",
 		"delete; one file per line",
@@ -40,21 +49,8 @@ var (
 )
 
 func main() {
-	var err error
-
-	// first deferred func will run last
 	defer func() {
-		if msg := recover(); msg != nil {
-			logger.Fatalf("%v", msg)
-		}
-
-		if err != nil {
-			if errors.Is(err, errUsage) {
-				usage(err)
-			}
-
-			logger.Fatalf("%s", err.Error())
-		}
+		passAway(errFinal)
 	}()
 
 	misc.DotEnv(".env", false /* noisy */)
@@ -71,25 +67,78 @@ func main() {
 	fConfig := flagset.String("config", "", "path to config file (required)")
 	fCommitL := flagset.Bool("commit", false, "apply changes (default: false)")
 	fCommitS := flagset.Bool("c", false, "apply changes (default: false)")
+	fVerShort := flagset.Bool("v", false, "print version and exit")
+	fVerLong := flagset.Bool("version", false, "print version and exit")
 
-	err = flagset.Parse(os.Args[1:])
+	err := flagset.Parse(os.Args[1:])
 	if err != nil {
-		err = errors.Join(err, errUsage)
+		errFinal = err
+
+		return
+	}
+
+	cfg := config{}
+
+	err = yaml.Unmarshal([]byte(raw), &cfg)
+	if err != nil {
+		errFinal = errors.Join(err, errUsage)
+
+		return
+	}
+
+	if *fVerShort || *fVerLong {
+		fmt.Println(cfg.Version)
+
+		return
+	}
+
+	action, files, err := readConfig(*fConfig)
+	if err != nil {
+		errFinal = errors.Join(err, errUsage)
 
 		return
 	}
 
 	fDryrun := !(*fCommitL || *fCommitS)
+	files = envVarResolver(files)
+	errFinal = filer(files, action, fDryrun)
+}
 
-	action, files, err := readConfig(*fConfig)
-	if err != nil {
-		err = errors.Join(err, errUsage)
-
-		return
+// Defer from main() very early; the first deferred function will run last.
+// Gracefully handles panics and fatal errors. Replaces os.exit(1).
+func passAway(fatal error) {
+	if msg := recover(); msg != nil {
+		logger.Stacktrace(true)
+		logger.Fatalf("%v", msg)
 	}
 
-	files = envVarResolver(files)
-	err = filer(files, action, fDryrun)
+	if fatal != nil {
+		if errors.Is(fatal, errUsage) || errors.Is(fatal, flag.ErrHelp) {
+			usage(fatal)
+		}
+
+		logger.Fatalf("%s", fatal.Error())
+	}
+}
+
+func usage(err error) {
+	if !errors.Is(err, flag.ErrHelp) {
+		flagset.Usage()
+	}
+
+	fmt.Println(`Perform an action on a list of files.
+First line of config file should be the action.
+Changes nothing by default, pass -commit
+Comments with # and newlines are ignored in config file
+
+Actions available:`)
+
+	for i, action := range actions {
+		fmt.Printf("- %s: %s\n", action, descriptions[i])
+	}
+
+	fmt.Println()
+	fmt.Println(cmd.EnvVarUsage())
 }
 
 func readConfig(configPath string) (action string, lines []string, err error) {
@@ -123,26 +172,6 @@ func readConfig(configPath string) (action string, lines []string, err error) {
 	}
 
 	return action, files, nil
-}
-
-func usage(err error) {
-	if !errors.Is(err, flag.ErrHelp) {
-		flagset.Usage()
-	}
-
-	fmt.Println("perform an action on a list of files")
-	fmt.Println("first line of config file should be the action")
-	fmt.Println("changes nothing by default, pass -commit")
-	fmt.Println("comments with # and newlines are ignored in config file")
-	fmt.Println()
-	fmt.Println("actions available:")
-
-	for i, action := range actions {
-		fmt.Printf("- %s: %s\n", action, descriptions[i])
-	}
-
-	fmt.Println()
-	fmt.Println(cmd.EnvVarUsage())
 }
 
 func envVarResolver(files []string) []string {
