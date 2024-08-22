@@ -32,29 +32,23 @@ const (
 	varTasksModF = "<task-not-module-names>" // all not module task names
 )
 
+type config struct {
+	Version string         `yaml:"version"`
+	Tasks   []*runner.Task `yaml:"tasks"`
+}
+
 var (
 	//go:embed config.yml
-	config string
-	tasks  []*runner.Task
-	logger = &logging.Logger{}
+	rawConfig string
+	logger    = &logging.Logger{}
+	cfg       config
+	flagset   = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	errFinal  error
 )
 
 func main() {
-	var err error
-
-	// first deferred func will run last
 	defer func() {
-		if msg := recover(); msg != nil {
-			logger.Fatalf("%v", msg)
-		}
-
-		if err != nil {
-			if errors.Is(err, runner.ErrUsage) {
-				usage(err)
-			}
-
-			logger.Fatalf("%s", err.Error())
-		}
+		passAway(errFinal)
 	}()
 
 	misc.DotEnv(".env", false /*noisy*/)
@@ -68,15 +62,47 @@ func main() {
 	}
 
 	logger = logging.Create(opts...)
+	fVerShort := flagset.Bool("v", false, "print version and exit")
+	fVerLong := flagset.Bool("version", false, "print version and exit")
 
-	err = yaml.Unmarshal([]byte(config), &tasks)
+	err := yaml.Unmarshal([]byte(rawConfig), &cfg)
 	if err != nil {
-		err = errors.Join(err, runner.ErrUsage)
+		errFinal = errors.Join(err, runner.ErrUsage)
 
 		return
 	}
 
-	err = run(os.Args[1:]...)
+	err = flagset.Parse(os.Args[1:])
+	if err != nil {
+		errFinal = errors.Join(err, runner.ErrUsage)
+
+		return
+	}
+
+	if *fVerShort || *fVerLong {
+		fmt.Println(cfg.Version)
+
+		return
+	}
+
+	errFinal = run(os.Args[1:]...)
+}
+
+// Defer from main() very early; the first deferred function will run last.
+// Gracefully handles panics and fatal errors. Replaces os.exit(1).
+func passAway(fatal error) {
+	if msg := recover(); msg != nil {
+		logger.Stacktrace(true)
+		logger.Fatalf("%v", msg)
+	}
+
+	if fatal != nil {
+		if errors.Is(fatal, runner.ErrUsage) || errors.Is(fatal, flag.ErrHelp) {
+			usage(fatal)
+		}
+
+		logger.Fatalf("%s", fatal.Error())
+	}
 }
 
 func usage(err error) {
@@ -84,27 +110,20 @@ func usage(err error) {
 		fmt.Println()
 	}
 
-	fmt.Println("runner: miscellaneous automation tool")
-	fmt.Println("run task: ./run <task> <module?> <other args?>")
-	fmt.Println("task help: ./run <task> -h")
-	fmt.Println()
-	fmt.Println("module tasks:")
+	moduleTasks, repoTasks := []string{}, []string{}
 
-	for _, task := range lo.Filter(tasks, func(t *runner.Task, _ int) bool { return t.Module }) {
+	for _, task := range lo.Filter(cfg.Tasks, func(t *runner.Task, _ int) bool { return t.Module }) {
 		line := "./run "
 		line += task.Name + "\t"
 
-		fmt.Println(line)
+		moduleTasks = append(moduleTasks, line)
 	}
 
-	fmt.Println()
-	fmt.Println("repository tasks:")
-
-	for _, task := range lo.Filter(tasks, func(t *runner.Task, _ int) bool { return !t.Module }) {
+	for _, task := range lo.Filter(cfg.Tasks, func(t *runner.Task, _ int) bool { return !t.Module }) {
 		line := "./run "
 		line += task.Name + "\t"
 
-		fmt.Println(line)
+		repoTasks = append(repoTasks, line)
 	}
 
 	modules, e := cmd.FindModules(logger)
@@ -112,12 +131,22 @@ func usage(err error) {
 		fmt.Printf("finding modules: error: %v\n", e)
 	}
 
-	fmt.Println()
-	fmt.Println("modules:")
-	fmt.Println("- " + strings.Join(modules, "\n- "))
-	fmt.Println()
-	fmt.Println(cmd.EnvVarUsage())
-	fmt.Println(".env file is used")
+	fmt.Printf(`runner: miscellaneous automation tool
+run task:  ./run <task> <module?> <other args?>
+task help: ./run <task> -h
+
+module tasks:
+%s
+
+repository tasks:
+%s
+
+modules:
+- %s
+
+%s
+.env file is used
+`, strings.Join(moduleTasks, "\n"), strings.Join(repoTasks, "\n"), strings.Join(modules, "\n- "), cmd.EnvVarUsage())
 }
 
 // run <task> <module or input1> ...inputs.
@@ -126,9 +155,9 @@ func run(inputs ...string) error {
 		return misc.Wrap(runner.ErrUsage, "task is required")
 	}
 
-	theTask, found := lo.Find(tasks, func(t *runner.Task) bool { return t.Name == inputs[0] })
+	theTask, found := lo.Find(cfg.Tasks, func(t *runner.Task) bool { return t.Name == inputs[0] })
 	if !found {
-		taskNames := lo.Map(tasks, func(t *runner.Task, _ int) string { return t.Name })
+		taskNames := lo.Map(cfg.Tasks, func(t *runner.Task, _ int) string { return t.Name })
 
 		meant, ok := runner.DidYouMean(inputs[0], taskNames)
 		if ok {
@@ -209,11 +238,11 @@ func envVarMapper(inputs []string) func(pair string, _ int) string {
 func inputVarMapper(inputs []string) func(input string, _ int) string {
 	return func(input string, _ int) string {
 		if strings.Contains(input, varTasksModT) {
-			return strings.ReplaceAll(input, varTasksModT, taskNameFilterJoin(tasks, func(t *runner.Task, _ int) bool { return t.Module }))
+			return strings.ReplaceAll(input, varTasksModT, taskNameFilterJoin(cfg.Tasks, func(t *runner.Task, _ int) bool { return t.Module }))
 		}
 
 		if strings.Contains(input, varTasksModF) {
-			return strings.ReplaceAll(input, varTasksModF, taskNameFilterJoin(tasks, func(t *runner.Task, _ int) bool { return !t.Module }))
+			return strings.ReplaceAll(input, varTasksModF, taskNameFilterJoin(cfg.Tasks, func(t *runner.Task, _ int) bool { return !t.Module }))
 		}
 
 		if strings.Contains(input, varModule) {
