@@ -20,7 +20,8 @@ import (
 )
 
 type config struct {
-	Food string `yaml:"food"`
+	Food    string `yaml:"food"`
+	Version string `yaml:"version"`
 }
 
 var (
@@ -30,25 +31,12 @@ var (
 	flagset  = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 	logger   = &logging.Logger{}
 	errUsage = errors.New("see usage")
+	errFinal error
 )
 
 func main() {
-	var err error
-
-	// first deferred func will run last
 	defer func() {
-		if msg := recover(); msg != nil {
-			logger.Stacktrace(true)
-			logger.Fatalf("%v", msg)
-		}
-
-		if err != nil {
-			if errors.Is(err, errUsage) {
-				usage(err)
-			}
-
-			logger.Fatalf("%s", err.Error())
-		}
+		passAway(errFinal)
 	}()
 
 	misc.DotEnv(".env", false /* noisy */)
@@ -64,21 +52,38 @@ func main() {
 	logger = logging.Create(opts...)
 	_ = flagset.Bool("pizza", true, "pepperoni or mozzarella!")
 
-	err = flagset.Parse(os.Args[1:])
+	err := flagset.Parse(os.Args[1:])
 	if err != nil {
-		err = errors.Join(err, errUsage)
+		errFinal = errors.Join(err, errUsage)
 
 		return
 	}
 
 	err = yaml.Unmarshal(raw, &configs)
 	if err != nil {
-		err = errors.Join(err, errUsage)
+		errFinal = errors.Join(err, errUsage)
 
 		return
 	}
 
-	err = template()
+	errFinal = template()
+}
+
+// Defer from main() very early; the first deferred function will run last.
+// Gracefully handles panics and fatal errors. Replaces os.exit(1).
+func passAway(fatal error) {
+	if msg := recover(); msg != nil {
+		logger.Stacktrace(true)
+		logger.Fatalf("%v", msg)
+	}
+
+	if fatal != nil {
+		if errors.Is(fatal, errUsage) || errors.Is(fatal, flag.ErrHelp) {
+			usage(fatal)
+		}
+
+		logger.Fatalf("%s", fatal.Error())
+	}
 }
 
 func usage(err error) {
@@ -86,7 +91,7 @@ func usage(err error) {
 		flagset.Usage()
 	}
 
-	fmt.Println("description here")
+	fmt.Println(`Template`)
 	fmt.Println()
 	fmt.Println(cmd.EnvVarUsage())
 }
