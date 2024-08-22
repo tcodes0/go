@@ -20,7 +20,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/samber/lo"
 	"github.com/tcodes0/go/cmd"
 	"github.com/tcodes0/go/logging"
 	"github.com/tcodes0/go/misc"
@@ -82,8 +81,9 @@ func main() {
 
 	logger = logging.Create(opts...)
 	cfg := flagset.String("config", ".commitlintrc.yml", "path to commitlint config file")
-	URL := flagset.String("url", "https://github.com/tcodes0/go", "github repository URL to generate commit links")
-	module := flagset.String("module", "", "module changed, used for changelog title (required)")
+	title := flagset.String("title", "<empty>", "release title; new version and date will be added")
+	tagPrefix := flagset.String("tagprefix", "", "prefix to be concatenated to semver tag, i.e ${PREFIX}v1.0.0")
+	url := flagset.String("url", "", "github repository URL to point commit links at (required)")
 	fVerShort := flagset.Bool("v", false, "print version and exit")
 	fVerLong := flagset.Bool("version", false, "print version and exit")
 
@@ -107,13 +107,13 @@ func main() {
 		return
 	}
 
-	if *module == "" {
-		errFinal = errors.Join(errors.New("module required"), errUsage)
+	if *url == "" {
+		errFinal = errors.Join(errors.New("url required"), errUsage)
 
 		return
 	}
 
-	errFinal = changelog(*cfg, *URL, *module)
+	errFinal = changelog(*cfg, *url, *title, *tagPrefix)
 }
 
 // Defer from main() very early; the first deferred function will run last.
@@ -146,17 +146,7 @@ unstable tags (0.x.x) will not be promoted to 1.0.0 automatically, do it manuall
 `, cmd.EnvVarUsage())
 }
 
-func changelog(cfg, url, module string) error {
-	mods, err := cmd.FindModules(logger)
-	if err != nil {
-		return misc.Wrapfl(err)
-	}
-
-	_, found := lo.Find(mods, func(m string) bool { return m == module })
-	if !found {
-		return fmt.Errorf("unknown module: %s", module)
-	}
-
+func changelog(cfg, url, title, tagPrefix string) error {
 	// format: hash\n (tags branches)\ncommit message and body in multiple lines\n
 	byteLogLines, err := exec.Command("git", "log", "--pretty=format:%H%n%d%n%B").Output()
 	if err != nil {
@@ -165,7 +155,7 @@ func changelog(cfg, url, module string) error {
 
 	splitLines := strings.Split(string(byteLogLines), "\n")
 
-	releaseLines, oldVer, err := parseGitLog(module, splitLines)
+	releaseLines, oldVer, err := parseGitLog(tagPrefix, splitLines)
 	if err != nil {
 		return misc.Wrapfl(err)
 	}
@@ -176,11 +166,11 @@ func changelog(cfg, url, module string) error {
 	}
 
 	document := &strings.Builder{}
-
 	newVer, body, footer := writeContent(types, releaseLines, oldVer, url)
-	title := fmt.Sprintf("%s: v%s %s\n\n", module, newVer, md("i", "("+time.Now().Format("2006-01-02")+")"))
-	document.WriteString(md("h1", title))
-	document.WriteString(md("h3", compareLink(url, tag(module, newVer.String()), tag(module, oldVer.String()))) + "\n\n")
+	titleH1 := fmt.Sprintf("%s: v%s %s\n\n", title, newVer, md("i", "("+time.Now().Format("2006-01-02")+")"))
+
+	document.WriteString(md("h1", titleH1))
+	document.WriteString(md("h3", compareLink(url, tag(tagPrefix, newVer.String()), tag(tagPrefix, oldVer.String()))) + "\n\n")
 
 	if body.Len() != 0 {
 		document.WriteString(body.String())
@@ -204,10 +194,10 @@ func changelog(cfg, url, module string) error {
 	return nil
 }
 
-func parseGitLog(module string, allLogLines []string) (releaseLogLines []changelogLine, versionOld semver, err error) {
+func parseGitLog(tagPrefix string, allLogLines []string) (releaseLogLines []changelogLine, versionOld semver, err error) {
 	oldVer := make(semver, 0, semverLen)
 	releaseLogLines = make([]changelogLine, 0, len(allLogLines))
-	REReleaseTag := regexp.MustCompile("tag: " + module + `\/v(?P<version>\d+\.\d+\.\d+)`)
+	REReleaseTag := regexp.MustCompile("tag: " + tagPrefix + `v(?P<version>\d+\.\d+\.\d+)`)
 	REHash := regexp.MustCompile(`^[abcdef0-9]+$`)
 	hash := ""
 
@@ -253,7 +243,7 @@ func parseGitLog(module string, allLogLines []string) (releaseLogLines []changel
 	}
 
 	if len(oldVer) == 0 {
-		return nil, nil, fmt.Errorf("tag not found: %s", tag(module, "?.?.?"))
+		return nil, nil, fmt.Errorf("tag not found: %s", tag(tagPrefix, "?.?.?"))
 	}
 
 	return releaseLogLines, oldVer, nil
@@ -457,8 +447,8 @@ func commitLink(url, hash string) string {
 	return fmt.Sprintf("[%s](%s/commit/%s)", hash[:8], url, hash)
 }
 
-func tag(module, version string) string {
-	return module + "/v" + version
+func tag(prefix, version string) string {
+	return prefix + "v" + version
 }
 
 func compareLink(url, tag1, tag2 string) string {
