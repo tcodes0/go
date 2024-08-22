@@ -51,6 +51,8 @@ func main() {
 
 	logger = logging.Create(opts...)
 	_ = flagset.Bool("pizza", true, "pepperoni or mozzarella!")
+	fVerShort := flagset.Bool("v", false, "print version and exit")
+	fVerLong := flagset.Bool("version", false, "print version and exit")
 
 	err := flagset.Parse(os.Args[1:])
 	if err != nil {
@@ -62,6 +64,12 @@ func main() {
 	err = yaml.Unmarshal(raw, &configs)
 	if err != nil {
 		errFinal = errors.Join(err, errUsage)
+
+		return
+	}
+
+	if *fVerShort || *fVerLong {
+		fmt.Println(configs.Version)
 
 		return
 	}
