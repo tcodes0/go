@@ -138,11 +138,12 @@ func usage(err error) {
 		flagset.Usage()
 	}
 
-	fmt.Println("generate a markdown changelog from git log")
-	fmt.Println("a prior tag with format module/vx.x.x must exist on main")
-	fmt.Println("unstable tags (0.x.x) will not be promoted to 1.0.0 automatically, do it manually")
-	fmt.Println()
-	fmt.Println(cmd.EnvVarUsage())
+	fmt.Printf(`generate a markdown changelog from git log
+a prior tag with format module/vx.x.x must exist on main
+unstable tags (0.x.x) will not be promoted to 1.0.0 automatically, do it manually
+
+%s
+`, cmd.EnvVarUsage())
 }
 
 func changelog(cfg, url, module string) error {

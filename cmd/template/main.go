@@ -99,9 +99,11 @@ func usage(err error) {
 		flagset.Usage()
 	}
 
-	fmt.Println(`Template`)
-	fmt.Println()
-	fmt.Println(cmd.EnvVarUsage())
+	fmt.Printf(`
+Template
+
+%s
+`, cmd.EnvVarUsage())
 }
 
 func template() error {

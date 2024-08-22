@@ -126,19 +126,22 @@ func usage(err error) {
 		flagset.Usage()
 	}
 
-	fmt.Println(`Perform an action on a list of files.
+	actionLines := []string{}
+
+	for i, action := range actions {
+		actionLines = append(actionLines, fmt.Sprintf("- %s: %s", action, descriptions[i]))
+	}
+
+	fmt.Printf(`Perform an action on a list of files.
 First line of config file should be the action.
 Changes nothing by default, pass -commit
 Comments with # and newlines are ignored in config file
 
-Actions available:`)
+Actions available:
+%s
 
-	for i, action := range actions {
-		fmt.Printf("- %s: %s\n", action, descriptions[i])
-	}
-
-	fmt.Println()
-	fmt.Println(cmd.EnvVarUsage())
+%s
+`, strings.Join(actionLines, "\n"), cmd.EnvVarUsage())
 }
 
 func readConfig(configPath string) (action string, lines []string, err error) {

@@ -137,11 +137,12 @@ func usage(err error) {
 		flagset.Usage()
 	}
 
-	fmt.Println()
-	fmt.Println("recursively finds and reports files missing boilerplate header")
-	fmt.Println("-h to see required flags")
-	fmt.Println()
-	fmt.Println(cmd.EnvVarUsage())
+	fmt.Printf(`
+recursively finds and reports files missing boilerplate header
+-h to see required flags
+
+%s
+`, cmd.EnvVarUsage())
 }
 
 func boilerplate(findExpr, header string, fix, shebang bool, ignore *regexp.Regexp) error {
