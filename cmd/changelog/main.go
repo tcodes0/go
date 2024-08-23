@@ -139,7 +139,7 @@ func usage(err error) {
 	}
 
 	fmt.Printf(`generate a markdown changelog from git log
-a prior tag with format module/vx.x.x must exist on main
+a prior tag with format ${PREFIX}vx.x.x must exist on main
 unstable tags (0.x.x) will not be promoted to 1.0.0 automatically, do it manually
 
 %s
@@ -236,7 +236,7 @@ func parseGitLog(tagPrefix string, allLogLines []string) (releaseLogLines []chan
 				oldVer = append(oldVer, uint8(version))
 			}
 
-			// seeing a module tag means it is the old tag,
+			// seeing a tag means it is the old tag,
 			// the release log ended and we are done
 			break
 		}
