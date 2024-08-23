@@ -20,7 +20,7 @@ flags+=(-v)
 # detect race conditions
 flags+=(-race)
 
-if requestedHelp "$*"; then
+if requested_help "$*"; then
   msgln "Inputs:"
   msgln "<module>\t build the module on $buildDir\t (required)"
   msgln "-install\t install build output"

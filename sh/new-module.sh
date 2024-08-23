@@ -37,7 +37,7 @@ formatCmd="
 
 ### validation, input handling ###
 
-if requestedHelp "$*" || [ -z "$name" ]; then
+if requested_help "$*" || [ -z "$name" ]; then
   msgln "Inputs:"
   msgln "<name>\t initializes a new go module called <name>\t (required)"
   msgln "-cmd\t instead of a module init cmd/<name>"

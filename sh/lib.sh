@@ -3,88 +3,104 @@
 # Use of this source code is governed by the BSD-3-Clause
 # license that can be found in the LICENSE file and online
 # at https://opensource.org/license/BSD-3-clause.
+#
+# Library of shell functions and vars.
+# This script is sourced by path from other scripts, careful if moving or renaming it.
+# Sourcing this library causes side effects only to library variables.
 
-########################################################
-## this script is sourced by path from other scripts, ##
-## careful if moving or renaming it                   ##
-########################################################
+############
+### vars ###
+############
 
-set -euo pipefail
-shopt -s globstar
+# ANSI escape codes for specific colors
+export LIB_COLOR_PASS="\e[7;38;05;242m PASS \e[0m"
+export LIB_COLOR_FAIL="\e[2;7;38;05;197;47m FAIL \e[0m"
 
-export LIB_COLOR_PASS="\e[7;38;05;242m PASS \e[0m" LIB_COLOR_FAIL="\e[2;7;38;05;197;47m FAIL \e[0m"
-export LIB_VISUAL_END="\e[0m" LIB_FORMAT_DIM="\e[2m" CHANGELOG_FILE="CHANGELOG.md"
-# wrapper var to avoid macos sed incompatibilities
-export SED=sed
+# ANSI escape codes for visual formatting
+export LIB_VISUAL_END="\e[0m"
+export LIB_FORMAT_DIM="\e[2m"
 
-# example: if macos;
+# on most systems, sed is GNU sed
+export SED="sed"
+
+###############
+### private ###
+###############
+
+# internal, do not use
+__log() {
+  local level=$1 linenum=${2:-} msg=${*:3}
+
+  if [ ! "$msg" ]; then msg="<empty>"; fi
+  if [ ! "$linenum" ]; then linenum="?"; fi
+
+  echo -e "$level ($0:$linenum) $msg"
+} >&2
+
+#################
+### functions ###
+#################
+
+# Description: Reports whether the current OS is macOS
+# Example    : if macos; then echo "yes"; fi
 macos() {
   [ "$(uname)" == "Darwin" ]
 }
 
-if macos; then
-  SED=gsed
-fi
-
-# example: msgln hello world
-msgln() {
-  msg "$*\\n"
-}
-
-# internal, do not use
-__log() {
-  local level=$1 linenum=${2:?} msg=${*:3}
-
-  if [ "$msg" ]; then
-    echo -ne "$level ($0:$linenum) $msg\\n" >&2
-  fi
-}
-
-# example: log some information
-log() {
-  __log INFO "$@"
-}
-
-# example: msg hello world
+# Description: Print a message without a newline
+# Args       : Any
+# STDOUT     : Message
+# Example    : msg hello world
 msg() {
   echo -ne "$*"
 }
 
-# output example: "23". Lines are terminal Y axis
-currentTerminalLine() {
-  # https://github.com/dylanaraps/pure-bash-bible#get-the-current-cursor-position
-  IFS='[;' read -p $'\e[6n' -d R -rs _ currentLine _ _
-  printf "%s" "$currentLine"
+# Description: Print a message with a newline
+# Args       : Any
+# STDOUT     : Message + \n
+# Example    : msg hello world
+msgln() {
+  msg "$*\\n"
 }
 
-# example: requestedHelp "$*"
-requestedHelp() {
-  if ! [[ "$*" =~ -h|--help|help ]]; then
-    return 1
-  fi
+# Description: Log a message with INFO level and line number
+# Args       : Any
+# STDERR     : INFO (pizza.sh:34) message + \n
+# Example    : log $LINENO pizza order received
+log() {
+  __log INFO "$@"
 }
 
-# internal, do not use
-__e() {
-  local linenum=${1:?} funcname=$2 msg=ERROR
-
-  if [ "${*:3}" ]; then
-    msg=${*:3}
-  fi
-
-  echo -ne "$msg $0:$linenum ($funcname)" >&2
-}
-
-# usage: err $LINENO "message" (default message: error)
+# Description: Log a message with ERROR level and line number
+# Args       : Any
+# STDERR     : ERROR (pizza.sh:34) message + \n
+# Example    : err $LINENO oven temperature too high
 err() {
-  __e "$1" "${FUNCNAME[1]}" "${*:2}"
+  __log ERROR "$@"
 }
 
-#- - - - - - - - - - -
-
-# usage: fatal $LINENO "message" (default message: error)
+# Description: Calls err with args, then exits with status 1
+# Args       : Any
+# STDERR     : FATAL (pizza.sh:34) message + \n
+# Example    : fatal $LINENO we've run out of cheese
 fatal() {
-  __e "$1" "${FUNCNAME[1]}" "FATAL: ${*:2}"
-
+  __log FATAL "$@"
   exit 1
 }
+
+# Description: Reports whether the user provided a standard help flag
+# Args       : $@
+# Example    : if requested_help "$*"; then echo "help"; fi
+requested_help() {
+  [[ "$*" =~ -h|--help|help ]]
+}
+
+####################
+### side effects ###
+####################
+
+if macos; then
+  # on macOS, this library assumes gsed is installed.
+  # BSD sed is very different from GNU sed
+  SED="gsed"
+fi

@@ -33,7 +33,7 @@ renameExpect() {
 
 ### script ###
 
-if requestedHelp "$*"; then
+if requested_help "$*"; then
   msgln "generate test mocks using mockery"
   exit 1
 fi

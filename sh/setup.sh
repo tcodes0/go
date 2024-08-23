@@ -53,7 +53,7 @@ exitShowProblems() {
   exit 1
 }
 
-if requestedHelp "$*"; then
+if requested_help "$*"; then
   msgln "check for missing tools, configuration and show notes"
   exit 1
 fi

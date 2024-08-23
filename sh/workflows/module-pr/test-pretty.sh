@@ -9,7 +9,7 @@ shopt -s globstar
 # shellcheck source=../../lib.sh
 source "$PWD/sh/lib.sh"
 
-if requestedHelp "$*"; then
+if requested_help "$*"; then
   msgln "Inputs:"
   msgln "<module>\t run tests; output coverage files\t (required)"
   exit 1
