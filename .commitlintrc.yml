@@ -1,5 +1,6 @@
 # https://commitlint.js.org/reference/rules.html
 defaultIgnores: true
+extends: "@commitlint/config-conventional"
 helpUrl: ""
 rules:
   body-leading-blank:

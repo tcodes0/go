@@ -153,6 +153,13 @@ exitShowProblems "install the missing tools with"
 
 # configuration
 
+if ! npm --global list | grep -q @commitlint/config-conventional; then
+  fail 'commitlint config' 'missing @commitlint/config-conventional'
+  fixProblems+=("npm install --global @commitlint/config-conventional")
+else
+  pass '@commitlint/config-conventional installed'
+fi
+
 if ! [[ "$SHELL" =~ bash ]]; then
   fail 'shell is bash' "expected bash as shell but got $SHELL"
   fixProblems+=("either use bash as default shell or start bash as subshell using 'bash'")
