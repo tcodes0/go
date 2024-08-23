@@ -20,7 +20,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/samber/lo"
 	"github.com/tcodes0/go/cmd"
 	"github.com/tcodes0/go/logging"
 	"github.com/tcodes0/go/misc"
@@ -32,6 +31,7 @@ const tMisc = "misc"
 type config struct {
 	Replace map[string]string `yaml:"replace"`
 	URL     string            `yaml:"url"`
+	Version string            `yaml:"version"`
 }
 
 type changelogLine struct {
@@ -49,8 +49,9 @@ var (
 	logger    = &logging.Logger{}
 	errUsage  = errors.New("see usage")
 	semverLen = 3
-	//nolint:lll // regex
+	//nolint:lll // regex https://regex101.com/r/tYwQcJ/3
 	RECommitLine = regexp.MustCompile(`^(?P<asterisk>\*? ?)(?P<type>[a-zA-Z]+)(?P<breaking1>!)?(?:\((?P<scope>[^)]+)\))?(?P<breaking2>!)?:\s(?P<description>.+?)$`)
+	errFinal     error
 )
 
 type semver []uint8
@@ -64,22 +65,8 @@ func (sv semver) String() string {
 }
 
 func main() {
-	var err error
-
-	// first deferred func will run last
 	defer func() {
-		if msg := recover(); msg != nil {
-			logger.Stacktrace(true)
-			logger.Fatalf("%v", msg)
-		}
-
-		if err != nil {
-			if errors.Is(err, errUsage) {
-				usage(err)
-			}
-
-			logger.Fatalf("%s", err.Error())
-		}
+		passAway(errFinal)
 	}()
 
 	misc.DotEnv(".env", false /* noisy */)
@@ -94,30 +81,56 @@ func main() {
 
 	logger = logging.Create(opts...)
 	cfg := flagset.String("config", ".commitlintrc.yml", "path to commitlint config file")
-	URL := flagset.String("url", "https://github.com/tcodes0/go", "github repository URL to generate commit links")
-	module := flagset.String("module", "", "module changed, used for changelog title (required)")
+	title := flagset.String("title", "", "release title; new version and date will be added")
+	tagPrefix := flagset.String("tagprefix", "", "prefix to be concatenated to semver tag, i.e ${PREFIX}v1.0.0")
+	url := flagset.String("url", "", "github repository URL to point commit links at (required)")
+	fVerShort := flagset.Bool("v", false, "print version and exit")
+	fVerLong := flagset.Bool("version", false, "print version and exit")
 
-	err = flagset.Parse(os.Args[1:])
+	err := flagset.Parse(os.Args[1:])
 	if err != nil {
-		err = errors.Join(err, errUsage)
-
-		return
-	}
-
-	if *module == "" {
-		err = errors.Join(errors.New("module required"), errUsage)
+		errFinal = errors.Join(err, errUsage)
 
 		return
 	}
 
 	err = yaml.Unmarshal(raw, &configs)
 	if err != nil {
-		err = errors.Join(err, errUsage)
+		errFinal = errors.Join(err, errUsage)
 
 		return
 	}
 
-	err = changelog(*cfg, *URL, *module)
+	if *fVerShort || *fVerLong {
+		fmt.Println(configs.Version)
+
+		return
+	}
+
+	if *url == "" {
+		errFinal = errors.Join(errors.New("url required"), errUsage)
+
+		return
+	}
+
+	errFinal = changelog(*cfg, *url, *title, *tagPrefix)
+}
+
+// Defer from main() very early; the first deferred function will run last.
+// Gracefully handles panics and fatal errors. Replaces os.exit(1).
+func passAway(fatal error) {
+	if msg := recover(); msg != nil {
+		logger.Stacktrace(true)
+		logger.Fatalf("%v", msg)
+	}
+
+	if fatal != nil {
+		if errors.Is(fatal, errUsage) || errors.Is(fatal, flag.ErrHelp) {
+			usage(fatal)
+		}
+
+		logger.Fatalf("%s", fatal.Error())
+	}
 }
 
 func usage(err error) {
@@ -125,22 +138,18 @@ func usage(err error) {
 		flagset.Usage()
 	}
 
-	fmt.Println("generate a markdown changelog from git log")
-	fmt.Println("a prior tag with format module/vx.x.x must exist on main")
-	fmt.Println("unstable tags (0.x.x) will not be promoted to 1.0.0 automatically, do it manually")
-	fmt.Println()
-	fmt.Println(cmd.EnvVarUsage())
+	fmt.Printf(`generate a markdown changelog from git log
+a prior tag with format ${PREFIX}vx.x.x must exist on main
+unstable tags (0.x.x) will not be promoted to 1.0.0 automatically, do it manually
+
+%s
+`, cmd.EnvVarUsage())
 }
 
-func changelog(cfg, url, module string) error {
-	mods, err := cmd.FindModules(logger)
+func changelog(cfg, url, title, tagPrefix string) error {
+	err := validateInputs(title, tagPrefix)
 	if err != nil {
 		return misc.Wrapfl(err)
-	}
-
-	_, found := lo.Find(mods, func(m string) bool { return m == module })
-	if !found {
-		return fmt.Errorf("unknown module: %s", module)
 	}
 
 	// format: hash\n (tags branches)\ncommit message and body in multiple lines\n
@@ -151,7 +160,7 @@ func changelog(cfg, url, module string) error {
 
 	splitLines := strings.Split(string(byteLogLines), "\n")
 
-	releaseLines, oldVer, err := parseGitLog(module, splitLines)
+	releaseLines, oldVer, err := parseGitLog(tagPrefix, splitLines)
 	if err != nil {
 		return misc.Wrapfl(err)
 	}
@@ -161,12 +170,17 @@ func changelog(cfg, url, module string) error {
 		return misc.Wrapfl(err)
 	}
 
-	document := &strings.Builder{}
+	titleColon := ": "
+	if title == "" {
+		titleColon = ""
+	}
 
+	document := &strings.Builder{}
 	newVer, body, footer := writeContent(types, releaseLines, oldVer, url)
-	title := fmt.Sprintf("%s: v%s %s\n\n", module, newVer, md("i", "("+time.Now().Format("2006-01-02")+")"))
-	document.WriteString(md("h1", title))
-	document.WriteString(md("h3", compareLink(url, tag(module, newVer.String()), tag(module, oldVer.String()))) + "\n\n")
+	titleH1 := fmt.Sprintf("%s%s%sv%s %s\n\n", title, titleColon, tagPrefix, newVer, md("i", "("+time.Now().Format("2006-01-02")+")"))
+
+	document.WriteString(md("h1", titleH1))
+	document.WriteString(md("h3", compareLink(url, tag(tagPrefix, newVer.String()), tag(tagPrefix, oldVer.String()))) + "\n\n")
 
 	if body.Len() != 0 {
 		document.WriteString(body.String())
@@ -190,10 +204,27 @@ func changelog(cfg, url, module string) error {
 	return nil
 }
 
-func parseGitLog(module string, allLogLines []string) (releaseLogLines []changelogLine, versionOld semver, err error) {
+func validateInputs(title, tagPrefix string) error {
+	RETitleRaw := `^[a-zA-Z0-9 !%&*()-+]+$`
+	RETitle := regexp.MustCompile(RETitleRaw)
+	REPrefixRaw := `^[a-zA-Z0-9\/]+$`
+	RETag := regexp.MustCompile(REPrefixRaw)
+
+	if title != "" && !RETitle.MatchString(title) {
+		return fmt.Errorf("invalid title: '%s', should match %s", title, RETitleRaw)
+	}
+
+	if tagPrefix != "" && !RETag.MatchString(tagPrefix) {
+		return fmt.Errorf("invalid tag prefix: '%s', should match %s", tagPrefix, REPrefixRaw)
+	}
+
+	return nil
+}
+
+func parseGitLog(tagPrefix string, allLogLines []string) (releaseLogLines []changelogLine, versionOld semver, err error) {
 	oldVer := make(semver, 0, semverLen)
 	releaseLogLines = make([]changelogLine, 0, len(allLogLines))
-	REReleaseTag := regexp.MustCompile("tag: " + module + `\/v(?P<version>\d+\.\d+\.\d+)`)
+	REReleaseTag := regexp.MustCompile("tag: " + tagPrefix + `v(?P<version>\d+\.\d+\.\d+)`)
 	REHash := regexp.MustCompile(`^[abcdef0-9]+$`)
 	hash := ""
 
@@ -232,14 +263,14 @@ func parseGitLog(module string, allLogLines []string) (releaseLogLines []changel
 				oldVer = append(oldVer, uint8(version))
 			}
 
-			// seeing a module tag means it is the old tag,
+			// seeing a tag means it is the old tag,
 			// the release log ended and we are done
 			break
 		}
 	}
 
 	if len(oldVer) == 0 {
-		return nil, nil, fmt.Errorf("tag not found: %s", tag(module, "?.?.?"))
+		return nil, nil, fmt.Errorf("tag not found: %s", tag(tagPrefix, "?.?.?"))
 	}
 
 	return releaseLogLines, oldVer, nil
@@ -443,8 +474,8 @@ func commitLink(url, hash string) string {
 	return fmt.Sprintf("[%s](%s/commit/%s)", hash[:8], url, hash)
 }
 
-func tag(module, version string) string {
-	return module + "/v" + version
+func tag(prefix, version string) string {
+	return prefix + "v" + version
 }
 
 func compareLink(url, tag1, tag2 string) string {

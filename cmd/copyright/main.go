@@ -24,7 +24,8 @@ import (
 )
 
 type config struct {
-	Header string `yaml:"header"`
+	Header  string `yaml:"header"`
+	Version string `yaml:"version"`
 }
 
 var (
@@ -34,26 +35,13 @@ var (
 	flagset       = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 	logger        = &logging.Logger{}
 	errUsage      = errors.New("see usage")
+	errFinal      error
 )
 
 //nolint:funlen // main won't lose weight, can't stop growing liMes
 func main() {
-	var err error
-
-	// first deferred func will run last
 	defer func() {
-		if msg := recover(); msg != nil {
-			logger.Stacktrace(true)
-			logger.Fatalf("%v", msg)
-		}
-
-		if err != nil {
-			if errors.Is(err, errUsage) {
-				usage(err)
-			}
-
-			logger.Fatalf("%s", err.Error())
-		}
+		passAway(errFinal)
 	}()
 
 	misc.DotEnv(".env", false /* noisy */)
@@ -72,10 +60,12 @@ func main() {
 	fComment := flagset.String("comment", "", "comment token, prepended to header lines. (required if -fix)")
 	fFind := flagset.String("check", "", "asterisk glob to check files. (required)")
 	fIgnore := flagset.String("ignore", "", fmt.Sprintf("regexp match to ignore. (default %s)", defaultIgnore))
+	fVerShort := flagset.Bool("v", false, "print version and exit")
+	fVerLong := flagset.Bool("version", false, "print version and exit")
 
-	err = flagset.Parse(os.Args[1:])
+	err := flagset.Parse(os.Args[1:])
 	if err != nil {
-		err = errors.Join(err, errUsage)
+		errFinal = errors.Join(err, errUsage)
 
 		return
 	}
@@ -84,13 +74,19 @@ func main() {
 
 	err = yaml.Unmarshal([]byte(raw), &cfg)
 	if err != nil {
-		err = errors.Join(err, errUsage)
+		errFinal = errors.Join(err, errUsage)
+
+		return
+	}
+
+	if *fVerShort || *fVerLong {
+		fmt.Println(cfg.Version)
 
 		return
 	}
 
 	if *fFind == "" || (*fComment == "" && *fFix) {
-		err = errors.Join(errors.New("missing required flags"), errUsage)
+		errFinal = errors.Join(errors.New("missing required flags"), errUsage)
 
 		return
 	}
@@ -116,7 +112,24 @@ func main() {
 		}
 	}
 
-	err = boilerplate(*fFind, header, *fFix, *fShebang, ignore)
+	errFinal = boilerplate(*fFind, header, *fFix, *fShebang, ignore)
+}
+
+// Defer from main() very early; the first deferred function will run last.
+// Gracefully handles panics and fatal errors. Replaces os.exit(1).
+func passAway(fatal error) {
+	if msg := recover(); msg != nil {
+		logger.Stacktrace(true)
+		logger.Fatalf("%v", msg)
+	}
+
+	if fatal != nil {
+		if errors.Is(fatal, errUsage) || errors.Is(fatal, flag.ErrHelp) {
+			usage(fatal)
+		}
+
+		logger.Fatalf("%s", fatal.Error())
+	}
 }
 
 func usage(err error) {
@@ -124,11 +137,12 @@ func usage(err error) {
 		flagset.Usage()
 	}
 
-	fmt.Println()
-	fmt.Println("recursively finds and reports files missing boilerplate header")
-	fmt.Println("-h to see required flags")
-	fmt.Println()
-	fmt.Println(cmd.EnvVarUsage())
+	fmt.Printf(`
+recursively finds and reports files missing boilerplate header
+-h to see required flags
+
+%s
+`, cmd.EnvVarUsage())
 }
 
 func boilerplate(findExpr, header string, fix, shebang bool, ignore *regexp.Regexp) error {

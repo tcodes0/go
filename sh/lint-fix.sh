@@ -24,7 +24,7 @@ linters=(
   tagalign
 )
 
-if requestedHelp "$*"; then
+if requested_help "$*"; then
   msgln "fixes for a few standalone linters"
   msgln "Inputs:"
   msgln "<module>\t lint fix the module\t (required)"

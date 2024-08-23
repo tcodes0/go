@@ -72,10 +72,11 @@ func usage(err error) {
 		fmt.Println()
 	}
 
-	fmt.Println()
-	fmt.Println("generates go.work file")
-	fmt.Println()
-	fmt.Println(cmd.EnvVarUsage())
+	fmt.Printf(`
+generates go.work file
+
+%s
+`, cmd.EnvVarUsage())
 }
 
 func genGoWork() error {

@@ -53,7 +53,7 @@ exitShowProblems() {
   exit 1
 }
 
-if requestedHelp "$*"; then
+if requested_help "$*"; then
   msgln "check for missing tools, configuration and show notes"
   exit 1
 fi
@@ -152,6 +152,13 @@ setup manual 'see https://docs.docker.com/get-docker/' docker container runtime
 exitShowProblems "install the missing tools with"
 
 # configuration
+
+if ! npm --global list | grep -q @commitlint/config-conventional; then
+  fail 'commitlint config' 'missing @commitlint/config-conventional'
+  fixProblems+=("npm install --global @commitlint/config-conventional")
+else
+  pass '@commitlint/config-conventional installed'
+fi
 
 if ! [[ "$SHELL" =~ bash ]]; then
   fail 'shell is bash' "expected bash as shell but got $SHELL"

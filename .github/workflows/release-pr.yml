@@ -4,9 +4,15 @@ run-name: release PR ${{ github.ref }}@${{ github.sha }}
 on:
   workflow_dispatch:
     inputs:
-      module:
-        description: Module to release
+      url:
+        description: Github repository URL to point commit links at
         required: true
+        type: string
+      title:
+        description: Release title; new version and date will be added
+        type: string
+      tag_prefix:
+        description: Prefix to be concatenated to semver tag, i.e ${PREFIX}v1.0.0
         type: string
 
 jobs:
@@ -15,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Validate branch
-        if: github.ref != 'refs/heads/main'
+        if: github.ref != 'refs/heads/main' && github.event.local != true
         run: |
           echo expected main, got: ${{ github.ref }} && exit 1
 
@@ -30,17 +36,28 @@ jobs:
         with:
           go-version: 1.22
 
+      - name: Install changelog
+        if: github.event.local != true
+        run: go install github.com/tcodes0/go/cmd/changelog@v0.1.5
+
+      - name: Install changelog (local)
+        if: github.event.local == true
+        run: go install ./cmd/changelog
+
       - name: Update changelog
         shell: bash
-        run: ./sh/workflows/release/changelog.sh ${{ inputs.module }}
+        env:
+          CHANGELOG_FILE: CHANGELOG.md
+        run: ./sh/workflows/release/changelog.sh "${{ inputs.url }}" "${{ inputs.title }}" "${{ inputs.tag_prefix }}"
 
       - name: Open PR
         uses: peter-evans/create-pull-request@v6.1.0
+        if: github.event.local != true
         with:
-          commit-message: "chore: release ${{ inputs.module }}"
-          title: "chore: release ${{ inputs.module }}"
+          commit-message: "chore: release ${{ inputs.title }}"
+          title: "chore: release ${{ inputs.title }}"
           add-paths: .
           body: ""
           committer: release-workflow <41898282+github-actions[bot]@users.noreply.github.com>
-          branch: release-${{ inputs.module }}
+          branch: release-${{ inputs.title }}
           branch-suffix: random
