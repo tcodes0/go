@@ -31,19 +31,18 @@ jobs:
           fetch-tags: true
           fetch-depth: 0
 
-      - name: Set up Go (local)
-        if: github.event.local == true
-        uses: actions/setup-go@v5
-        with:
-          go-version: 1.22
-      - run: go install ./cmd/changelog
-
       - name: Set up Go
-        if: github.event.local != true
         uses: actions/setup-go@v5
         with:
           go-version: 1.22
-      - run: go install github.com/tcodes0/go/cmd/changelog@v0.1.5
+
+      - name: Install changelog
+        if: github.event.local != true
+        run: go install github.com/tcodes0/go/cmd/changelog@v0.1.5
+
+      - name: Install changelog (local)
+        if: github.event.local == true
+        run: go install ./cmd/changelog
 
       - name: Update changelog
         shell: bash
