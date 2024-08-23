@@ -87,6 +87,7 @@ jobs:
         with:
           node-version: lts/iron
           cache: npm
+      - run: npm --global install @commitlint/config-conventional
 
       - name: Run commitlint
         env:
