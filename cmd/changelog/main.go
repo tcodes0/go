@@ -81,7 +81,7 @@ func main() {
 
 	logger = logging.Create(opts...)
 	cfg := flagset.String("config", ".commitlintrc.yml", "path to commitlint config file")
-	title := flagset.String("title", "<empty>", "release title; new version and date will be added")
+	title := flagset.String("title", "", "release title; new version and date will be added")
 	tagPrefix := flagset.String("tagprefix", "", "prefix to be concatenated to semver tag, i.e ${PREFIX}v1.0.0")
 	url := flagset.String("url", "", "github repository URL to point commit links at (required)")
 	fVerShort := flagset.Bool("v", false, "print version and exit")
@@ -147,6 +147,11 @@ unstable tags (0.x.x) will not be promoted to 1.0.0 automatically, do it manuall
 }
 
 func changelog(cfg, url, title, tagPrefix string) error {
+	err := validateInputs(title, tagPrefix)
+	if err != nil {
+		return misc.Wrapfl(err)
+	}
+
 	// format: hash\n (tags branches)\ncommit message and body in multiple lines\n
 	byteLogLines, err := exec.Command("git", "log", "--pretty=format:%H%n%d%n%B").Output()
 	if err != nil {
@@ -165,9 +170,14 @@ func changelog(cfg, url, title, tagPrefix string) error {
 		return misc.Wrapfl(err)
 	}
 
+	titleColon := ": "
+	if title == "" {
+		titleColon = ""
+	}
+
 	document := &strings.Builder{}
 	newVer, body, footer := writeContent(types, releaseLines, oldVer, url)
-	titleH1 := fmt.Sprintf("%s: v%s %s\n\n", title, newVer, md("i", "("+time.Now().Format("2006-01-02")+")"))
+	titleH1 := fmt.Sprintf("%s%s%sv%s %s\n\n", title, titleColon, tagPrefix, newVer, md("i", "("+time.Now().Format("2006-01-02")+")"))
 
 	document.WriteString(md("h1", titleH1))
 	document.WriteString(md("h3", compareLink(url, tag(tagPrefix, newVer.String()), tag(tagPrefix, oldVer.String()))) + "\n\n")
@@ -190,6 +200,23 @@ func changelog(cfg, url, title, tagPrefix string) error {
 	}
 
 	fmt.Print(document.String())
+
+	return nil
+}
+
+func validateInputs(title, tagPrefix string) error {
+	RETitleRaw := `^[a-zA-Z0-9 !%&*()-+]+$`
+	RETitle := regexp.MustCompile(RETitleRaw)
+	REPrefixRaw := `^[a-zA-Z0-9\/]+$`
+	RETag := regexp.MustCompile(REPrefixRaw)
+
+	if title != "" && !RETitle.MatchString(title) {
+		return fmt.Errorf("invalid title: '%s', should match %s", title, RETitleRaw)
+	}
+
+	if tagPrefix != "" && !RETag.MatchString(tagPrefix) {
+		return fmt.Errorf("invalid tag prefix: '%s', should match %s", tagPrefix, REPrefixRaw)
+	}
 
 	return nil
 }
