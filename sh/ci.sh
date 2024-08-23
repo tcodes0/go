@@ -26,6 +26,8 @@ usageExit() {
 pushJob() {
   local type="$1" job="$2"
 
+  job=$(echo -n "$job" | tr -s ' ')
+
   if [ "$type" == "fail" ]; then
     if [[ "${failedJobs[*]}" != *${job}* ]]; then
       failedJobs+=("$job")
@@ -184,6 +186,8 @@ ciPid=$!
 
 printf "\e[H\e[2J" # move 1-1, clear whole screen
 msgln "    running ci..."
+
+trap 'msgln \\nsee ci log at $logFile' INT
 
 while ps -p "$ciPid" >/dev/null; do
   printf "\e[H" # move 1-1
