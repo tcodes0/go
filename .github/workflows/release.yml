@@ -17,4 +17,6 @@ jobs:
 
       - name: Push tag
         shell: bash
-        run: ./sh/workflows/release/tag.sh
+        env:
+          CHANGELOG_FILE: CHANGELOG.md
+        run: ./workflows/release/tag.sh
