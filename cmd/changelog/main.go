@@ -49,7 +49,7 @@ var (
 	logger    = &logging.Logger{}
 	errUsage  = errors.New("see usage")
 	semverLen = 3
-	//nolint:lll // regex
+	//nolint:lll // regex https://regex101.com/r/tYwQcJ/3
 	RECommitLine = regexp.MustCompile(`^(?P<asterisk>\*? ?)(?P<type>[a-zA-Z]+)(?P<breaking1>!)?(?:\((?P<scope>[^)]+)\))?(?P<breaking2>!)?:\s(?P<description>.+?)$`)
 	errFinal     error
 )
