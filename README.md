@@ -20,5 +20,3 @@
   http://www.patorjk.com/software/taag/#p=display&f=Alligator&t=packages
   http://www.patorjk.com/software/taag/#p=display&f=ANSI%20Shadow&t=tcodes0%20go
 </details>
-
-## Documentation [is on the wiki](https://github.com/tcodes0/go/wiki)
