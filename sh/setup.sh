@@ -202,6 +202,13 @@ else
   pass '.env'
 fi
 
+if ! git submodule update --init; then
+  fail 'git submodules' 'update --init failed'
+  fixProblems+=("try 'git submodule update --init' manually")
+else
+  pass 'git submodules'
+fi
+
 exitShowProblems "fix configuration issues:"
 
 # notes
