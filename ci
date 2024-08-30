@@ -1,3 +1,0 @@
-#! /usr/bin/env bash
-
-BASH_ENV=sh/lib/lib.sh ./sh/lib/ci.sh
