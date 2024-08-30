@@ -33,7 +33,8 @@ func main() {
 	// first deferred func will run last
 	defer func() {
 		if msg := recover(); msg != nil {
-			logger.Fatalf("%v", msg)
+		logger.Stacktrace(logging.LError, true)
+		logger.Fatalf("%v", msg)
 		}
 
 		if err != nil {
