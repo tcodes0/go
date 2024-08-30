@@ -29,6 +29,7 @@ jobs:
       - name: Build
         env:
           MOD_PATH: ${{ inputs.modulePath }}
+          BASH_ENV: ./sh/lib/lib.sh
         run: ./sh/workflows/module_pr/build.sh
 
   test:
@@ -56,6 +57,7 @@ jobs:
           MOD_PATH: ${{ inputs.modulePath }}
           CACHE: true
           COVERAGE_FILE: coverage.out
+          BASH_ENV: ./sh/lib/lib.sh
         shell: bash
         run: ./sh/workflows/module_pr/test_pretty.sh
 

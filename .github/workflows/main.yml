@@ -73,6 +73,7 @@ jobs:
     env:
       # will not be set when running on push/merge to main
       PR_TITLE: ${{ github.event.pull_request.title }}
+      BASH_ENV: ./sh/lib/lib.sh
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -173,6 +174,8 @@ jobs:
         uses: brokeyourbike/go-mockery-action@v0
         with:
           mockery-version: "2.43.0"
+        env:
+          BASH_ENV: ./sh/lib/lib.sh
       - run: ./sh/lib/go/generate_mocks.sh
 
       - name: Diff
