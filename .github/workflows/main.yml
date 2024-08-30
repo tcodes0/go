@@ -79,7 +79,6 @@ jobs:
         with:
           fetch-depth: 0
           submodules: true
-          ssh-key: ${{ secrets.SH_SSH_PKEY }}
 
       - name: Create package-lock.json
         run: echo '{}' > package-lock.json
@@ -146,7 +145,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ssh-key: ${{ secrets.SH_SSH_PKEY }}
           submodules: true
 
       - name: Generate go work
@@ -164,7 +162,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ssh-key: ${{ secrets.SH_SSH_PKEY }}
           submodules: true
 
       - name: Set up Go

@@ -16,7 +16,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
-          ssh-key: ${{ secrets.SH_SSH_PKEY }}
 
       - name: Push tag
         shell: bash
