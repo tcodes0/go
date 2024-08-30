@@ -6,7 +6,6 @@
 
 set -euo pipefail
 shopt -s globstar
-source "$PWD/../../lib/lib.sh"
 
 if requested_help "$*"; then
   msgln "Inputs:"

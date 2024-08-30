@@ -10,6 +10,7 @@ tasks:
       - MOD_PATH=<module>
       - HOME=<inherit>
       - PATH=<inherit>
+      - BASH_ENV=./sh/lib/lib.sh
     exec:
       - ./sh/workflows/module_pr/build.sh
 
@@ -20,6 +21,8 @@ tasks:
 
   - name: go-lint-fix
     module: true
+    env:
+      - BASH_ENV=./sh/lib/lib.sh
     exec:
       - "./sh/lib/go/lint_fix.sh <module>"
 
@@ -54,6 +57,11 @@ tasks:
       - "cspell --gitignore ."
 
   - name: setup
+    env:
+      - HOME=<inherit>
+      - PATH=<inherit>
+      - NVM_DIR=<inherit>
+      - BASH_ENV=./sh/lib/lib.sh
     exec:
       - ./sh/setup.sh
 
