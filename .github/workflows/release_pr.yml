@@ -30,6 +30,8 @@ jobs:
         with:
           fetch-tags: true
           fetch-depth: 0
+          submodules: true
+          ssh-key: ${{ secrets.SH_SSH_PKEY }}
 
       - name: Set up Go
         uses: actions/setup-go@v5
