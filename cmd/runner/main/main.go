@@ -181,7 +181,7 @@ func run(inputs ...string) error {
 		//nolint:gosec // has validation
 		command := exec.Command(cmdInput[0], cmdInput[1:]...)
 
-		logger.Info(line)
+		logger.Debug(line)
 
 		if len(theTask.Env) > 0 {
 			envs := lo.Map(theTask.Env, envVarMapper(inputs))
@@ -199,7 +199,7 @@ func run(inputs ...string) error {
 		}
 
 		if stderrBuffer.Len() > 0 {
-			logger.Info(stderrBuffer.String())
+			logger.Warn(stderrBuffer.String())
 		}
 
 		if err != nil {

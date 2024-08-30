@@ -22,6 +22,8 @@ tasks:
   - name: go-lint-fix
     module: true
     env:
+      - HOME=<inherit>
+      - PATH=<inherit>
       - BASH_ENV=./sh/lib/lib.sh
     exec:
       - "./sh/lib/go/lint_fix.sh <module>"
@@ -30,7 +32,7 @@ tasks:
     module: true
     exec:
       - gofumpt -l -w
-      - prettier --write <module>/**/*{.yml}
+      - prettier --write <module>/**/*.yml
 
   - name: test
     module: true
@@ -41,6 +43,7 @@ tasks:
       - MOD_PATH=<module>
       - PATH=<inherit>
       - HOME=<inherit>
+      - BASH_ENV=./sh/lib/lib.sh
     exec:
       - ./sh/workflows/module_pr/test_pretty.sh
 
@@ -49,8 +52,12 @@ tasks:
       - "prettier --write ./**/*{.yml,.json}"
 
   - name: generate-mocks
+    env:
+      - PATH=<inherit>
+      - HOME=<inherit>
+      - BASH_ENV=./sh/lib/lib.sh
     exec:
-      - ./sh/lib/generate-mocks.sh
+      - ./sh/lib/go/generate_mocks.sh
 
   - name: spellcheck
     exec:
@@ -75,6 +82,10 @@ tasks:
       - go run cmd/gengowork/main.go
 
   - name: new-module
+    env:
+      - PATH=<inherit>
+      - HOME=<inherit>
+      - BASH_ENV=./sh/lib/lib.sh
     exec:
       - ./sh/new_module.sh
 
