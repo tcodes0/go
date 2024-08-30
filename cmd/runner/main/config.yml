@@ -11,7 +11,7 @@ tasks:
       - HOME=<inherit>
       - PATH=<inherit>
     exec:
-      - ./sh/workflows/module-pr/build.sh
+      - ./sh/workflows/module_pr/build.sh
 
   - name: lint
     module: true
@@ -39,7 +39,7 @@ tasks:
       - PATH=<inherit>
       - HOME=<inherit>
     exec:
-      - ./sh/workflows/module-pr/test-pretty.sh
+      - ./sh/workflows/module_pr/test_pretty.sh
 
   - name: format-configs
     exec:
@@ -68,7 +68,7 @@ tasks:
 
   - name: new-module
     exec:
-      - ./sh/new-module.sh
+      - ./sh/new_module.sh
 
   - name: copyright-fix-go
     env:

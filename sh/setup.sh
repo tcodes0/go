@@ -181,7 +181,7 @@ else
   pass 'docker running'
 fi
 
-if ! MOD_PATH=cmd/runner ./sh/workflows/module-pr/build.sh; then
+if ! MOD_PATH=cmd/runner ./sh/workflows/module_pr/build.sh; then
   fail 'build cmd/runner' 'build failed'
   fixProblems+=("cmd/runner build failed, ./run symlink won't work")
 else

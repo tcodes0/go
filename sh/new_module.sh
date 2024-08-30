@@ -19,7 +19,7 @@ formatMod="
     name: %s
     needs: changed-files
     if: needs.changed-files.outputs.TODO
-    uses: ./.github/workflows/module-pr.yml
+    uses: ./.github/workflows/module_pr.yml
     with:
       goVersion: TODO
       modulePath: %s
@@ -29,7 +29,7 @@ formatCmd="
     name: cmd/%s
     needs: changed-files
     if: needs.changed-files.outputs.TODO
-    uses: ./.github/workflows/module-pr.yml
+    uses: ./.github/workflows/module_pr.yml
     with:
       goVersion: TODO
       modulePath: cmd/%s

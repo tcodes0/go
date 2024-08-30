@@ -1,4 +1,4 @@
-name: module-pr
+name: module_pr
 run-name: ${{ inputs.modulePath }}@${{ github.sha }}
 
 on:
@@ -29,7 +29,7 @@ jobs:
       - name: Build
         env:
           MOD_PATH: ${{ inputs.modulePath }}
-        run: ./sh/workflows/module-pr/build.sh
+        run: ./sh/workflows/module_pr/build.sh
 
   test:
     name: test
@@ -57,7 +57,7 @@ jobs:
           CACHE: true
           COVERAGE_FILE: coverage.out
         shell: bash
-        run: ./sh/workflows/module-pr/test-pretty.sh
+        run: ./sh/workflows/module_pr/test_pretty.sh
 
       - name: Annotate
         if: always()

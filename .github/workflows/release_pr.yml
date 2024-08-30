@@ -1,4 +1,4 @@
-name: release-pr
+name: release_pr
 run-name: release PR ${{ github.ref }}@${{ github.sha }}
 
 on:
@@ -16,7 +16,7 @@ on:
         type: string
 
 jobs:
-  release-pr:
+  release_pr:
     name: release PR
     runs-on: ubuntu-latest
     steps:
