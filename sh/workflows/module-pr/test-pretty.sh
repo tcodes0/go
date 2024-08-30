@@ -6,8 +6,7 @@
 
 set -euo pipefail
 shopt -s globstar
-# shellcheck source=../../lib.sh
-source "$PWD/sh/lib.sh"
+source "$PWD/../../lib/lib.sh"
 
 if requested_help "$*"; then
   msgln "Inputs:"
@@ -63,8 +62,7 @@ echo "testOutputJson=$testOutputJson"
 echo "testOutputJson=$testOutputJson" >>"$GITHUB_OUTPUT"
 
 if [ ! -f "$COVERAGE_FILE" ]; then
-  msgln "$COVERAGE_FILE not found, did you run tests with -coverprofile=?"
-  exit
+  fatal $LINENO "$COVERAGE_FILE not found, did you run tests with -coverprofile=?"
 fi
 
 cover -html="$COVERAGE_FILE" -o coverage.html

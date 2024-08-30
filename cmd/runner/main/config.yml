@@ -21,7 +21,7 @@ tasks:
   - name: go-lint-fix
     module: true
     exec:
-      - "./sh/lint-fix.sh <module>"
+      - "./sh/lib/go/lint_fix.sh <module>"
 
   - name: format
     module: true
@@ -47,7 +47,7 @@ tasks:
 
   - name: generate-mocks
     exec:
-      - ./sh/generate-mocks.sh
+      - ./sh/lib/generate-mocks.sh
 
   - name: spellcheck
     exec:

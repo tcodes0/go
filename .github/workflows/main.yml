@@ -95,7 +95,7 @@ jobs:
           VERSION: 19.3.0
           # will not be set when running on push/merge to main
           BASE_REF: ${{ github.event.pull_request.base.ref }}
-        run: ./sh/workflows/main/commit-lint.sh
+        run: ./sh/lib/workflows/main/commit_lint.sh
 
   root-go-mod:
     name: root_go_mod_up_to_date
@@ -148,7 +148,7 @@ jobs:
         run: go run cmd/gengowork/main.go
 
       - name: Diff
-        run: ./sh/workflows/main/diff.sh
+        run: ./sh/lib/workflows/main/diff.sh
 
   mocks:
     name: go_mocks_up_to_date
@@ -168,10 +168,10 @@ jobs:
         uses: brokeyourbike/go-mockery-action@v0
         with:
           mockery-version: "2.43.0"
-      - run: ./sh/generate-mocks.sh
+      - run: ./sh/lib/generate-mocks.sh
 
       - name: Diff
-        run: ./sh/workflows/main/diff.sh
+        run: ./sh/lib/workflows/main/diff.sh
 
   shell:
     name: lint_format_shell

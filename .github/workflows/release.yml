@@ -19,4 +19,4 @@ jobs:
         shell: bash
         env:
           CHANGELOG_FILE: CHANGELOG.md
-        run: ./sh/workflows/release/tag.sh
+        run: ./sh/lib/workflows/release/tag.sh
