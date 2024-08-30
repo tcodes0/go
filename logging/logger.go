@@ -205,15 +205,15 @@ func (logger *Logger) setPrefix(prefix string) {
 	}
 }
 
-// prints a stacktrace as an error level log.
-func (logger *Logger) Stacktrace(allGoroutines bool) {
+// prints a stacktrace as a log message with customizable level.
+func (logger *Logger) Stacktrace(level Level, allGoroutines bool) {
 	var stackBuffer bytes.Buffer
 
 	stack := make([]byte, 2048)
 	n := runtime.Stack(stack, allGoroutines)
 	stackBuffer.Write(stack[:n])
 
-	logger.out(LError, stackBuffer.String())
+	logger.out(level, stackBuffer.String())
 }
 
 // set the level of the logger, lesser messages will be ignored.

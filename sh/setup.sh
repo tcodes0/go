@@ -6,8 +6,11 @@
 
 set -euo pipefail
 shopt -s globstar
-# shellcheck source=lib.sh
-source "$PWD/sh/lib.sh"
+trap 'echo -e ERROR \($0:$LINENO\)' ERR
+
+##########################
+### vars and functions ###
+##########################
 
 fixProblems=()
 
@@ -53,13 +56,32 @@ exitShowProblems() {
   exit 1
 }
 
+cwd_is_root() {
+  # shellcheck disable=SC2155
+  local header=$(head -2 <go.mod || true)
+  [[ "$header" =~ module[[:blank:]]github.com/tcodes0/go ]]
+}
+
+usage() {
+  command cat <<-EOF
+Usage:
+Checks for and fixes missing tools, configurations, shows notes and performs some first time setup tasks
+
+$0
+EOF
+}
+
+##############
+### script ###
+##############
+
 if requested_help "$*"; then
-  msgln "check for missing tools, configuration and show notes"
+  usage
   exit 1
 fi
 
-if [ "$(basename "$PWD")" != "tcodes0-go" ]; then
-  msgln "run this script from project root"
+if ! cwd_is_root; then
+  echo -e FATAL "($0:$LINENO) run this script from project root" >&2
   exit 1
 fi
 
@@ -181,18 +203,11 @@ else
   pass 'docker running'
 fi
 
-if ! MOD_PATH=cmd/runner ./sh/workflows/module-pr/build.sh; then
+if ! MOD_PATH=cmd/runner ./sh/workflows/module_pr/build.sh; then
   fail 'build cmd/runner' 'build failed'
-  fixProblems+=("cmd/runner build failed, ./run symlink won't work")
+  fixProblems+=("cmd/runner build failed, ./run won't work")
 else
   pass 'build cmd/runner'
-fi
-
-if [ ! -d wiki/.git ]; then
-  fail 'local wiki' 'wiki is not cloned'
-  fixProblems+=("git clone git@github.com:tcodes0/go.wiki.git wiki")
-else
-  pass 'local wiki'
 fi
 
 if [ ! -f .env ]; then
@@ -202,13 +217,23 @@ else
   pass '.env'
 fi
 
+if ! git submodule update --init; then
+  fail 'git submodules' 'update --init failed'
+  fixProblems+=("try 'git submodule update --init' manually")
+else
+  pass 'git submodules'
+fi
+
 exitShowProblems "fix configuration issues:"
 
 # notes
 
 msgln
-msgln note: before using ./ci, run \'act\' once to set it up
-msgln note: run \'export CMD_COLOR=true\' to see colored output, or add to .env
+msgln note: before using ./run ci, run \'act\' once to set it up
+
+if [ ! "${CMD_COLOR:-}" ]; then
+  msgln note: run \'export CMD_COLOR=true\' to see colored output, or add to .env
+fi
 
 if [ "${NVM_DIR:-}" ]; then
   msgln note: when using nvm and upgrading node, global packages need to be reinstalled

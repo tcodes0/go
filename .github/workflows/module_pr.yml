@@ -1,4 +1,4 @@
-name: module-pr
+name: module_pr
 run-name: ${{ inputs.modulePath }}@${{ github.sha }}
 
 on:
@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -29,7 +31,8 @@ jobs:
       - name: Build
         env:
           MOD_PATH: ${{ inputs.modulePath }}
-        run: ./sh/workflows/module-pr/build.sh
+          BASH_ENV: ./sh/lib/lib.sh
+        run: ./sh/workflows/module_pr/build.sh
 
   test:
     name: test
@@ -37,6 +40,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Set up Go
         id: setup-up-go
@@ -56,8 +61,8 @@ jobs:
           MOD_PATH: ${{ inputs.modulePath }}
           CACHE: true
           COVERAGE_FILE: coverage.out
-        shell: bash
-        run: ./sh/workflows/module-pr/test-pretty.sh
+          BASH_ENV: ./sh/lib/lib.sh
+        run: ./sh/workflows/module_pr/test_pretty.sh
 
       - name: Annotate
         if: always()

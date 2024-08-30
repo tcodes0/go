@@ -120,7 +120,7 @@ func main() {
 // Gracefully handles panics and fatal errors. Replaces os.exit(1).
 func passAway(fatal error) {
 	if msg := recover(); msg != nil {
-		logger.Stacktrace(true)
+		logger.Stacktrace(logging.LError, true)
 		logger.Fatalf("%v", msg)
 	}
 
@@ -129,6 +129,7 @@ func passAway(fatal error) {
 			usage(fatal)
 		}
 
+		logger.Stacktrace(logging.LDebug, true)
 		logger.Fatalf("%s", fatal.Error())
 	}
 }

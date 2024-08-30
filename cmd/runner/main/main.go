@@ -92,7 +92,7 @@ func main() {
 // Gracefully handles panics and fatal errors. Replaces os.exit(1).
 func passAway(fatal error) {
 	if msg := recover(); msg != nil {
-		logger.Stacktrace(true)
+		logger.Stacktrace(logging.LError, true)
 		logger.Fatalf("%v", msg)
 	}
 
@@ -101,6 +101,7 @@ func passAway(fatal error) {
 			usage(fatal)
 		}
 
+		logger.Stacktrace(logging.LDebug, true)
 		logger.Fatalf("%s", fatal.Error())
 	}
 }
@@ -180,7 +181,7 @@ func run(inputs ...string) error {
 		//nolint:gosec // has validation
 		command := exec.Command(cmdInput[0], cmdInput[1:]...)
 
-		logger.Info(line)
+		logger.Debug(line)
 
 		if len(theTask.Env) > 0 {
 			envs := lo.Map(theTask.Env, envVarMapper(inputs))
@@ -198,7 +199,7 @@ func run(inputs ...string) error {
 		}
 
 		if stderrBuffer.Len() > 0 {
-			logger.Info(stderrBuffer.String())
+			logger.Warn(stderrBuffer.String())
 		}
 
 		if err != nil {

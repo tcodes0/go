@@ -14,9 +14,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Push tag
         shell: bash
         env:
           CHANGELOG_FILE: CHANGELOG.md
-        run: ./sh/workflows/release/tag.sh
+          BASH_ENV: ./sh/lib/lib.sh
+        run: ./sh/lib/workflows/release/tag.sh

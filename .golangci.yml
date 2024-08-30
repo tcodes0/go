@@ -30,7 +30,6 @@ linters:
     - errchkjson
     - errname
     - exhaustive
-    - exportloopref
     - makezero
     - mirror
     - noctx
@@ -136,10 +135,6 @@ linters-settings:
     ignore-type-assert-ok: true
     ignore-map-index-ok: true
     ignore-chan-recv-ok: true
-
-  # can be removed after updates if there are no warnings
-  errcheck:
-    ignore: ""
 
   wrapcheck:
     ignorePackageGlobs:
