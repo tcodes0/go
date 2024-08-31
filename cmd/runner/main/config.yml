@@ -96,7 +96,7 @@ tasks:
       - CMD_COLOR=<inherit>
       - CMD_LOGLEVEL=<inherit>
     exec:
-      - go run cmd/copyright/main.go -check '*.go' -fix -comment '// '
+      - go run cmd/copyright/main.go -check *.go -fix -comment //<space>
 
   - name: copyright-fix-sh
     env:
@@ -105,4 +105,4 @@ tasks:
       - CMD_COLOR=<inherit>
       - CMD_LOGLEVEL=<inherit>
     exec:
-      - go run cmd/copyright/main.go -check '*.sh' -fix -comment '# ' -shebang
+      - go run cmd/copyright/main.go -check *.sh -fix -comment \#<space> -shebang

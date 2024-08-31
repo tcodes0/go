@@ -6,15 +6,12 @@
 package main
 
 import (
-	"bytes"
 	_ "embed"
 	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
-	"slices"
 	"strings"
 
 	"github.com/samber/lo"
@@ -23,13 +20,6 @@ import (
 	"github.com/tcodes0/go/logging"
 	"github.com/tcodes0/go/misc"
 	"gopkg.in/yaml.v3"
-)
-
-const (
-	varModule    = "<module>"                // the module passed as input
-	varInherit   = "<inherit>"               // copy this from the environment
-	varTasksModT = "<task-module-names>"     // all module task names
-	varTasksModF = "<task-not-module-names>" // all not module task names
 )
 
 type config struct {
@@ -170,95 +160,8 @@ func run(inputs ...string) error {
 
 	err := theTask.Validate(logger, inputs[1:]...)
 	if err != nil {
-		//nolint:wrapcheck // runner pkg
-		return err
+		return misc.Wrapfl(err)
 	}
 
-	for _, line := range theTask.Exec {
-		cmdInput := slices.Concat(strings.Split(line, " "), inputs[1:])
-		cmdInput = lo.Map(cmdInput, inputVarMapper(inputs))
-
-		//nolint:gosec // has validation
-		command := exec.Command(cmdInput[0], cmdInput[1:]...)
-
-		logger.Debug(line)
-
-		if len(theTask.Env) > 0 {
-			envs := lo.Map(theTask.Env, envVarMapper(inputs))
-			command.Env = append(command.Env, envs...)
-		}
-
-		logger.Debugf("env: %s", strings.Join(command.Env, " "))
-
-		stderrBuffer := bytes.Buffer{}
-		command.Stderr = &stderrBuffer
-
-		out, err := command.Output()
-		if len(out) > 0 {
-			fmt.Println(string(out))
-		}
-
-		if stderrBuffer.Len() > 0 {
-			logger.Warn(stderrBuffer.String())
-		}
-
-		if err != nil {
-			exitErr, ok := (err).(*exec.ExitError)
-			if ok && len(exitErr.Stderr) > 0 {
-				logger.Errorf("stderr: %s", string(exitErr.Stderr))
-			}
-
-			return misc.Wrapf(err, "command '%s'", line)
-		}
-	}
-
-	return nil
-}
-
-func envVarMapper(inputs []string) func(pair string, _ int) string {
-	return func(pair string, _ int) string {
-		if strings.Contains(pair, varModule) {
-			return strings.Replace(pair, varModule, inputs[1], 1)
-		}
-
-		if strings.Contains(pair, varInherit) {
-			key := strings.Split(pair, "=")[0]
-
-			val, ok := os.LookupEnv(key)
-			if !ok {
-				logger.Debugf("env value inherited is empty: %s", key)
-			}
-
-			return strings.Replace(pair, varInherit, val, 1)
-		}
-
-		return pair
-	}
-}
-
-func inputVarMapper(inputs []string) func(input string, _ int) string {
-	return func(input string, _ int) string {
-		if strings.Contains(input, varTasksModT) {
-			return strings.ReplaceAll(input, varTasksModT, taskNameFilterJoin(cfg.Tasks, func(t *runner.Task, _ int) bool { return t.Module }))
-		}
-
-		if strings.Contains(input, varTasksModF) {
-			return strings.ReplaceAll(input, varTasksModF, taskNameFilterJoin(cfg.Tasks, func(t *runner.Task, _ int) bool { return !t.Module }))
-		}
-
-		if strings.Contains(input, varModule) {
-			return strings.ReplaceAll(input, varModule, inputs[1])
-		}
-
-		return input
-	}
-}
-
-func taskNameFilterJoin(tasks []*runner.Task, filterFunc func(t *runner.Task, _ int) bool) string {
-	modTasks := lo.Filter(tasks, filterFunc)
-	names := lo.Reduce(modTasks, func(agg []string, t *runner.Task, _ int) []string {
-		return append(agg, t.Name)
-	}, make([]string, 0, len(modTasks)))
-
-	return strings.Join(names, ",")
+	return misc.Wrapfl(theTask.Execute(logger, cfg.Tasks, inputs[1:]...))
 }

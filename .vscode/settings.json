@@ -18,10 +18,11 @@
   "gopls": {
     // https://github.com/golang/tools/commit/01018ba9edc26f327f5c78d72e7596b6bf23c480
     "ui.semanticTokens": true,
-    // conflicts with golanci-lint 1.58
+    // conflicts with golanci-lint 1.60.3
     "ui.diagnostic.analyses": {
       "lostcancel": false,
-      "printf": false
+      "printf": false,
+      "gosec": false
     }
   },
   // - - - - - - - - YAML - - - - - - - - -

@@ -6,12 +6,15 @@
 package main
 
 import (
+	"context"
 	_ "embed"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"log"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"regexp"
@@ -20,9 +23,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/samber/lo"
 	"github.com/tcodes0/go/cmd"
+	apigithub "github.com/tcodes0/go/cmd/changelog"
+	"github.com/tcodes0/go/jsonutil"
 	"github.com/tcodes0/go/logging"
 	"github.com/tcodes0/go/misc"
+	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v3"
 )
 
@@ -50,7 +57,7 @@ var (
 	errUsage  = errors.New("see usage")
 	semverLen = 3
 	//nolint:lll // regex https://regex101.com/r/tYwQcJ/3
-	RECommitLine = regexp.MustCompile(`^(?P<asterisk>\*? ?)(?P<type>[a-zA-Z]+)(?P<breaking1>!)?(?:\((?P<scope>[^)]+)\))?(?P<breaking2>!)?:\s(?P<description>.+?)$`)
+	RECommitLine = regexp.MustCompile(`^(?P<asterisk>\*? ?)(?P<type>[a-zA-Z]+)(?P<breaking1>!)?(?:\((?P<scope>[^)]+)\))?(?P<breaking2>!)?:\s(?P<description>.+?)(?:\s\(#(?P<PR>\d+)\))?$`)
 	errFinal     error
 )
 
@@ -83,7 +90,7 @@ func main() {
 	cfg := flagset.String("config", ".commitlintrc.yml", "path to commitlint config file")
 	title := flagset.String("title", "", "release title; new version and date will be added")
 	tagPrefix := flagset.String("tagprefix", "", "prefix to be concatenated to semver tag, i.e ${PREFIX}v1.0.0")
-	url := flagset.String("url", "", "github repository URL to point commit links at (required)")
+	repoURL := flagset.String("url", "", "github repository URL to point links at, prefixed 'https://github.com/' (required)")
 	fVerShort := flagset.Bool("v", false, "print version and exit")
 	fVerLong := flagset.Bool("version", false, "print version and exit")
 
@@ -107,13 +114,13 @@ func main() {
 		return
 	}
 
-	if *url == "" {
+	if *repoURL == "" {
 		errFinal = errors.Join(errors.New("url required"), errUsage)
 
 		return
 	}
 
-	errFinal = changelog(*cfg, *url, *title, *tagPrefix)
+	errFinal = changelog(*cfg, *repoURL, *title, *tagPrefix)
 }
 
 // Defer from main() very early; the first deferred function will run last.
@@ -147,7 +154,7 @@ unstable tags (0.x.x) will not be promoted to 1.0.0 automatically, do it manuall
 `, cmd.EnvVarUsage())
 }
 
-func changelog(cfg, url, title, tagPrefix string) error {
+func changelog(cfg, repoURL, title, tagPrefix string) error {
 	err := validateInputs(title, tagPrefix)
 	if err != nil {
 		return misc.Wrapfl(err)
@@ -161,9 +168,23 @@ func changelog(cfg, url, title, tagPrefix string) error {
 
 	splitLines := strings.Split(string(byteLogLines), "\n")
 
-	releaseLines, oldVer, err := parseGitLog(tagPrefix, splitLines)
+	releaseLines, oldVer, prs, err := parseGitLog(tagPrefix, splitLines)
 	if err != nil {
 		return misc.Wrapfl(err)
+	}
+
+	if len(prs) != 0 {
+		var prLines []changelogLine
+
+		logger.DebugData(map[string]any{"prs": prs, "url": repoURL}, "querying github")
+
+		prLines, err = fetchPullRequests(prs, repoURL)
+		if err != nil {
+			logger.Error(err)
+			logger.Info("changelog will be generated without github information")
+		} else {
+			releaseLines = prLines
+		}
 	}
 
 	types, err := parseConfig(cfg)
@@ -176,31 +197,7 @@ func changelog(cfg, url, title, tagPrefix string) error {
 		titleColon = ""
 	}
 
-	document := &strings.Builder{}
-	newVer, body, footer := writeContent(types, releaseLines, oldVer, url)
-	titleH1 := fmt.Sprintf("%s%s%sv%s %s\n\n", title, titleColon, tagPrefix, newVer, md("i", "("+time.Now().Format("2006-01-02")+")"))
-
-	document.WriteString(md("h1", titleH1))
-	document.WriteString(md("h3", compareLink(url, tag(tagPrefix, newVer.String()), tag(tagPrefix, oldVer.String()))) + "\n\n")
-
-	if body.Len() != 0 {
-		document.WriteString(body.String())
-		body.Reset()
-	}
-
-	if footer.Len() != 0 {
-		prettyType, ok := configs.Replace[tMisc]
-		if !ok {
-			prettyType = tMisc
-		}
-
-		document.WriteString(md("h4", prettyType) + "\n")
-		document.WriteString(footer.String())
-		document.WriteString("\n")
-		footer.Reset()
-	}
-
-	fmt.Print(document.String())
+	fmt.Print(writeDocument(types, releaseLines, oldVer, prs, repoURL, title, tagPrefix, titleColon))
 
 	return nil
 }
@@ -222,12 +219,11 @@ func validateInputs(title, tagPrefix string) error {
 	return nil
 }
 
-func parseGitLog(tagPrefix string, allLogLines []string) (releaseLogLines []changelogLine, versionOld semver, err error) {
-	oldVer := make(semver, 0, semverLen)
+func parseGitLog(tagPrefix string, allLogLines []string) (releaseLogLines []changelogLine, versionOld semver, prs []string, err error) {
+	oldVer, hash, prs := make(semver, 0, semverLen), "", []string{}
 	releaseLogLines = make([]changelogLine, 0, len(allLogLines))
 	REReleaseTag := regexp.MustCompile("tag: " + tagPrefix + `v(?P<version>\d+\.\d+\.\d+)`)
 	REHash := regexp.MustCompile(`^[abcdef0-9]+$`)
-	hash := ""
 
 	for _, line := range allLogLines {
 		line = strings.TrimSpace(line)
@@ -246,8 +242,12 @@ func parseGitLog(tagPrefix string, allLogLines []string) (releaseLogLines []chan
 
 		if match := RECommitLine.FindStringSubmatch(line); match != nil {
 			if match[1] /*asterisk*/ == "" {
-				// commit head has no asterisk, body lines do.
-				// commit head is repeated in the body, skip.
+				// if line has asterisk it is a commit in the body, else it is a pull request title,
+				// from the pull request title only the PR number is important.
+				if match[7] /*PR*/ != "" {
+					prs = append(prs, match[7])
+				}
+
 				continue
 			}
 
@@ -258,7 +258,7 @@ func parseGitLog(tagPrefix string, allLogLines []string) (releaseLogLines []chan
 			for _, versionN := range strings.Split(match[1], ".") {
 				version, err := strconv.ParseInt(versionN, 10, 8)
 				if err != nil {
-					return nil, nil, misc.Wrapfl(err)
+					return nil, nil, nil, misc.Wrapfl(err)
 				}
 
 				oldVer = append(oldVer, uint8(version))
@@ -271,10 +271,10 @@ func parseGitLog(tagPrefix string, allLogLines []string) (releaseLogLines []chan
 	}
 
 	if len(oldVer) == 0 {
-		return nil, nil, fmt.Errorf("tag not found: %s", tag(tagPrefix, "?.?.?"))
+		return nil, nil, nil, fmt.Errorf("old tag not found, expected format: %s", tag(tagPrefix, "0.0.0"))
 	}
 
-	return releaseLogLines, oldVer, nil
+	return releaseLogLines, oldVer, prs, nil
 }
 
 func versionUp(current semver, unstable, breaking, minor bool) semver {
@@ -306,6 +306,73 @@ func versionUp(current semver, unstable, breaking, minor bool) semver {
 	return newVer
 }
 
+func fetchPullRequests(prs []string, ghURL string) (lines []changelogLine, err error) {
+	token := os.Getenv("GITHUB_TOKEN")
+	if token == "" {
+		return nil, errors.New("empty GITHUB_TOKEN env var")
+	}
+
+	userRepo := strings.TrimPrefix(ghURL, "https://github.com/")
+	limit, query, header, fatCommits, group := 100, url.Values{}, http.Header{}, []*apigithub.FatCommit{}, errgroup.Group{}
+
+	query.Add("page", "1")
+	query.Add("per_page", strconv.Itoa(limit))
+	header.Add("Accept", "application/vnd.github.v3+json")
+	header.Add("Authorization", "token "+token)
+
+	for _, pullReq := range prs {
+		group.Go(func() error {
+			var fats *[]*apigithub.FatCommit
+
+			ctx := logger.WithContext(context.TODO())
+
+			fats, err = fetchOne(ctx, fmt.Sprintf("repos/%s/pulls/%s/commits?%s", userRepo, pullReq, query.Encode()), header, nil)
+			if err != nil {
+				return err
+			}
+
+			fatCommits = slices.Concat(fatCommits, *fats)
+
+			if len(*fats) == limit {
+				return fmt.Errorf("PR #%s requires pagination", pullReq)
+			}
+
+			return nil
+		})
+	}
+
+	err = group.Wait()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, fat := range fatCommits {
+		lines = append(lines, changelogLine{Text: "* " + fat.Commit.Message, Hash: fat.SHA})
+	}
+
+	return lines, nil
+}
+
+func fetchOne(ctx context.Context, path string, header http.Header, client *http.Client) (*[]*apigithub.FatCommit, error) {
+	res, err := apigithub.Get(ctx, path, header, client)
+	if err != nil {
+		return nil, misc.Wrapfl(err)
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("status code %d", res.StatusCode)
+	}
+
+	fatCommits, err := jsonutil.UnmarshalReader[[]*apigithub.FatCommit](res.Body)
+	res.Body.Close()
+
+	if err != nil {
+		return nil, misc.Wrapfl(err)
+	}
+
+	return fatCommits, nil
+}
+
 func parseConfig(cfg string) (types []any, err error) {
 	file, err := os.Open(cfg)
 	if err != nil {
@@ -335,16 +402,57 @@ func parseConfig(cfg string) (types []any, err error) {
 	return types, nil
 }
 
-func writeContent(types []any, logLines []changelogLine, oldVer semver, url string) (newVer semver, body, footer *strings.Builder) {
-	footer, body = &strings.Builder{}, &strings.Builder{}
+func writeDocument(types []any, releaseLines []changelogLine, oldVer semver, prs []string, repoURL, title, tagPrefix,
+	titleColon string,
+) string {
+	document := &strings.Builder{}
+	newVer, header, body, footer := compose(types, releaseLines, oldVer, repoURL)
+	titleH1 := fmt.Sprintf("%s%s%sv%s %s\n\n", title, titleColon, tagPrefix, newVer, md("i", "("+time.Now().Format("2006-01-02")+")"))
+	prLinks := lo.Map(prs, func(pr string, _ int) string { return link("#"+pr, fmt.Sprintf("%s/pull/%s", repoURL, pr)) })
+
+	document.WriteString(md("h1", titleH1))
+	document.WriteString(md("h3", "PRs in this release: "+strings.Join(prLinks, ", ")+"\n"))
+	document.WriteString(md("h3",
+		link("Diff with "+tag(tagPrefix, oldVer.String()),
+			fmt.Sprintf("%s/compare/%s..%s", repoURL, tag(tagPrefix, newVer.String()), tag(tagPrefix, oldVer.String()))),
+	) + "\n\n")
+
+	if header.Len() != 0 {
+		document.WriteString(header.String() + "\n")
+		header.Reset()
+	}
+
+	if body.Len() != 0 {
+		document.WriteString(body.String())
+		body.Reset()
+	}
+
+	if footer.Len() != 0 {
+		prettyType, ok := configs.Replace[tMisc]
+		if !ok {
+			prettyType = tMisc
+		}
+
+		document.WriteString(md("h4", prettyType) + "\n")
+		document.WriteString(footer.String() + "\n")
+		footer.Reset()
+	}
+
+	return document.String()
+}
+
+func compose(types []any, logLines []changelogLine, oldVer semver, repoURL string) (newVer semver, body, footer, header *strings.Builder) {
+	footer, body, header = &strings.Builder{}, &strings.Builder{}, &strings.Builder{}
 	minor, breaks := false, false
+	// removes repetitive commits like 'misc: fix ci' even if the hashes are different
+	uniqLines := lo.UniqBy(logLines, func(line changelogLine) string { return line.Text })
 
 	for _, t := range types {
 		var scoped, scopeless, breakings []changelogLine
 
 		typ, _ := t.(string)
 		paragraph := &strings.Builder{}
-		scoped, scopeless, breakings, minor = parseLines(logLines, typ, url)
+		scoped, scopeless, breakings, minor = parseLines(uniqLines, typ, repoURL)
 
 		if len(scoped) != 0 {
 			slices.SortFunc(scoped, sortFn)
@@ -356,15 +464,15 @@ func writeContent(types []any, logLines []changelogLine, oldVer semver, url stri
 		}
 
 		if len(breakings) != 0 {
-			breaks = true
+			if !breaks {
+				header.WriteString(md("h2", md("i", "Breaking Changes")) + "\n")
 
-			body.WriteString(md("h2", "Breaking Changes") + "\n")
-
-			for _, b := range breakings {
-				body.WriteString(b.Text)
+				breaks = true
 			}
 
-			body.WriteString("\n")
+			for _, b := range breakings {
+				header.WriteString(b.Text)
+			}
 		}
 
 		if paragraph.Len() != 0 {
@@ -382,10 +490,10 @@ func writeContent(types []any, logLines []changelogLine, oldVer semver, url stri
 
 	newVer = versionUp(oldVer, oldVer[0] == 0, breaks, minor)
 
-	return newVer, body, footer
+	return newVer, header, body, footer
 }
 
-func parseLines(lines []changelogLine, typ, url string) (scoped, scopeless, breakings []changelogLine, minor bool) {
+func parseLines(lines []changelogLine, typ, repoURL string) (scoped, scopeless, breakings []changelogLine, minor bool) {
 	scopeless = make([]changelogLine, 0, len(lines))
 	scoped = make([]changelogLine, 0, len(lines))
 	breakings = make([]changelogLine, 0, len(lines))
@@ -409,12 +517,14 @@ func parseLines(lines []changelogLine, typ, url string) (scoped, scopeless, brea
 		line.Minor = lineType == "feat"
 
 		if scope != "" {
-			line.Text = md("li", md("b", scope)+": "+description) + fmt.Sprintf(" (%s)\n", commitLink(url, line.Hash))
+			line.Text = md("li", md("b", scope)+": "+description) + fmt.Sprintf(" (%s)\n",
+				link(line.Hash[:8], fmt.Sprintf("%s/commit/%s", repoURL, line.Hash)),
+			)
 			if !line.Breaking {
 				scoped = append(scoped, line)
 			}
 		} else {
-			line.Text = md("li", description) + fmt.Sprintf(" (%s)\n", commitLink(url, line.Hash))
+			line.Text = md("li", description) + fmt.Sprintf(" (%s)\n", link(line.Hash[:8], fmt.Sprintf("%s/commit/%s", repoURL, line.Hash)))
 			if !line.Breaking {
 				scopeless = append(scopeless, line)
 			}
@@ -468,17 +578,15 @@ func md(tag, text string) string {
 		return "*" + text + "*"
 	}
 
-	return text
-}
+	logger.Warnf("ignored markdown tag: %s", tag)
 
-func commitLink(url, hash string) string {
-	return fmt.Sprintf("[%s](%s/commit/%s)", hash[:8], url, hash)
+	return text
 }
 
 func tag(prefix, version string) string {
 	return prefix + "v" + version
 }
 
-func compareLink(url, tag1, tag2 string) string {
-	return fmt.Sprintf("[Diff with %s](%s/compare/%s..%s)", tag2, url, tag2, tag1)
+func link(text, repoURL string) string {
+	return fmt.Sprintf("[%s](%s)", text, repoURL)
 }
