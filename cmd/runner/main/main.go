@@ -163,5 +163,5 @@ func run(inputs ...string) error {
 		return misc.Wrapfl(err)
 	}
 
-	return misc.Wrapfl(theTask.Execute(logger, cfg.Tasks, inputs[1:]...))
+	return misc.Wrapfl(theTask.Execute(logger, cfg.Tasks, inputs...))
 }
