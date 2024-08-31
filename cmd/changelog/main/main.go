@@ -28,6 +28,7 @@ import (
 	"github.com/tcodes0/go/jsonutil"
 	"github.com/tcodes0/go/logging"
 	"github.com/tcodes0/go/misc"
+	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v3"
 )
 
@@ -313,42 +314,64 @@ func fetchPullRequests(prs []string, ghURL string) (lines []changelogLine, err e
 
 	userRepo := strings.TrimPrefix(ghURL, "https://")
 	userRepo = strings.TrimPrefix(userRepo, "github.com/")
-	page, limit, query, header := 1, 100, url.Values{}, http.Header{}
+	limit, query, header, fatCommits, group := 100, url.Values{}, http.Header{}, []*apigithub.FatCommit{}, errgroup.Group{}
 
-	query.Add("page", strconv.Itoa(page))
+	query.Add("page", "1")
 	query.Add("per_page", strconv.Itoa(limit))
 	header.Add("Accept", "application/vnd.github.v3+json")
 	header.Add("Authorization", "token "+token)
 
-	for _, pr := range prs {
-		for {
-			res, err := apigithub.Get(logger.WithContext(context.TODO()), "repos/"+userRepo+"/pulls/"+pr+"/commits?"+query.Encode(), header, nil)
+	for _, pullReq := range prs {
+		group.Go(func() error {
+			var fats *[]*apigithub.FatCommit
+
+			ctx := logger.WithContext(context.TODO())
+
+			fats, err = fetchOne(ctx, fmt.Sprintf("repos/%s/pulls/%s/commits?%s", userRepo, pullReq, query.Encode()), header, nil)
 			if err != nil {
-				return nil, misc.Wrapfl(err)
+				return err
 			}
 
-			if res.StatusCode != http.StatusOK {
-				return nil, fmt.Errorf("status code %d", res.StatusCode)
+			fatCommits = slices.Concat(fatCommits, *fats)
+
+			if len(*fats) == limit {
+				return fmt.Errorf("PR #%s requires pagination", pullReq)
 			}
 
-			fatCommits, err := jsonutil.UnmarshalReader[[]*apigithub.FatCommit](res.Body)
-			res.Body.Close()
+			return nil
+		})
+	}
 
-			if err != nil {
-				return nil, misc.Wrapfl(err)
-			}
+	err = group.Wait()
+	if err != nil {
+		return nil, err
+	}
 
-			for _, fat := range *fatCommits {
-				lines = append(lines, changelogLine{Text: "* " + fat.Commit.Message, Hash: fat.SHA})
-			}
-
-			if len(*fatCommits) < limit {
-				break
-			}
-		}
+	for _, fat := range fatCommits {
+		lines = append(lines, changelogLine{Text: "* " + fat.Commit.Message, Hash: fat.SHA})
 	}
 
 	return lines, nil
+}
+
+func fetchOne(ctx context.Context, path string, header http.Header, client *http.Client) (*[]*apigithub.FatCommit, error) {
+	res, err := apigithub.Get(ctx, path, header, client)
+	if err != nil {
+		return nil, misc.Wrapfl(err)
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("status code %d", res.StatusCode)
+	}
+
+	fatCommits, err := jsonutil.UnmarshalReader[[]*apigithub.FatCommit](res.Body)
+	res.Body.Close()
+
+	if err != nil {
+		return nil, misc.Wrapfl(err)
+	}
+
+	return fatCommits, nil
 }
 
 func parseConfig(cfg string) (types []any, err error) {
