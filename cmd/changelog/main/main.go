@@ -262,7 +262,6 @@ func parseGitLog(tagPrefix string, allLogLines []string) (releaseLogLines []chan
 					return nil, nil, nil, misc.Wrapfl(err)
 				}
 
-				//nolint:gosec // parseInt enforces 8bits
 				oldVer = append(oldVer, uint8(version))
 			}
 
