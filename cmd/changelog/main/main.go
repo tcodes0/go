@@ -197,7 +197,7 @@ func changelog(cfg, linkURL, title, tagPrefix string) error {
 		titleColon = ""
 	}
 
-	fmt.Print(releaseString(types, releaseLines, oldVer, prs, linkURL, title, tagPrefix, titleColon))
+	fmt.Print(writeDocument(types, releaseLines, oldVer, prs, linkURL, title, tagPrefix, titleColon))
 
 	return nil
 }
@@ -404,11 +404,11 @@ func parseConfig(cfg string) (types []any, err error) {
 	return types, nil
 }
 
-func releaseString(types []any, releaseLines []changelogLine, oldVer semver, prs []string, linkURL, title, tagPrefix,
+func writeDocument(types []any, releaseLines []changelogLine, oldVer semver, prs []string, linkURL, title, tagPrefix,
 	titleColon string,
 ) string {
 	document := &strings.Builder{}
-	newVer, body, footer := writeContent(types, releaseLines, oldVer, linkURL)
+	newVer, header, body, footer := compose(types, releaseLines, oldVer, linkURL)
 	titleH1 := fmt.Sprintf("%s%s%sv%s %s\n\n", title, titleColon, tagPrefix, newVer, md("i", "("+time.Now().Format("2006-01-02")+")"))
 	prLinks := lo.Map(prs, func(pr string, _ int) string { return link("#"+pr, fmt.Sprintf("%s/pull/%s", linkURL, pr)) })
 
@@ -418,6 +418,11 @@ func releaseString(types []any, releaseLines []changelogLine, oldVer semver, prs
 		link("Diff with "+tag(tagPrefix, oldVer.String()),
 			fmt.Sprintf("%s/compare/%s..%s", linkURL, tag(tagPrefix, newVer.String()), tag(tagPrefix, oldVer.String()))),
 	) + "\n\n")
+
+	if header.Len() != 0 {
+		document.WriteString(header.String() + "\n")
+		header.Reset()
+	}
 
 	if body.Len() != 0 {
 		document.WriteString(body.String())
@@ -431,16 +436,15 @@ func releaseString(types []any, releaseLines []changelogLine, oldVer semver, prs
 		}
 
 		document.WriteString(md("h4", prettyType) + "\n")
-		document.WriteString(footer.String())
-		document.WriteString("\n")
+		document.WriteString(footer.String() + "\n")
 		footer.Reset()
 	}
 
 	return document.String()
 }
 
-func writeContent(types []any, logLines []changelogLine, oldVer semver, linkURL string) (newVer semver, body, footer *strings.Builder) {
-	footer, body = &strings.Builder{}, &strings.Builder{}
+func compose(types []any, logLines []changelogLine, oldVer semver, linkURL string) (newVer semver, body, footer, header *strings.Builder) {
+	footer, body, header = &strings.Builder{}, &strings.Builder{}, &strings.Builder{}
 	minor, breaks := false, false
 
 	for _, t := range types {
@@ -460,15 +464,15 @@ func writeContent(types []any, logLines []changelogLine, oldVer semver, linkURL 
 		}
 
 		if len(breakings) != 0 {
-			breaks = true
+			if !breaks {
+				header.WriteString(md("h2", md("i", "Breaking Changes")) + "\n")
 
-			body.WriteString(md("h2", "Breaking Changes") + "\n")
-
-			for _, b := range breakings {
-				body.WriteString(b.Text)
+				breaks = true
 			}
 
-			body.WriteString("\n")
+			for _, b := range breakings {
+				header.WriteString(b.Text)
+			}
 		}
 
 		if paragraph.Len() != 0 {
@@ -486,7 +490,7 @@ func writeContent(types []any, logLines []changelogLine, oldVer semver, linkURL 
 
 	newVer = versionUp(oldVer, oldVer[0] == 0, breaks, minor)
 
-	return newVer, body, footer
+	return newVer, header, body, footer
 }
 
 func parseLines(lines []changelogLine, typ, linkURL string) (scoped, scopeless, breakings []changelogLine, minor bool) {
@@ -573,6 +577,8 @@ func md(tag, text string) string {
 	case "i":
 		return "*" + text + "*"
 	}
+
+	logger.Warnf("ignored markdown tag: %s", tag)
 
 	return text
 }
