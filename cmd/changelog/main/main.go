@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/samber/lo"
 	"github.com/tcodes0/go/cmd"
 	apigithub "github.com/tcodes0/go/cmd/changelog"
 	"github.com/tcodes0/go/jsonutil"
@@ -89,7 +90,7 @@ func main() {
 	cfg := flagset.String("config", ".commitlintrc.yml", "path to commitlint config file")
 	title := flagset.String("title", "", "release title; new version and date will be added")
 	tagPrefix := flagset.String("tagprefix", "", "prefix to be concatenated to semver tag, i.e ${PREFIX}v1.0.0")
-	linkURL := flagset.String("url", "", "github repository URL to point commit links at (required)")
+	linkURL := flagset.String("url", "", "github repository URL to point links at, prefixed 'https://github.com/' (required)")
 	fVerShort := flagset.Bool("v", false, "print version and exit")
 	fVerLong := flagset.Bool("version", false, "print version and exit")
 
@@ -180,6 +181,7 @@ func changelog(cfg, linkURL, title, tagPrefix string) error {
 		prLines, err = fetchPullRequests(prs, linkURL)
 		if err != nil {
 			logger.Error(err)
+			logger.Info("changelog will be generated from git log only")
 		} else {
 			releaseLines = prLines
 		}
@@ -195,7 +197,7 @@ func changelog(cfg, linkURL, title, tagPrefix string) error {
 		titleColon = ""
 	}
 
-	fmt.Print(releaseString(types, releaseLines, oldVer, linkURL, title, tagPrefix, titleColon))
+	fmt.Print(releaseString(types, releaseLines, oldVer, prs, linkURL, title, tagPrefix, titleColon))
 
 	return nil
 }
@@ -312,8 +314,7 @@ func fetchPullRequests(prs []string, ghURL string) (lines []changelogLine, err e
 		return nil, errors.New("empty GITHUB_TOKEN env var")
 	}
 
-	userRepo := strings.TrimPrefix(ghURL, "https://")
-	userRepo = strings.TrimPrefix(userRepo, "github.com/")
+	userRepo := strings.TrimPrefix(ghURL, "https://github.com/")
 	limit, query, header, fatCommits, group := 100, url.Values{}, http.Header{}, []*apigithub.FatCommit{}, errgroup.Group{}
 
 	query.Add("page", "1")
@@ -403,13 +404,20 @@ func parseConfig(cfg string) (types []any, err error) {
 	return types, nil
 }
 
-func releaseString(types []any, releaseLines []changelogLine, oldVer semver, linkURL, title, tagPrefix, titleColon string) string {
+func releaseString(types []any, releaseLines []changelogLine, oldVer semver, prs []string, linkURL, title, tagPrefix,
+	titleColon string,
+) string {
 	document := &strings.Builder{}
 	newVer, body, footer := writeContent(types, releaseLines, oldVer, linkURL)
 	titleH1 := fmt.Sprintf("%s%s%sv%s %s\n\n", title, titleColon, tagPrefix, newVer, md("i", "("+time.Now().Format("2006-01-02")+")"))
+	prLinks := lo.Map(prs, func(pr string, _ int) string { return link("#"+pr, fmt.Sprintf("%s/pull/%s", linkURL, pr)) })
 
 	document.WriteString(md("h1", titleH1))
-	document.WriteString(md("h3", compareLink(linkURL, tag(tagPrefix, newVer.String()), tag(tagPrefix, oldVer.String()))) + "\n\n")
+	document.WriteString(md("h3", "PRs in this release: "+strings.Join(prLinks, ", ")+"\n"))
+	document.WriteString(md("h3",
+		link("Diff with "+tag(tagPrefix, oldVer.String()),
+			fmt.Sprintf("%s/compare/%s..%s", linkURL, tag(tagPrefix, newVer.String()), tag(tagPrefix, oldVer.String()))),
+	) + "\n\n")
 
 	if body.Len() != 0 {
 		document.WriteString(body.String())
@@ -505,12 +513,14 @@ func parseLines(lines []changelogLine, typ, linkURL string) (scoped, scopeless, 
 		line.Minor = lineType == "feat"
 
 		if scope != "" {
-			line.Text = md("li", md("b", scope)+": "+description) + fmt.Sprintf(" (%s)\n", commitLink(linkURL, line.Hash))
+			line.Text = md("li", md("b", scope)+": "+description) + fmt.Sprintf(" (%s)\n",
+				link(line.Hash[:8], fmt.Sprintf("%s/commit/%s", linkURL, line.Hash)),
+			)
 			if !line.Breaking {
 				scoped = append(scoped, line)
 			}
 		} else {
-			line.Text = md("li", description) + fmt.Sprintf(" (%s)\n", commitLink(linkURL, line.Hash))
+			line.Text = md("li", description) + fmt.Sprintf(" (%s)\n", link(line.Hash[:8], fmt.Sprintf("%s/commit/%s", linkURL, line.Hash)))
 			if !line.Breaking {
 				scopeless = append(scopeless, line)
 			}
@@ -567,14 +577,10 @@ func md(tag, text string) string {
 	return text
 }
 
-func commitLink(u, hash string) string {
-	return fmt.Sprintf("[%s](%s/commit/%s)", hash[:8], u, hash)
-}
-
 func tag(prefix, version string) string {
 	return prefix + "v" + version
 }
 
-func compareLink(u, tag1, tag2 string) string {
-	return fmt.Sprintf("[Diff with %s](%s/compare/%s..%s)", tag2, u, tag2, tag1)
+func link(text, linkURL string) string {
+	return fmt.Sprintf("[%s](%s)", text, linkURL)
 }
