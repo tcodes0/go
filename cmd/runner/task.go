@@ -129,7 +129,7 @@ func (task *Task) Execute(logger *logging.Logger, tasks []*Task, inputs ...strin
 	for _, line := range task.Exec {
 		cmdInput := slices.Concat(strings.Split(line, " "), inputs[1:])
 		cmdInput = lo.Map(cmdInput, varMapper(inputs, tasks))
-		cmdInput = lo.Map(cmdInput, unespaceMapper)
+		cmdInput = lo.Map(cmdInput, unescapeMapper)
 
 		//nolint:gosec // has validation
 		command := exec.Command(cmdInput[0], cmdInput[1:]...)
@@ -222,7 +222,7 @@ func taskNameFilterJoin(tasks []*Task, filterFunc func(t *Task, _ int) bool) str
 	return strings.Join(names, ",")
 }
 
-func unespaceMapper(input string, _ int) string {
+func unescapeMapper(input string, _ int) string {
 	// literal # is desired but is considered yaml comment
 	return strings.ReplaceAll(input, `\#`, "#")
 }
