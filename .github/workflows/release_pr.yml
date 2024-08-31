@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       url:
-        description: Github repository URL to point commit links at
+        description: Github repository URL to point links at, prefixed 'https://github.com/'
         required: true
         type: string
       title:
