@@ -446,13 +446,15 @@ func writeDocument(types []any, releaseLines []changelogLine, oldVer semver, prs
 func compose(types []any, logLines []changelogLine, oldVer semver, linkURL string) (newVer semver, body, footer, header *strings.Builder) {
 	footer, body, header = &strings.Builder{}, &strings.Builder{}, &strings.Builder{}
 	minor, breaks := false, false
+	// removes repetitive commits like 'misc: fix ci' even if the hashes are different
+	uniqLines := lo.UniqBy(logLines, func(line changelogLine) string { return line.Text })
 
 	for _, t := range types {
 		var scoped, scopeless, breakings []changelogLine
 
 		typ, _ := t.(string)
 		paragraph := &strings.Builder{}
-		scoped, scopeless, breakings, minor = parseLines(logLines, typ, linkURL)
+		scoped, scopeless, breakings, minor = parseLines(uniqLines, typ, linkURL)
 
 		if len(scoped) != 0 {
 			slices.SortFunc(scoped, sortFn)
