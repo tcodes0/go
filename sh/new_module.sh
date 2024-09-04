@@ -48,7 +48,8 @@ init() {
       goVersion: TODO
       modulePath: cmd/%s
 "
-  local module="github.com/tcodes0/go/$name" format files_entry name="$1"
+  local name="$1" format files_entry
+  local module="github.com/tcodes0/go/$name"
 
   if [[ "$*" =~ -cmd ]]; then
     command cp -RH cmd/template "cmd/$name"

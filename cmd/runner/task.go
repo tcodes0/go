@@ -152,9 +152,9 @@ func (task *Task) Execute(logger *logging.Logger, tasks []*Task, inputs ...strin
 		}
 
 		if stderrBuffer.Len() > 0 {
-			logger.Warn("command stderr BEGINS")
+			logger.Info("command stderr BEGINS")
 			fmt.Fprint(os.Stderr, stderrBuffer.String())
-			logger.Warn("command stderr ENDS")
+			logger.Info("command stderr ENDS")
 		}
 
 		if err != nil {
