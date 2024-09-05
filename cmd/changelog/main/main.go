@@ -158,7 +158,7 @@ unstable tags (0.x.x) will not be promoted to 1.0.0 automatically, do it manuall
 }
 
 func changelog(cfg, repoURL, title, tagsFile string, tagPrefixes []string) error {
-	err := validateInputs(title, tagPrefixes)
+	err := validateInputs(tagPrefixes)
 	if err != nil {
 		return misc.Wrapfl(err)
 	}
@@ -213,15 +213,9 @@ func changelog(cfg, repoURL, title, tagsFile string, tagPrefixes []string) error
 	return nil
 }
 
-func validateInputs(title string, tagPrefixes []string) error {
-	RETitleRaw := `^[a-zA-Z0-9 !%&*()-+]+$`
-	RETitle := regexp.MustCompile(RETitleRaw)
+func validateInputs(tagPrefixes []string) error {
 	REPrefixRaw := `^[a-zA-Z0-9\/]+$`
 	RETag := regexp.MustCompile(REPrefixRaw)
-
-	if title != "" && !RETitle.MatchString(title) {
-		return fmt.Errorf("invalid title: '%s', should match %s", title, RETitleRaw)
-	}
 
 	for _, tagPrefix := range tagPrefixes {
 		if tagPrefix != "" && !RETag.MatchString(tagPrefix) {
