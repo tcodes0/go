@@ -443,7 +443,7 @@ func writeDocument(types []any, releaseLines []changelogLine, oldVers []semver, 
 		document.WriteString(md("h3",
 			link("Diff with "+tag(tagPrefix, oldVers[i].String()),
 				fmt.Sprintf("%s/compare/%s..%s", repoURL, tag(tagPrefix, newVers[i].String()), tag(tagPrefix, oldVers[i].String()))),
-		) + "\n\n")
+		) + "\n")
 	}
 
 	document.WriteString("\n")
