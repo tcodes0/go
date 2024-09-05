@@ -101,7 +101,7 @@ use (
 	prettyMods := strings.Join(mods, "\n\t")
 	newFile := fmt.Sprintf(format, version, prettyMods)
 
-	err = cmd.WriteFile("go.work", []byte(newFile))
+	err = cmd.OverwriteFile("go.work", []byte(newFile))
 	if err != nil {
 		return misc.Wrap(err, "WriteFile")
 	}

@@ -91,6 +91,7 @@ func main() {
 	title := flagset.String("title", "", "release title; new version and date will be added")
 	tagPrefixRaw := flagset.String("tagprefixes", "", "comma separated prefixes to find tags, i.e $PREFIXv1.0.0")
 	repoURL := flagset.String("url", "", "github repository URL to point links at, prefixed 'https://github.com/' (required)")
+	tagsFile := flagset.String("tagsfile", "", "write tags to file")
 	fVerShort := flagset.Bool("v", false, "print version and exit")
 	fVerLong := flagset.Bool("version", false, "print version and exit")
 
@@ -122,7 +123,7 @@ func main() {
 
 	prefixes := strings.Split(strings.ReplaceAll(*tagPrefixRaw, ", ", ","), ",")
 
-	errFinal = changelog(*cfg, *repoURL, *title, prefixes)
+	errFinal = changelog(*cfg, *repoURL, *title, *tagsFile, prefixes)
 }
 
 // Defer from main() very early; the first deferred function will run last.
@@ -156,7 +157,7 @@ unstable tags (0.x.x) will not be promoted to 1.0.0 automatically, do it manuall
 `, cmd.EnvVarUsage())
 }
 
-func changelog(cfg, repoURL, title string, tagPrefixes []string) error {
+func changelog(cfg, repoURL, title, tagsFile string, tagPrefixes []string) error {
 	err := validateInputs(title, tagPrefixes)
 	if err != nil {
 		return misc.Wrapfl(err)
@@ -199,7 +200,15 @@ func changelog(cfg, repoURL, title string, tagPrefixes []string) error {
 		titleColon = ""
 	}
 
-	fmt.Print(writeDocument(types, releaseLines, oldVers, prs, repoURL, title, titleColon, tagPrefixes))
+	doc, newVers := writeDocument(types, releaseLines, oldVers, prs, repoURL, title, titleColon, tagPrefixes)
+	fmt.Print(doc)
+
+	if tagsFile != "" {
+		err = writeTags(tagsFile, tagPrefixes, newVers)
+		if err != nil {
+			logger.Error(err)
+		}
+	}
 
 	return nil
 }
@@ -430,7 +439,7 @@ func parseConfig(cfg string) (types []any, err error) {
 
 func writeDocument(types []any, releaseLines []changelogLine, oldVers []semver, prs []string, repoURL, title, titleColon string,
 	tagPrefixes []string,
-) string {
+) (doc string, newVers []semver) {
 	document := &strings.Builder{}
 	newVers, header, body, footer := compose(types, releaseLines, oldVers, repoURL)
 
@@ -469,7 +478,7 @@ func writeDocument(types []any, releaseLines []changelogLine, oldVers []semver, 
 		footer.Reset()
 	}
 
-	return document.String()
+	return document.String(), newVers
 }
 
 func compose(types []any, logLines []changelogLine, oldVers []semver, repoURL string) (
@@ -627,4 +636,15 @@ func tag(prefix, version string) string {
 
 func link(text, repoURL string) string {
 	return fmt.Sprintf("[%s](%s)", text, repoURL)
+}
+
+func writeTags(tagsFile string, tagPrefixes []string, newVers []semver) error {
+	builder := &strings.Builder{}
+	builder.WriteString("# this file is generated to aid in automating releases\n")
+
+	for i, tagPrefix := range tagPrefixes {
+		builder.WriteString(tag(tagPrefix, newVers[i].String()) + "\n")
+	}
+
+	return misc.Wrapfl(cmd.OverwriteFile(tagsFile, []byte(builder.String())))
 }
