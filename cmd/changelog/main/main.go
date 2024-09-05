@@ -89,8 +89,9 @@ func main() {
 	logger = logging.Create(opts...)
 	cfg := flagset.String("config", ".commitlintrc.yml", "path to commitlint config file")
 	title := flagset.String("title", "", "release title; new version and date will be added")
-	tagPrefix := flagset.String("tagprefix", "", "prefix to be concatenated to semver tag, i.e ${PREFIX}v1.0.0")
+	tagPrefixRaw := flagset.String("tagprefixes", "", "comma separated prefixes to find tags, i.e $PREFIXv1.0.0")
 	repoURL := flagset.String("url", "", "github repository URL to point links at, prefixed 'https://github.com/' (required)")
+	tagsFile := flagset.String("tagsfile", "", "write tags to file")
 	fVerShort := flagset.Bool("v", false, "print version and exit")
 	fVerLong := flagset.Bool("version", false, "print version and exit")
 
@@ -120,7 +121,9 @@ func main() {
 		return
 	}
 
-	errFinal = changelog(*cfg, *repoURL, *title, *tagPrefix)
+	prefixes := strings.Split(strings.ReplaceAll(*tagPrefixRaw, ", ", ","), ",")
+
+	errFinal = changelog(*cfg, *repoURL, *title, *tagsFile, prefixes)
 }
 
 // Defer from main() very early; the first deferred function will run last.
@@ -154,8 +157,8 @@ unstable tags (0.x.x) will not be promoted to 1.0.0 automatically, do it manuall
 `, cmd.EnvVarUsage())
 }
 
-func changelog(cfg, repoURL, title, tagPrefix string) error {
-	err := validateInputs(title, tagPrefix)
+func changelog(cfg, repoURL, title, tagsFile string, tagPrefixes []string) error {
+	err := validateInputs(tagPrefixes)
 	if err != nil {
 		return misc.Wrapfl(err)
 	}
@@ -168,7 +171,7 @@ func changelog(cfg, repoURL, title, tagPrefix string) error {
 
 	splitLines := strings.Split(string(byteLogLines), "\n")
 
-	releaseLines, oldVer, prs, err := parseGitLog(tagPrefix, splitLines)
+	releaseLines, oldVers, prs, err := parseGitLog(tagPrefixes, splitLines)
 	if err != nil {
 		return misc.Wrapfl(err)
 	}
@@ -197,36 +200,39 @@ func changelog(cfg, repoURL, title, tagPrefix string) error {
 		titleColon = ""
 	}
 
-	fmt.Print(writeDocument(types, releaseLines, oldVer, prs, repoURL, title, tagPrefix, titleColon))
+	doc, newVers := writeDocument(types, releaseLines, oldVers, prs, repoURL, title, titleColon, tagPrefixes)
+	fmt.Print(doc)
+
+	if tagsFile != "" {
+		err = writeTags(tagsFile, tagPrefixes, newVers)
+		if err != nil {
+			logger.Error(err)
+		}
+	}
 
 	return nil
 }
 
-func validateInputs(title, tagPrefix string) error {
-	RETitleRaw := `^[a-zA-Z0-9 !%&*()-+]+$`
-	RETitle := regexp.MustCompile(RETitleRaw)
+func validateInputs(tagPrefixes []string) error {
 	REPrefixRaw := `^[a-zA-Z0-9\/]+$`
 	RETag := regexp.MustCompile(REPrefixRaw)
 
-	if title != "" && !RETitle.MatchString(title) {
-		return fmt.Errorf("invalid title: '%s', should match %s", title, RETitleRaw)
-	}
-
-	if tagPrefix != "" && !RETag.MatchString(tagPrefix) {
-		return fmt.Errorf("invalid tag prefix: '%s', should match %s", tagPrefix, REPrefixRaw)
+	for _, tagPrefix := range tagPrefixes {
+		if tagPrefix != "" && !RETag.MatchString(tagPrefix) {
+			return fmt.Errorf("invalid tag prefix: '%s', should match %s", tagPrefix, REPrefixRaw)
+		}
 	}
 
 	return nil
 }
 
-func parseGitLog(tagPrefix string, allLogLines []string) (releaseLogLines []changelogLine, versionOld semver, prs []string, err error) {
-	oldVer, hash, prs := make(semver, 0, semverLen), "", []string{}
+func parseGitLog(tagPrefixes, allLogLines []string) (releaseLogLines []changelogLine, versionOld []semver, prs []string, err error) {
 	releaseLogLines = make([]changelogLine, 0, len(allLogLines))
-	REReleaseTag := regexp.MustCompile("tag: " + tagPrefix + `v(?P<version>\d+\.\d+\.\d+)`)
-	REHash := regexp.MustCompile(`^[abcdef0-9]+$`)
+	REHash, oldVersions, hash := regexp.MustCompile(`^[abcdef0-9]+$`), make([]semver, 0, len(tagPrefixes)), ""
 
 	for _, line := range allLogLines {
 		line = strings.TrimSpace(line)
+
 		logger.Debugf("line=%s", line)
 
 		if line == "" {
@@ -254,27 +260,50 @@ func parseGitLog(tagPrefix string, allLogLines []string) (releaseLogLines []chan
 			releaseLogLines = append(releaseLogLines, changelogLine{Text: line, Hash: hash})
 		}
 
-		if match := REReleaseTag.FindStringSubmatch(line); match != nil {
-			for _, versionN := range strings.Split(match[1], ".") {
-				version, err := strconv.ParseInt(versionN, 10, 8)
-				if err != nil {
-					return nil, nil, nil, misc.Wrapfl(err)
-				}
-
-				oldVer = append(oldVer, uint8(version))
+		if strings.Contains(line, "tag:") {
+			parsedOldVers, err := parseTags(tagPrefixes, line)
+			if err != nil {
+				return nil, nil, nil, misc.Wrapfl(err)
 			}
 
-			// seeing a tag means it is the old tag,
-			// the release log ended and we are done
+			oldVersions = slices.Concat(oldVersions, parsedOldVers)
+		}
+
+		if len(oldVersions) == len(tagPrefixes) {
+			// found all the old tags
 			break
 		}
 	}
 
-	if len(oldVer) == 0 {
-		return nil, nil, nil, fmt.Errorf("old tag not found, expected format: %s", tag(tagPrefix, "0.0.0"))
+	if len(oldVersions) != len(tagPrefixes) {
+		return nil, nil, nil, fmt.Errorf("wanted old tags: %#v, found: %#v", tagPrefixes, oldVersions)
 	}
 
-	return releaseLogLines, oldVer, prs, nil
+	return releaseLogLines, oldVersions, prs, nil
+}
+
+func parseTags(tagPrefixes []string, line string) (oldVersions []semver, err error) {
+	for _, tagPrefix := range tagPrefixes {
+		REReleaseTag := regexp.MustCompile("tag: " + tagPrefix + `v(?P<version>\d+\.\d+\.\d+)`)
+
+		if match := REReleaseTag.FindStringSubmatch(line); match != nil {
+			oldVer := make(semver, 0, semverLen)
+
+			for _, versionN := range strings.Split(match[1], ".") {
+				version, err := strconv.ParseInt(versionN, 10, 8)
+				if err != nil {
+					return nil, misc.Wrapfl(err)
+				}
+
+				//nolint:gosec // parse int validates to int8
+				oldVer = append(oldVer, uint8(version))
+			}
+
+			oldVersions = append(oldVersions, oldVer)
+		}
+	}
+
+	return oldVersions, nil
 }
 
 func versionUp(current semver, unstable, breaking, minor bool) semver {
@@ -402,20 +431,25 @@ func parseConfig(cfg string) (types []any, err error) {
 	return types, nil
 }
 
-func writeDocument(types []any, releaseLines []changelogLine, oldVer semver, prs []string, repoURL, title, tagPrefix,
-	titleColon string,
-) string {
+func writeDocument(types []any, releaseLines []changelogLine, oldVers []semver, prs []string, repoURL, title, titleColon string,
+	tagPrefixes []string,
+) (doc string, newVers []semver) {
 	document := &strings.Builder{}
-	newVer, header, body, footer := compose(types, releaseLines, oldVer, repoURL)
-	titleH1 := fmt.Sprintf("%s%s%sv%s %s\n\n", title, titleColon, tagPrefix, newVer, md("i", "("+time.Now().Format("2006-01-02")+")"))
-	prLinks := lo.Map(prs, func(pr string, _ int) string { return link("#"+pr, fmt.Sprintf("%s/pull/%s", repoURL, pr)) })
+	newVers, header, body, footer := compose(types, releaseLines, oldVers, repoURL)
 
-	document.WriteString(md("h1", titleH1))
+	for i, tagPrefix := range tagPrefixes {
+		titleH1 := fmt.Sprintf("%s%s%sv%s %s\n", title, titleColon, tagPrefix, newVers[i], md("i", "("+time.Now().Format("2006-01-02")+")"))
+		document.WriteString(md("h1", titleH1))
+		document.WriteString(md("h3",
+			link("Diff with "+tag(tagPrefix, oldVers[i].String()),
+				fmt.Sprintf("%s/compare/%s..%s", repoURL, tag(tagPrefix, newVers[i].String()), tag(tagPrefix, oldVers[i].String()))),
+		) + "\n")
+	}
+
+	document.WriteString("\n")
+
+	prLinks := lo.Map(prs, func(pr string, _ int) string { return link("#"+pr, fmt.Sprintf("%s/pull/%s", repoURL, pr)) })
 	document.WriteString(md("h3", "PRs in this release: "+strings.Join(prLinks, ", ")+"\n"))
-	document.WriteString(md("h3",
-		link("Diff with "+tag(tagPrefix, oldVer.String()),
-			fmt.Sprintf("%s/compare/%s..%s", repoURL, tag(tagPrefix, newVer.String()), tag(tagPrefix, oldVer.String()))),
-	) + "\n\n")
 
 	if header.Len() != 0 {
 		document.WriteString(header.String() + "\n")
@@ -438,11 +472,14 @@ func writeDocument(types []any, releaseLines []changelogLine, oldVer semver, prs
 		footer.Reset()
 	}
 
-	return document.String()
+	return document.String(), newVers
 }
 
-func compose(types []any, logLines []changelogLine, oldVer semver, repoURL string) (newVer semver, body, footer, header *strings.Builder) {
+func compose(types []any, logLines []changelogLine, oldVers []semver, repoURL string) (
+	newVers []semver, body, footer, header *strings.Builder,
+) {
 	footer, body, header = &strings.Builder{}, &strings.Builder{}, &strings.Builder{}
+	// limitation: minor and breaks will apply to all versions, consequence of releasing many tags together
 	minor, breaks := false, false
 	// removes repetitive commits like 'misc: fix ci' even if the hashes are different
 	uniqLines := lo.UniqBy(logLines, func(line changelogLine) string { return line.Text })
@@ -488,9 +525,13 @@ func compose(types []any, logLines []changelogLine, oldVer semver, repoURL strin
 		}
 	}
 
-	newVer = versionUp(oldVer, oldVer[0] == 0, breaks, minor)
+	newVers = make([]semver, len(oldVers))
 
-	return newVer, header, body, footer
+	for i, oldVer := range oldVers {
+		newVers[i] = versionUp(oldVer, oldVer[0] == 0, breaks, minor)
+	}
+
+	return newVers, header, body, footer
 }
 
 func parseLines(lines []changelogLine, typ, repoURL string) (scoped, scopeless, breakings []changelogLine, minor bool) {
@@ -589,4 +630,15 @@ func tag(prefix, version string) string {
 
 func link(text, repoURL string) string {
 	return fmt.Sprintf("[%s](%s)", text, repoURL)
+}
+
+func writeTags(tagsFile string, tagPrefixes []string, newVers []semver) error {
+	builder := &strings.Builder{}
+	builder.WriteString("# this file is generated to aid in automating releases\n")
+
+	for i, tagPrefix := range tagPrefixes {
+		builder.WriteString(tag(tagPrefix, newVers[i].String()) + "\n")
+	}
+
+	return misc.Wrapfl(cmd.OverwriteFile(tagsFile, []byte(builder.String())))
 }

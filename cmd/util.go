@@ -61,7 +61,8 @@ func FindModules(logger *logging.Logger) ([]string, error) {
 	return out, nil
 }
 
-func WriteFile(filePath string, data []byte) error {
+// Overwrites the file, does not create the file.
+func OverwriteFile(filePath string, data []byte) error {
 	file, err := os.OpenFile(filePath, os.O_RDWR, 0)
 	if err != nil {
 		return misc.Wrap(err, "opening")

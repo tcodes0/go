@@ -82,7 +82,7 @@ func TestParseGitLog(t *testing.T) {
 		"* docs(pizza): document how to eat using hands",
 		"* fix: correct cheese to be creamy",
 		"fix: add pepperoni (#42)",
-		" (tag: other/v0.1.4, tag: pizza/v0.1.4)",
+		"(tag: other/v0.2.0, tag: pizza/v0.1.4) feat: experiment with chocolate",
 		"misc: update other (#41)",
 	}
 	expected := []changelogLine{
@@ -90,9 +90,22 @@ func TestParseGitLog(t *testing.T) {
 		{Text: "* fix: correct cheese to be creamy", Hash: "5974cb8f96fb6da96a5b917c5f43203daee1b431"},
 	}
 
-	lines, oldVer, prs, err := parseGitLog("pizza/", gitLog)
+	lines, oldVers, prs, err := parseGitLog([]string{"pizza/"}, gitLog)
 	assert.NoError(err)
-	assert.Equal(semver{0, 1, 4}, oldVer)
+	assert.Len(oldVers, 1)
+	assert.Equal(semver{0, 1, 4}, oldVers[0])
+	assert.Len(lines, len(expected))
+	assert.Equal([]string{"43", "42"}, prs)
+
+	for i, expect := range expected {
+		assert.Equal(expect, lines[i])
+	}
+
+	lines, oldVers, prs, err = parseGitLog([]string{"pizza/", "other/"}, gitLog)
+	assert.NoError(err)
+	assert.Len(oldVers, 2)
+	assert.Equal(semver{0, 1, 4}, oldVers[0])
+	assert.Equal(semver{0, 2, 0}, oldVers[1])
 	assert.Len(lines, len(expected))
 	assert.Equal([]string{"43", "42"}, prs)
 
