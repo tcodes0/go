@@ -280,6 +280,8 @@ func parseGitLog(tagPrefixes, allLogLines []string) (releaseLogLines []changelog
 		return nil, nil, nil, fmt.Errorf("wanted old tags: %#v, found: %#v", tagPrefixes, oldVersions)
 	}
 
+	slices.Reverse(prs) // reads better in changelog
+
 	return releaseLogLines, oldVersions, prs, nil
 }
 
