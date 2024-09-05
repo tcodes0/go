@@ -547,7 +547,7 @@ func parseLines(lines []changelogLine, typ, repoURL string) (scoped, scopeless, 
 		match := RECommitLine.FindStringSubmatch(line.Text)
 		if match == nil {
 			if line.Text != "" {
-				logger.Errorf("skip, no match: %s", line.Text)
+				logger.Warnf("ignore, no match: %s", line.Text)
 			}
 
 			continue
