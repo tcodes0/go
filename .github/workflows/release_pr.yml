@@ -49,8 +49,9 @@ jobs:
         shell: bash
         env:
           CHANGELOG_FILE: CHANGELOG.md
-          BASH_ENV: ./sh/lib/lib.sh
+          BASH_ENV: ./lib.sh
           TAGS_FILE: tags.txt
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./sh/lib/workflows/release/changelog.sh "${{ inputs.url }}" "${{ inputs.title }}" "${{ inputs.tag_prefix }}"
 
       - name: Open PR

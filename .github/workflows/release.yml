@@ -22,4 +22,7 @@ jobs:
         env:
           CHANGELOG_FILE: CHANGELOG.md
           BASH_ENV: ./sh/lib/lib.sh
+          DRY_RUN: true
+          TAGS_FILE: tags.txt
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./sh/lib/workflows/release/tag.sh
