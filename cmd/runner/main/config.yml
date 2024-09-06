@@ -13,12 +13,10 @@ tasks:
       - BASH_ENV=./sh/lib/lib.sh
     exec:
       - ./sh/workflows/module_pr/build.sh
-
   - name: lint
     module: true
     exec:
       - "golangci-lint run --timeout 10s --print-issued-lines=false"
-
   - name: go-lint-fix
     module: true
     env:
@@ -27,13 +25,11 @@ tasks:
       - BASH_ENV=./sh/lib/lib.sh
     exec:
       - "./sh/lib/go/lint_fix.sh <module>"
-
   - name: format
     module: true
     exec:
       - gofumpt -l -w
       - prettier --write <module>/**/*.yml
-
   - name: test
     module: true
     env:
@@ -46,11 +42,9 @@ tasks:
       - BASH_ENV=./sh/lib/lib.sh
     exec:
       - ./sh/workflows/module_pr/test_pretty.sh
-
   - name: format-configs
     exec:
       - "prettier --write ./**/*{.yml,.json}"
-
   - name: generate-mocks
     env:
       - PATH=<inherit>
@@ -58,11 +52,9 @@ tasks:
       - BASH_ENV=./sh/lib/lib.sh
     exec:
       - ./sh/lib/go/generate_mocks.sh
-
   - name: spellcheck
     exec:
       - "cspell --gitignore ."
-
   - name: setup
     env:
       - HOME=<inherit>
@@ -71,7 +63,6 @@ tasks:
       - BASH_ENV=./sh/lib/lib.sh
     exec:
       - ./sh/setup.sh
-
   - name: generate-go-work
     env:
       - PATH=<inherit>
@@ -80,7 +71,6 @@ tasks:
       - CMD_LOGLEVEL=<inherit>
     exec:
       - go run cmd/gengowork/main.go
-
   - name: new-module
     env:
       - PATH=<inherit>
@@ -88,7 +78,6 @@ tasks:
       - BASH_ENV=./sh/lib/lib.sh
     exec:
       - ./sh/new_module.sh
-
   - name: copyright-fix-go
     env:
       - PATH=<inherit>
@@ -97,7 +86,6 @@ tasks:
       - CMD_LOGLEVEL=<inherit>
     exec:
       - go run cmd/copyright/main.go -check *.go -fix -comment //<space>
-
   - name: copyright-fix-sh
     env:
       - PATH=<inherit>
