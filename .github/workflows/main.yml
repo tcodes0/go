@@ -232,7 +232,7 @@ jobs:
         with:
           files: "."
           incremental_files_only: true
-          config: ./cspell.config.yml
+          config: ./.cspell.config.yml
 
   copyright:
     name: copyright
