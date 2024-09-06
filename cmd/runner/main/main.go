@@ -28,12 +28,12 @@ type config struct {
 }
 
 var (
-	//go:embed config.yml
-	rawConfig string
-	logger    = &logging.Logger{}
-	cfg       config
-	flagset   = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	errFinal  error
+	cfgFiles   = []string{".t0runnerrc.yml", ".t0runnerrc.yaml"}
+	logger     = &logging.Logger{}
+	cfg        config
+	flagset    = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	errFinal   error
+	programVer = "0.2.0"
 )
 
 func main() {
@@ -54,8 +54,16 @@ func main() {
 	logger = logging.Create(opts...)
 	fVerShort := flagset.Bool("v", false, "print version and exit")
 	fVerLong := flagset.Bool("version", false, "print version and exit")
+	fConfig := flagset.String("config", "", "config file")
 
-	err := yaml.Unmarshal([]byte(rawConfig), &cfg)
+	cfgRaw, err := readCfg(fConfig, cfgFiles)
+	if err != nil {
+		errFinal = errors.Join(err, runner.ErrUsage)
+
+		return
+	}
+
+	err = yaml.Unmarshal(cfgRaw, &cfg)
 	if err != nil {
 		errFinal = errors.Join(err, runner.ErrUsage)
 
@@ -70,7 +78,7 @@ func main() {
 	}
 
 	if *fVerShort || *fVerLong {
-		fmt.Println(cfg.Version)
+		fmt.Println(programVer)
 
 		return
 	}
@@ -138,6 +146,24 @@ modules:
 %s
 .env file is used
 `, strings.Join(moduleTasks, "\n"), strings.Join(repoTasks, "\n"), strings.Join(modules, "\n- "), cmd.EnvVarUsage())
+}
+
+func readCfg(userCfg *string, defaults []string) (raw []byte, err error) {
+	if userCfg != nil {
+		raw, err = os.ReadFile(*userCfg)
+
+		return raw, misc.Wrapfl(err)
+	}
+
+	for _, defaultCfg := range defaults {
+		if _, err := os.Stat(defaultCfg); err == nil {
+			raw, err = os.ReadFile(defaultCfg)
+
+			return raw, misc.Wrapfl(err)
+		}
+	}
+
+	return nil, errors.New("config file not found")
 }
 
 // run <task> <module or input1> ...inputs.
