@@ -131,8 +131,10 @@ func usage(err error) {
 	}
 
 	fmt.Printf(`runner: miscellaneous automation tool
-run task:  ./run <task> <module?> <other args?>
-task help: ./run <task> -h
+run task:      ./run <task> <module?> <other args?>
+task help:     ./run <task> -h
+version:       ./run -v
+custom config: ./run -config <file>
 
 module tasks:
 %s
@@ -144,12 +146,14 @@ modules:
 - %s
 
 %s
-.env file is used
-`, strings.Join(moduleTasks, "\n"), strings.Join(repoTasks, "\n"), strings.Join(modules, "\n- "), cmd.EnvVarUsage())
+.env file is checked for environment variables.
+default config files: %s
+`, strings.Join(moduleTasks, "\n"), strings.Join(repoTasks, "\n"),
+		strings.Join(modules, "\n- "), cmd.EnvVarUsage(), strings.Join(cfgFiles, ", "))
 }
 
 func readCfg(userCfg *string, defaults []string) (raw []byte, err error) {
-	if userCfg != nil {
+	if userCfg != nil && *userCfg != "" {
 		raw, err = os.ReadFile(*userCfg)
 
 		return raw, misc.Wrapfl(err)
