@@ -2,7 +2,7 @@
 # <variables> are replaced by some value
 # see main.go const section for variables
 
-version: 0.1.5
+version: 0.2.0
 tasks:
   - name: build
     module: true
