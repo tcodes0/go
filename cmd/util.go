@@ -93,8 +93,8 @@ func OverwriteFile(filePath string, data []byte) error {
 
 func EnvVarUsage() string {
 	format := `environment variables:
-%s     toggle logger colored output (default: false)
-%s  1 - 5, 1 is debug. The higher the less logs (default: 2)`
+- %s     toggle logger colored output (default: false)
+- %s  1 - 5, 1 is debug. The higher the less logs (default: 2)`
 
 	return fmt.Sprintf(format, EnvColor, EnvLogLevel)
 }

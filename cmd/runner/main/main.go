@@ -146,7 +146,9 @@ modules:
 - %s
 
 %s
+
 .env file is checked for environment variables.
+see go.doc for config documentation.
 default config files: %s
 `, strings.Join(moduleTasks, "\n"), strings.Join(repoTasks, "\n"),
 		strings.Join(modules, "\n- "), cmd.EnvVarUsage(), strings.Join(cfgFiles, ", "))
