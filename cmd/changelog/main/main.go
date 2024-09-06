@@ -21,6 +21,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/samber/lo"
@@ -279,6 +280,8 @@ func parseGitLog(tagPrefixes, allLogLines []string) (releaseLogLines []changelog
 		return nil, nil, nil, fmt.Errorf("wanted old tags: %#v, found: %#v", tagPrefixes, oldVersions)
 	}
 
+	slices.Reverse(prs) // reads better in changelog
+
 	return releaseLogLines, oldVersions, prs, nil
 }
 
@@ -336,31 +339,32 @@ func versionUp(current semver, unstable, breaking, minor bool) semver {
 }
 
 func fetchPullRequests(prs []string, ghURL string) (lines []changelogLine, err error) {
+	userRepo, limit, query, header := strings.TrimPrefix(ghURL, "https://github.com/"), 100, url.Values{}, http.Header{}
+	fatCommits, group, lock := map[int]*[]*apigithub.FatCommit{}, errgroup.Group{}, sync.Mutex{}
+
 	token := os.Getenv("GITHUB_TOKEN")
 	if token == "" {
 		return nil, errors.New("empty GITHUB_TOKEN env var")
 	}
-
-	userRepo := strings.TrimPrefix(ghURL, "https://github.com/")
-	limit, query, header, fatCommits, group := 100, url.Values{}, http.Header{}, []*apigithub.FatCommit{}, errgroup.Group{}
 
 	query.Add("page", "1")
 	query.Add("per_page", strconv.Itoa(limit))
 	header.Add("Accept", "application/vnd.github.v3+json")
 	header.Add("Authorization", "token "+token)
 
-	for _, pullReq := range prs {
+	for i, pullReq := range prs {
 		group.Go(func() error {
-			var fats *[]*apigithub.FatCommit
-
 			ctx := logger.WithContext(context.TODO())
 
-			fats, err = fetchOne(ctx, fmt.Sprintf("repos/%s/pulls/%s/commits?%s", userRepo, pullReq, query.Encode()), header, nil)
-			if err != nil {
+			fats, e := fetchOne(ctx, fmt.Sprintf("repos/%s/pulls/%s/commits?%s", userRepo, pullReq, query.Encode()), header, nil)
+			if e != nil {
 				return err
 			}
 
-			fatCommits = slices.Concat(fatCommits, *fats)
+			lock.Lock()
+			defer lock.Unlock()
+
+			fatCommits[i] = fats
 
 			if len(*fats) == limit {
 				return fmt.Errorf("PR #%s requires pagination", pullReq)
@@ -375,8 +379,10 @@ func fetchPullRequests(prs []string, ghURL string) (lines []changelogLine, err e
 		return nil, err
 	}
 
-	for _, fat := range fatCommits {
-		lines = append(lines, changelogLine{Text: "* " + fat.Commit.Message, Hash: fat.SHA})
+	for _, fats := range fatCommits {
+		for _, fat := range *fats {
+			lines = append(lines, changelogLine{Text: "* " + fat.Commit.Message, Hash: fat.SHA})
+		}
 	}
 
 	return lines, nil
@@ -543,7 +549,7 @@ func parseLines(lines []changelogLine, typ, repoURL string) (scoped, scopeless, 
 		match := RECommitLine.FindStringSubmatch(line.Text)
 		if match == nil {
 			if line.Text != "" {
-				logger.Errorf("skip, no match: %s", line.Text)
+				logger.Warnf("ignore, no match: %s", line.Text)
 			}
 
 			continue
