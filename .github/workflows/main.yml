@@ -46,7 +46,7 @@ jobs:
         }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.1.7
 
       - name: Changed files
         id: list-changed-files
@@ -76,7 +76,7 @@ jobs:
       BASH_ENV: ./sh/lib/lib.sh
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.1.7
         with:
           fetch-depth: 0
           submodules: true
@@ -85,7 +85,7 @@ jobs:
         run: echo '{}' > package-lock.json
 
       - name: Setup Node.js environment
-        uses: actions/setup-node@v4.0.2
+        uses: actions/setup-node@v4.0.3
         with:
           node-version: lts/iron
           cache: npm
@@ -106,12 +106,12 @@ jobs:
     if: needs.changed-files.outputs.rootGoMod
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.1.7
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v5.0.2
         with:
-          go-version: 1.22
+          go-version: 1.23
 
       - name: Go mod
         uses: j0hnsmith/go-mod-check@v1
@@ -125,12 +125,12 @@ jobs:
     if: needs.changed-files.outputs.cmdGoMod
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.1.7
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v5.0.2
         with:
-          go-version: 1.22
+          go-version: 1.23
 
       - name: Go mod
         uses: j0hnsmith/go-mod-check@v1
@@ -144,7 +144,7 @@ jobs:
     if: false && needs.changed-files.outputs.anyGoMod
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.1.7
         with:
           submodules: true
 
@@ -161,17 +161,17 @@ jobs:
     if: needs.changed-files.outputs.anyMod1
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.1.7
         with:
           submodules: true
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v5.0.2
         with:
-          go-version: 1.22
+          go-version: 1.23
 
       - name: Mockery
-        uses: brokeyourbike/go-mockery-action@v0
+        uses: brokeyourbike/go-mockery-action@v0.1.7
         with:
           mockery-version: "2.43.0"
         env:
@@ -188,7 +188,7 @@ jobs:
     if: needs.changed-files.outputs.shell
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.1.7
 
       - name: Lint and format
         uses: luizm/action-sh-checker@v0.8.0
@@ -210,7 +210,7 @@ jobs:
       FILES: ${{ needs.changed-files.outputs.config }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.1.7
 
       - name: Prettier
         uses: actionsx/prettier@v3
@@ -225,10 +225,10 @@ jobs:
     if: (needs.changed-files.outputs.anyCodeAdded || needs.changed-files.outputs.doc) && github.event.local != true
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.1.7
 
       - name: Cspell
-        uses: streetsidesoftware/cspell-action@v6.4.0
+        uses: streetsidesoftware/cspell-action@v6.8.1
         with:
           files: "."
           incremental_files_only: true
@@ -241,12 +241,12 @@ jobs:
     if: needs.changed-files.outputs.anyCodeAdded
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.1.7
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v5.0.2
         with:
-          go-version: 1.22
+          go-version: 1.23
 
       - name: Run Copyright
         run: |
@@ -263,7 +263,7 @@ jobs:
     if: needs.changed-files.outputs.modClock
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.22
+      goVersion: 1.23
       modulePath: clock
 
   httpmisc:
@@ -272,7 +272,7 @@ jobs:
     if: needs.changed-files.outputs.modHttpMisc
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.22
+      goVersion: 1.23
       modulePath: httpmisc
 
   hue:
@@ -281,7 +281,7 @@ jobs:
     if: needs.changed-files.outputs.modHue
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.22
+      goVersion: 1.23
       modulePath: hue
 
   identifier:
@@ -290,7 +290,7 @@ jobs:
     if: needs.changed-files.outputs.modIdentifier
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.22
+      goVersion: 1.23
       modulePath: identifier
 
   jsonutil:
@@ -299,7 +299,7 @@ jobs:
     if: needs.changed-files.outputs.modJsonutil
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.22
+      goVersion: 1.23
       modulePath: jsonutil
 
   logging:
@@ -308,7 +308,7 @@ jobs:
     if: needs.changed-files.outputs.modLogging
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.22
+      goVersion: 1.23
       modulePath: logging
 
   misc:
@@ -317,7 +317,7 @@ jobs:
     if: needs.changed-files.outputs.modMisc
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.22
+      goVersion: 1.23
       modulePath: misc
 
   cmd-copyright:
@@ -326,7 +326,7 @@ jobs:
     if: needs.changed-files.outputs.modCmdCopyright
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.22
+      goVersion: 1.23
       modulePath: cmd/copyright
 
   generate-go-work:
@@ -335,7 +335,7 @@ jobs:
     if: needs.changed-files.outputs.modCmdGenGoWork
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.22
+      goVersion: 1.23
       modulePath: cmd/gengowork
 
   filer:
@@ -344,7 +344,7 @@ jobs:
     if: needs.changed-files.outputs.modCmdFiler
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.22
+      goVersion: 1.23
       modulePath: cmd/filer
 
   cmd-changelog:
@@ -353,5 +353,5 @@ jobs:
     if: needs.changed-files.outputs.modCmdChangelog
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.22
+      goVersion: 1.23
       modulePath: cmd/changelog

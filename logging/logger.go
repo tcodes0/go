@@ -141,6 +141,7 @@ func (logger *Logger) exit() {
 }
 
 func (logger *Logger) out(msgLevel Level, msg ...any) {
+	//nolint:gosec // type conversion
 	if logger.l == nil || msgLevel < Level(logger.level.Load()) {
 		return
 	}
