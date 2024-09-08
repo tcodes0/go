@@ -50,7 +50,7 @@ jobs:
 
       - name: Changed files
         id: list-changed-files
-        uses: tj-actions/changed-files@v44
+        uses: tj-actions/changed-files@v45.0.1
         with:
           # since_last_remote_commit: true # use only for testing, it's easy to produce no changed files
           files_yaml_from_source_file: .changed-files.yml
