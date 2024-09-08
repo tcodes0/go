@@ -5,38 +5,38 @@
 version: 0.2.0
 tasks:
   - name: build
-    module: true
+    package: true
     env:
-      - MOD_PATH=<module>
+      - MOD_PATH=<package>
       - HOME=<inherit>
       - PATH=<inherit>
       - BASH_ENV=./sh/lib/lib.sh
     exec:
       - ./sh/workflows/module_pr/build.sh
   - name: lint
-    module: true
+    package: true
     exec:
       - "golangci-lint run --timeout 10s --print-issued-lines=false"
   - name: go-lint-fix
-    module: true
+    package: true
     env:
       - HOME=<inherit>
       - PATH=<inherit>
       - BASH_ENV=./sh/lib/lib.sh
     exec:
-      - "./sh/lib/go/lint_fix.sh <module>"
+      - "./sh/lib/go/lint_fix.sh <package>"
   - name: format
-    module: true
+    package: true
     exec:
       - gofumpt -l -w
-      - prettier --write <module>/**/*.yml
+      - prettier --write <package>/**/*.yml
   - name: test
-    module: true
+    package: true
     env:
       - CACHE=true
       - GITHUB_OUTPUT=/dev/null
       - COVERAGE_FILE=coverage.out
-      - MOD_PATH=<module>
+      - MOD_PATH=<package>
       - PATH=<inherit>
       - HOME=<inherit>
       - BASH_ENV=./sh/lib/lib.sh

@@ -104,54 +104,60 @@ func passAway(fatal error) {
 	}
 }
 
-func usage(err error) {
-	if errors.Is(err, flag.ErrHelp) {
+func usage(incomingErr error) {
+	if errors.Is(incomingErr, flag.ErrHelp) {
 		fmt.Println()
 	}
 
-	moduleTasks, repoTasks := []string{}, []string{}
+	packageTasks, repoTasks, builder := []string{}, []string{}, strings.Builder{}
 
-	for _, task := range lo.Filter(cfg.Tasks, func(t *runner.Task, _ int) bool { return t.Module }) {
+	for _, task := range lo.Filter(cfg.Tasks, func(t *runner.Task, _ int) bool { return t.Package }) {
 		line := "./run "
 		line += task.Name + "\t"
 
-		moduleTasks = append(moduleTasks, line)
+		packageTasks = append(packageTasks, line)
 	}
 
-	for _, task := range lo.Filter(cfg.Tasks, func(t *runner.Task, _ int) bool { return !t.Module }) {
+	for _, task := range lo.Filter(cfg.Tasks, func(t *runner.Task, _ int) bool { return !t.Package }) {
 		line := "./run "
 		line += task.Name + "\t"
 
 		repoTasks = append(repoTasks, line)
 	}
 
-	modules, e := cmd.FindModules(logger)
-	if e != nil {
-		fmt.Printf("finding modules: error: %v\n", e)
-	}
-
-	fmt.Printf(`runner: miscellaneous automation tool
-run task:      ./run <task> <module?> <other args?>
+	builder.WriteString(`runner: miscellaneous automation tool
+run task:      ./run <task> <args...>
 task help:     ./run <task> -h
 version:       ./run -v
-custom config: ./run -config <file>
+custom config: ./run -config <file>`)
 
-module tasks:
-%s
+	if len(packageTasks) > 0 {
+		builder.WriteString("\n" + `
+package tasks:
+` + strings.Join(packageTasks, "\n"))
+	}
 
+	if len(repoTasks) > 0 {
+		builder.WriteString("\n" + `
 repository tasks:
-%s
+` + strings.Join(repoTasks, "\n") + "\n")
+	}
 
-modules:
-- %s
+	packages, err := cmd.FindPackages(logger)
+	if err != nil {
+		fmt.Printf("finding packages: error: %v\n", err)
+	}
 
-%s
+	if len(packages) > 0 {
+		builder.WriteString("\n" + `packages:
+- ` + strings.Join(packages, "\n- ") + "\n")
+	}
 
-.env file is checked for environment variables.
+	builder.WriteString("\n" + `.env file is checked for environment variables.
 see go.doc for config documentation.
-default config files: %s
-`, strings.Join(moduleTasks, "\n"), strings.Join(repoTasks, "\n"),
-		strings.Join(modules, "\n- "), cmd.EnvVarUsage(), strings.Join(cfgFiles, ", "))
+default config files: ` + strings.Join(cfgFiles, ", ") + "\n")
+
+	_, _ = fmt.Print(builder.String())
 }
 
 func parseFlags(cmdLine []string) (flags []string, err error) {
@@ -202,7 +208,7 @@ func readCfg(userCfg *string, defaults []string) (raw []byte, err error) {
 	return nil, errors.New("config file not found")
 }
 
-// run <task> <module or input1> ...inputs.
+// run <task> <package or input1> ...inputs.
 func run(inputs []string) error {
 	if len(inputs) == 0 {
 		return misc.Wrap(runner.ErrUsage, "task is required")

@@ -22,30 +22,28 @@ import (
 )
 
 const (
-	varModule    = "<module>"                // the module passed as input
-	varInherit   = "<inherit>"               // copy this from the environment
-	varTasksModT = "<task-module-names>"     // all module task names
-	varTasksModF = "<task-not-module-names>" // all not module task names
-	varSpace     = "<space>"                 // single whitespace
+	varPackage = "<package>" // the package passed as input
+	varInherit = "<inherit>" // copy this from the environment
+	varSpace   = "<space>"   // single whitespace
 )
 
 var ErrUsage = errors.New("see usage")
 
 type Task struct {
-	Env    []string `yaml:"env"`
-	Name   string   `yaml:"name"`
-	Exec   []string `yaml:"exec"`
-	Module bool     `yaml:"module"`
+	Env     []string `yaml:"env"`
+	Name    string   `yaml:"name"`
+	Exec    []string `yaml:"exec"`
+	Package bool     `yaml:"package"`
 }
 
-// validate <module or input1> ...inputs.
+// validate <package or input1> ...inputs.
 func (task *Task) Validate(logger *logging.Logger, inputs ...string) error {
 	_, help := lo.Find(inputs, func(input string) bool { return input == "-h" || input == "--help" })
 	if help {
 		return nil
 	}
 
-	err := task.ValidateModule(logger, inputs...)
+	err := task.ValidatePackage(logger, inputs...)
 	if err != nil {
 		return err
 	}
@@ -53,28 +51,28 @@ func (task *Task) Validate(logger *logging.Logger, inputs ...string) error {
 	return err
 }
 
-func (task *Task) ValidateModule(logger *logging.Logger, inputs ...string) error {
-	if !task.Module {
+func (task *Task) ValidatePackage(logger *logging.Logger, inputs ...string) error {
+	if !task.Package {
 		return nil
 	}
 
 	if len(inputs) < 1 {
-		return misc.Wrapf(ErrUsage, "%s: module is required", task.Name)
+		return misc.Wrapf(ErrUsage, "%s: package is required", task.Name)
 	}
 
-	mods, err := cmd.FindModules(logger)
+	mods, err := cmd.FindPackages(logger)
 	if err != nil {
-		return misc.Wrap(err, "FindModules")
+		return misc.Wrap(err, "FindPackages")
 	}
 
 	_, found := lo.Find(mods, func(m string) bool { return m == inputs[0] })
 	if !found {
 		meant, ok := DidYouMean(inputs[0], mods)
 		if ok {
-			return misc.Wrapf(ErrUsage, "%s: unknown module, %s", inputs[0], meant)
+			return misc.Wrapf(ErrUsage, "%s: unknown package, %s", inputs[0], meant)
 		}
 
-		return misc.Wrapf(ErrUsage, "%s: unknown module", inputs[0])
+		return misc.Wrapf(ErrUsage, "%s: unknown package", inputs[0])
 	}
 
 	return nil
@@ -83,7 +81,7 @@ func (task *Task) ValidateModule(logger *logging.Logger, inputs ...string) error
 func (task *Task) Execute(logger *logging.Logger, tasks []*Task, inputs ...string) error {
 	for _, line := range task.Exec {
 		cmdInput := slices.Concat(strings.Split(line, " "), inputs[1:])
-		cmdInput = lo.Map(cmdInput, varMapper(inputs, tasks))
+		cmdInput = lo.Map(cmdInput, varMapper(inputs))
 		cmdInput = lo.Map(cmdInput, unescapeMapper)
 
 		//nolint:gosec // has validation
@@ -127,8 +125,8 @@ func (task *Task) Execute(logger *logging.Logger, tasks []*Task, inputs ...strin
 
 func envVarMapper(inputs []string, logger *logging.Logger) func(pair string, _ int) string {
 	return func(pair string, _ int) string {
-		if strings.Contains(pair, varModule) {
-			return strings.Replace(pair, varModule, inputs[1], 1)
+		if strings.Contains(pair, varPackage) {
+			return strings.Replace(pair, varPackage, inputs[1], 1)
 		}
 
 		if strings.Contains(pair, varInherit) {
@@ -146,18 +144,10 @@ func envVarMapper(inputs []string, logger *logging.Logger) func(pair string, _ i
 	}
 }
 
-func varMapper(inputs []string, tasks []*Task) func(input string, _ int) string {
+func varMapper(inputs []string) func(input string, _ int) string {
 	return func(input string, _ int) string {
-		if strings.Contains(input, varTasksModT) {
-			return strings.ReplaceAll(input, varTasksModT, taskNameFilterJoin(tasks, func(t *Task, _ int) bool { return t.Module }))
-		}
-
-		if strings.Contains(input, varTasksModF) {
-			return strings.ReplaceAll(input, varTasksModF, taskNameFilterJoin(tasks, func(t *Task, _ int) bool { return !t.Module }))
-		}
-
-		if strings.Contains(input, varModule) {
-			return strings.ReplaceAll(input, varModule, inputs[1])
+		if strings.Contains(input, varPackage) {
+			return strings.ReplaceAll(input, varPackage, inputs[1])
 		}
 
 		if strings.Contains(input, varSpace) {
@@ -166,15 +156,6 @@ func varMapper(inputs []string, tasks []*Task) func(input string, _ int) string 
 
 		return input
 	}
-}
-
-func taskNameFilterJoin(tasks []*Task, filterFunc func(t *Task, _ int) bool) string {
-	modTasks := lo.Filter(tasks, filterFunc)
-	names := lo.Reduce(modTasks, func(agg []string, t *Task, _ int) []string {
-		return append(agg, t.Name)
-	}, make([]string, 0, len(modTasks)))
-
-	return strings.Join(names, ",")
 }
 
 func unescapeMapper(input string, _ int) string {

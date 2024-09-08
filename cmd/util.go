@@ -25,7 +25,7 @@ var (
 	EnvLogLevel = "CMD_LOGLEVEL"
 )
 
-func FindModules(logger *logging.Logger) ([]string, error) {
+func FindPackages(logger *logging.Logger) ([]string, error) {
 	goFiles := make([]string, 0)
 
 	for _, glob := range globs {

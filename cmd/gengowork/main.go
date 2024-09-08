@@ -140,7 +140,7 @@ func parseGoVersion() (string, error) {
 }
 
 func findModules() ([]string, error) {
-	modules, err := cmd.FindModules(logger)
+	modules, err := cmd.FindPackages(logger)
 	if err != nil {
 		return nil, misc.Wrap(err, "FindModules")
 	}
