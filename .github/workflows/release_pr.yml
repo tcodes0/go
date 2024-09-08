@@ -46,7 +46,7 @@ jobs:
       - name: Install changelog (local)
         if: github.event.local == true
         run: go install ./cmd/changelog
-`
+
       - name: Update changelog
         shell: bash
         env:
