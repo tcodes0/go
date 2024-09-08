@@ -11,8 +11,8 @@ on:
       title:
         description: Release title; new version and date will be added
         type: string
-      tag_prefix:
-        description: Prefix to be concatenated to semver tag, i.e ${PREFIX}v1.0.0
+      tag_prefixes:
+        description: Comma separated prefixes to find tags, i.e $PREFIXv1.0.0
         type: string
 
 jobs:
@@ -54,7 +54,7 @@ jobs:
           BASH_ENV: ./sh/lib/lib.sh
           TAGS_FILE: tags.txt
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./sh/lib/workflows/release/changelog.sh "${{ inputs.url }}" "${{ inputs.title }}" "${{ inputs.tag_prefix }}"
+        run: ./sh/lib/workflows/release/changelog.sh "${{ inputs.url }}" "${{ inputs.title }}" "${{ inputs.tag_prefixes }}"
 
       - name: Bump cmd configs version
         shell: bash

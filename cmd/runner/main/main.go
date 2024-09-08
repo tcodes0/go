@@ -28,12 +28,12 @@ type config struct {
 }
 
 var (
-	//go:embed config.yml
-	rawConfig string
-	logger    = &logging.Logger{}
-	cfg       config
-	flagset   = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	errFinal  error
+	cfgFiles   = []string{".t0runnerrc.yml", ".t0runnerrc.yaml"}
+	logger     = &logging.Logger{}
+	cfg        config
+	flagset    = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	errFinal   error
+	programVer = "0.2.0"
 )
 
 func main() {
@@ -54,15 +54,23 @@ func main() {
 	logger = logging.Create(opts...)
 	fVerShort := flagset.Bool("v", false, "print version and exit")
 	fVerLong := flagset.Bool("version", false, "print version and exit")
+	fConfig := flagset.String("config", "", "config file")
 
-	err := yaml.Unmarshal([]byte(rawConfig), &cfg)
+	cmdLineArgs, err := parseFlags(os.Args[1:])
 	if err != nil {
 		errFinal = errors.Join(err, runner.ErrUsage)
 
 		return
 	}
 
-	err = flagset.Parse(os.Args[1:])
+	cfgRaw, err := readCfg(fConfig, cfgFiles)
+	if err != nil {
+		errFinal = errors.Join(err, runner.ErrUsage)
+
+		return
+	}
+
+	err = yaml.Unmarshal(cfgRaw, &cfg)
 	if err != nil {
 		errFinal = errors.Join(err, runner.ErrUsage)
 
@@ -70,12 +78,12 @@ func main() {
 	}
 
 	if *fVerShort || *fVerLong {
-		fmt.Println(cfg.Version)
+		fmt.Println(programVer)
 
 		return
 	}
 
-	errFinal = run(os.Args[1:]...)
+	errFinal = run(cmdLineArgs)
 }
 
 // Defer from main() very early; the first deferred function will run last.
@@ -96,52 +104,113 @@ func passAway(fatal error) {
 	}
 }
 
-func usage(err error) {
-	if errors.Is(err, flag.ErrHelp) {
+func usage(incomingErr error) {
+	if errors.Is(incomingErr, flag.ErrHelp) {
 		fmt.Println()
 	}
 
-	moduleTasks, repoTasks := []string{}, []string{}
+	packageTasks, repoTasks, builder := []string{}, []string{}, strings.Builder{}
 
-	for _, task := range lo.Filter(cfg.Tasks, func(t *runner.Task, _ int) bool { return t.Module }) {
+	for _, task := range lo.Filter(cfg.Tasks, func(t *runner.Task, _ int) bool { return t.Package }) {
 		line := "./run "
 		line += task.Name + "\t"
 
-		moduleTasks = append(moduleTasks, line)
+		packageTasks = append(packageTasks, line)
 	}
 
-	for _, task := range lo.Filter(cfg.Tasks, func(t *runner.Task, _ int) bool { return !t.Module }) {
+	for _, task := range lo.Filter(cfg.Tasks, func(t *runner.Task, _ int) bool { return !t.Package }) {
 		line := "./run "
 		line += task.Name + "\t"
 
 		repoTasks = append(repoTasks, line)
 	}
 
-	modules, e := cmd.FindModules(logger)
-	if e != nil {
-		fmt.Printf("finding modules: error: %v\n", e)
+	builder.WriteString(`runner: miscellaneous automation tool
+run task:      ./run <task> <args...>
+task help:     ./run <task> -h
+version:       ./run -v
+custom config: ./run -config <file>`)
+
+	if len(packageTasks) > 0 {
+		builder.WriteString("\n" + `
+package tasks:
+` + strings.Join(packageTasks, "\n"))
 	}
 
-	fmt.Printf(`runner: miscellaneous automation tool
-run task:  ./run <task> <module?> <other args?>
-task help: ./run <task> -h
-
-module tasks:
-%s
-
+	if len(repoTasks) > 0 {
+		builder.WriteString("\n" + `
 repository tasks:
-%s
+` + strings.Join(repoTasks, "\n") + "\n")
+	}
 
-modules:
-- %s
+	packages, err := cmd.FindPackages(logger)
+	if err != nil {
+		fmt.Printf("finding packages: error: %v\n", err)
+	}
 
-%s
-.env file is used
-`, strings.Join(moduleTasks, "\n"), strings.Join(repoTasks, "\n"), strings.Join(modules, "\n- "), cmd.EnvVarUsage())
+	if len(packages) > 0 {
+		builder.WriteString("\n" + `packages:
+- ` + strings.Join(packages, "\n- ") + "\n")
+	}
+
+	builder.WriteString("\n" + cmd.EnvVarUsage() + "\n")
+	builder.WriteString("\n" + `.env file is checked for environment variables.
+see go.doc for config documentation.
+default config files: ` + strings.Join(cfgFiles, ", ") + "\n")
+
+	_, _ = fmt.Print(builder.String())
 }
 
-// run <task> <module or input1> ...inputs.
-func run(inputs ...string) error {
+func parseFlags(cmdLine []string) (cmdLineArgs []string, err error) {
+	err = flagset.Parse(cmdLine)
+	if err != nil {
+		return nil, misc.Wrapfl(err)
+	}
+
+	skip := false
+	for _, cmdL := range cmdLine {
+		if skip {
+			skip = false
+
+			continue
+		}
+
+		if cmdL == "-v" || cmdL == "-version" {
+			continue
+		}
+
+		if cmdL == "-config" {
+			skip = true
+
+			continue
+		}
+
+		cmdLineArgs = append(cmdLineArgs, cmdL)
+	}
+
+	return cmdLineArgs, nil
+}
+
+func readCfg(userCfg *string, defaults []string) (raw []byte, err error) {
+	if userCfg != nil && *userCfg != "" {
+		raw, err = os.ReadFile(*userCfg)
+
+		return raw, misc.Wrapfl(err)
+	}
+
+	for _, defaultCfg := range defaults {
+		if _, err := os.Stat(defaultCfg); err == nil {
+			raw, err = os.ReadFile(defaultCfg)
+
+			return raw, misc.Wrapfl(err)
+		}
+	}
+
+	return nil, errors.New("config file not found")
+}
+
+// run <task> <package or input1> ...inputs.
+func run(inputs []string) error {
 	if len(inputs) == 0 {
 		return misc.Wrap(runner.ErrUsage, "task is required")
 	}
