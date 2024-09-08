@@ -194,7 +194,7 @@ func TestLoggerLevel(t *testing.T) {
 		/* 6 None*/ {matchEmpty, matchEmpty, matchEmpty, matchEmpty, matchEmpty},
 	}
 
-	for i := range int(logging.LNone) {
+	for i := range uint8(logging.LNone) {
 		level := i + 1
 		name := fmt.Sprintf("level %d", level)
 

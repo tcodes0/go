@@ -141,6 +141,7 @@ func (logger *Logger) exit() {
 }
 
 func (logger *Logger) out(msgLevel Level, msg ...any) {
+	//nolint:gosec // type conversion
 	if logger.l == nil || msgLevel < Level(logger.level.Load()) {
 		return
 	}
@@ -218,6 +219,5 @@ func (logger *Logger) Stacktrace(level Level, allGoroutines bool) {
 
 // set the level of the logger, lesser messages will be ignored.
 func (logger *Logger) SetLevel(level Level) {
-	//nolint:gosec // type conversion
 	logger.level.Store(int32(level))
 }

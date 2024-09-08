@@ -132,6 +132,7 @@ linters-settings:
   varnamelen:
     ignore-decls:
       - i int
+      - i uint8
     ignore-type-assert-ok: true
     ignore-map-index-ok: true
     ignore-chan-recv-ok: true

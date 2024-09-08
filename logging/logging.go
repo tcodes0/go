@@ -17,7 +17,7 @@ import (
 
 // Setting a level prevents messages with a lower level from being logged.
 // The default level is LInfo, suppressing debug messages.
-type Level int
+type Level uint8
 
 const (
 	// lowest level.
@@ -138,7 +138,6 @@ func Create(options ...CreateOptions) *Logger {
 		exitFunc: opts.exit,
 	}
 	logger.color.Store(opts.color)
-	//nolint:gosec // internal
 	logger.level.Store(int32(opts.level))
 
 	return logger
