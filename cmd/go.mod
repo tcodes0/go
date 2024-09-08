@@ -6,8 +6,10 @@ require (
 	github.com/lithammer/fuzzysearch v1.1.8
 	github.com/samber/lo v1.39.0
 	github.com/stretchr/testify v1.9.0
+	github.com/tcodes0/go/jsonutil v0.1.5
 	github.com/tcodes0/go/logging v0.1.4
 	github.com/tcodes0/go/misc v0.1.4
+	golang.org/x/sync v0.1.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 

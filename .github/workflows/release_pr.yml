@@ -26,14 +26,14 @@ jobs:
           echo expected main, got: ${{ github.ref }} && exit 1
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.1.7
         with:
           fetch-tags: true
           fetch-depth: 0
           submodules: true
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v5.0.2
         with:
           go-version: 1.23
         # used in bump configs step
@@ -63,7 +63,7 @@ jobs:
         run: ./sh/workflows/release/bump_cmd_configs.sh
 
       - name: Open PR
-        uses: peter-evans/create-pull-request@v6.1.0
+        uses: peter-evans/create-pull-request@v7.0.1
         if: github.event.local != true
         with:
           commit-message: "chore: release ${{ inputs.title }}"
