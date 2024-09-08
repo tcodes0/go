@@ -56,6 +56,13 @@ func main() {
 	fVerLong := flagset.Bool("version", false, "print version and exit")
 	fConfig := flagset.String("config", "", "config file")
 
+	osArgs, err := parseFlags(os.Args[1:])
+	if err != nil {
+		errFinal = errors.Join(err, runner.ErrUsage)
+
+		return
+	}
+
 	cfgRaw, err := readCfg(fConfig, cfgFiles)
 	if err != nil {
 		errFinal = errors.Join(err, runner.ErrUsage)
@@ -70,20 +77,13 @@ func main() {
 		return
 	}
 
-	err = flagset.Parse(os.Args[1:])
-	if err != nil {
-		errFinal = errors.Join(err, runner.ErrUsage)
-
-		return
-	}
-
 	if *fVerShort || *fVerLong {
 		fmt.Println(programVer)
 
 		return
 	}
 
-	errFinal = run(os.Args[1:]...)
+	errFinal = run(osArgs)
 }
 
 // Defer from main() very early; the first deferred function will run last.
@@ -154,6 +154,36 @@ default config files: %s
 		strings.Join(modules, "\n- "), cmd.EnvVarUsage(), strings.Join(cfgFiles, ", "))
 }
 
+func parseFlags(cmdLine []string) (flags []string, err error) {
+	err = flagset.Parse(cmdLine)
+	if err != nil {
+		return nil, misc.Wrapfl(err)
+	}
+
+	skip := false
+	for _, cmdL := range cmdLine {
+		if skip {
+			skip = false
+
+			continue
+		}
+
+		if cmdL == "-v" || cmdL == "-version" {
+			continue
+		}
+
+		if cmdL == "-config" {
+			skip = true
+
+			continue
+		}
+
+		flags = append(flags, cmdL)
+	}
+
+	return flags, nil
+}
+
 func readCfg(userCfg *string, defaults []string) (raw []byte, err error) {
 	if userCfg != nil && *userCfg != "" {
 		raw, err = os.ReadFile(*userCfg)
@@ -173,7 +203,7 @@ func readCfg(userCfg *string, defaults []string) (raw []byte, err error) {
 }
 
 // run <task> <module or input1> ...inputs.
-func run(inputs ...string) error {
+func run(inputs []string) error {
 	if len(inputs) == 0 {
 		return misc.Wrap(runner.ErrUsage, "task is required")
 	}
