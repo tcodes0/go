@@ -56,7 +56,7 @@ func main() {
 	fVerLong := flagset.Bool("version", false, "print version and exit")
 	fConfig := flagset.String("config", "", "config file")
 
-	osArgs, err := parseFlags(os.Args[1:])
+	cmdLineArgs, err := parseFlags(os.Args[1:])
 	if err != nil {
 		errFinal = errors.Join(err, runner.ErrUsage)
 
@@ -83,7 +83,7 @@ func main() {
 		return
 	}
 
-	errFinal = run(osArgs)
+	errFinal = run(cmdLineArgs)
 }
 
 // Defer from main() very early; the first deferred function will run last.
@@ -153,6 +153,7 @@ repository tasks:
 - ` + strings.Join(packages, "\n- ") + "\n")
 	}
 
+	builder.WriteString("\n" + cmd.EnvVarUsage() + "\n")
 	builder.WriteString("\n" + `.env file is checked for environment variables.
 see go.doc for config documentation.
 default config files: ` + strings.Join(cfgFiles, ", ") + "\n")
@@ -160,7 +161,7 @@ default config files: ` + strings.Join(cfgFiles, ", ") + "\n")
 	_, _ = fmt.Print(builder.String())
 }
 
-func parseFlags(cmdLine []string) (flags []string, err error) {
+func parseFlags(cmdLine []string) (cmdLineArgs []string, err error) {
 	err = flagset.Parse(cmdLine)
 	if err != nil {
 		return nil, misc.Wrapfl(err)
@@ -184,10 +185,10 @@ func parseFlags(cmdLine []string) (flags []string, err error) {
 			continue
 		}
 
-		flags = append(flags, cmdL)
+		cmdLineArgs = append(cmdLineArgs, cmdL)
 	}
 
-	return flags, nil
+	return cmdLineArgs, nil
 }
 
 func readCfg(userCfg *string, defaults []string) (raw []byte, err error) {
