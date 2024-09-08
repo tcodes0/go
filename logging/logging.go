@@ -68,8 +68,8 @@ func FromContext(ctx context.Context) *Logger {
 type createOpts = struct {
 	writer io.Writer
 	exit   func(code int)
-	level  Level
 	flags  int
+	level  Level
 	color  bool
 }
 
@@ -138,6 +138,7 @@ func Create(options ...CreateOptions) *Logger {
 		exitFunc: opts.exit,
 	}
 	logger.color.Store(opts.color)
+	//nolint:gosec // internal
 	logger.level.Store(int32(opts.level))
 
 	return logger

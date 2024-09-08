@@ -218,5 +218,6 @@ func (logger *Logger) Stacktrace(level Level, allGoroutines bool) {
 
 // set the level of the logger, lesser messages will be ignored.
 func (logger *Logger) SetLevel(level Level) {
+	//nolint:gosec // type conversion
 	logger.level.Store(int32(level))
 }
