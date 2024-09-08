@@ -111,7 +111,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22
+          go-version: 1.23
 
       - name: Go mod
         uses: j0hnsmith/go-mod-check@v1
@@ -130,7 +130,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22
+          go-version: 1.23
 
       - name: Go mod
         uses: j0hnsmith/go-mod-check@v1
@@ -168,7 +168,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22
+          go-version: 1.23
 
       - name: Mockery
         uses: brokeyourbike/go-mockery-action@v0
@@ -246,7 +246,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22
+          go-version: 1.23
 
       - name: Run Copyright
         run: |
@@ -263,7 +263,7 @@ jobs:
     if: needs.changed-files.outputs.modClock
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.22
+      goVersion: 1.23
       modulePath: clock
 
   httpmisc:
@@ -272,7 +272,7 @@ jobs:
     if: needs.changed-files.outputs.modHttpMisc
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.22
+      goVersion: 1.23
       modulePath: httpmisc
 
   hue:
@@ -281,7 +281,7 @@ jobs:
     if: needs.changed-files.outputs.modHue
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.22
+      goVersion: 1.23
       modulePath: hue
 
   identifier:
@@ -290,7 +290,7 @@ jobs:
     if: needs.changed-files.outputs.modIdentifier
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.22
+      goVersion: 1.23
       modulePath: identifier
 
   jsonutil:
@@ -299,7 +299,7 @@ jobs:
     if: needs.changed-files.outputs.modJsonutil
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.22
+      goVersion: 1.23
       modulePath: jsonutil
 
   logging:
@@ -308,7 +308,7 @@ jobs:
     if: needs.changed-files.outputs.modLogging
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.22
+      goVersion: 1.23
       modulePath: logging
 
   misc:
@@ -317,7 +317,7 @@ jobs:
     if: needs.changed-files.outputs.modMisc
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.22
+      goVersion: 1.23
       modulePath: misc
 
   cmd-copyright:
@@ -326,7 +326,7 @@ jobs:
     if: needs.changed-files.outputs.modCmdCopyright
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.22
+      goVersion: 1.23
       modulePath: cmd/copyright
 
   generate-go-work:
@@ -335,7 +335,7 @@ jobs:
     if: needs.changed-files.outputs.modCmdGenGoWork
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.22
+      goVersion: 1.23
       modulePath: cmd/gengowork
 
   filer:
@@ -344,7 +344,7 @@ jobs:
     if: needs.changed-files.outputs.modCmdFiler
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.22
+      goVersion: 1.23
       modulePath: cmd/filer
 
   cmd-changelog:
@@ -353,5 +353,5 @@ jobs:
     if: needs.changed-files.outputs.modCmdChangelog
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.22
+      goVersion: 1.23
       modulePath: cmd/changelog
