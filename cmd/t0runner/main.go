@@ -215,17 +215,21 @@ func run(inputs []string) error {
 		return misc.Wrap(internal.ErrUsage, "task is required")
 	}
 
-	theTask, found := lo.Find(cfg.Tasks, func(t *internal.Task) bool { return t.Name == inputs[0] })
+	providedTaskName := inputs[0]
+
+	theTask, found := lo.Find(cfg.Tasks, func(t *internal.Task) bool { return t.Name == providedTaskName })
 	if !found {
 		taskNames := lo.Map(cfg.Tasks, func(t *internal.Task, _ int) string { return t.Name })
 
-		meant, ok := internal.DidYouMean(inputs[0], taskNames)
+		meant, ok := internal.DidYouMean(providedTaskName, taskNames)
 		if ok {
-			return misc.Wrapf(internal.ErrUsage, "%s: unknown task, %s", inputs[0], meant)
+			return misc.Wrapf(internal.ErrUsage, "%s: unknown task, %s", providedTaskName, meant)
 		}
 
-		return misc.Wrapf(internal.ErrUsage, "%s: unknown task", inputs[0])
+		return misc.Wrapf(internal.ErrUsage, "%s: unknown task", providedTaskName)
 	}
 
-	return misc.Wrapfl(theTask.Execute(logger, cfg.Tasks, inputs...))
+	theTask.SetInputs(inputs)
+
+	return misc.Wrapfl(theTask.Execute(logger))
 }
