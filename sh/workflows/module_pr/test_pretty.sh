@@ -12,6 +12,8 @@ trap 'err $LINENO' ERR
 ### vars and functions ###
 ##########################
 
+package_path="$1"
+
 usage() {
   command cat <<-EOF
 Usage:
@@ -24,12 +26,12 @@ EOF
 test_directory() {
   # extract test package name from path
   # shellcheck disable=SC2155
-  local test_pkg=$(basename "$MOD_PATH")_test reg_exp_prefix_cmd="^cmd/"
-  local test_dir="./$MOD_PATH/$test_pkg"
+  local test_pkg=$(basename "$package_path")_test reg_exp_prefix_cmd="^cmd/"
+  local test_dir="./$package_path/$test_pkg"
 
-  if [[ "$MOD_PATH" =~ $reg_exp_prefix_cmd ]]; then
+  if [[ "$package_path" =~ $reg_exp_prefix_cmd ]]; then
     # cmds don't follow _test subpackage convention
-    test_dir="./$MOD_PATH"
+    test_dir="./$package_path"
   fi
 
   if ! [ -d "$test_dir" ]; then
@@ -55,7 +57,7 @@ run_tests() {
   # output coverage profile to file
   flags+=(-coverprofile="$COVERAGE_FILE")
   # package to scan coverage, necessary for blackbox testing
-  flags+=(-coverpkg="./$MOD_PATH")
+  flags+=(-coverpkg="./$package_path")
 
   if [ "$CACHE" == "false" ]; then
     # disable passed test caching

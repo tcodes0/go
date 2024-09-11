@@ -7,10 +7,11 @@
 set -euo pipefail
 shopt -s globstar
 
-buildDir=".build"
+build_dir=".build"
+package_path="$1"
 
-# cd to $buildDir/
-flags+=(-C "$buildDir")
+# cd to $build_dir/
+flags+=(-C "$build_dir")
 # fail if any dependencies are missing
 flags+=(-mod=readonly)
 # verbose
@@ -18,11 +19,11 @@ flags+=(-v)
 # detect race conditions
 flags+=(-race)
 # path to build
-flags+=("../$MOD_PATH")
+flags+=("../$package_path")
 
 if requested_help "$*"; then
   msgln "Inputs:"
-  msgln "<module>\t build the module on $buildDir\t (required)"
+  msgln "<module>\t build the module on $build_dir\t (required)"
   msgln "-install\t install build output"
   exit 1
 fi
@@ -35,9 +36,9 @@ if [[ "$*" =~ -install ]]; then
 fi
 
 # building tests will fail
-if [[ "$MOD_PATH" =~ test$ ]]; then
+if [[ "$package_path" =~ test$ ]]; then
   exit 0
 fi
 
-mkdir -p "$buildDir"
+mkdir -p "$build_dir"
 go $command "${flags[@]}"

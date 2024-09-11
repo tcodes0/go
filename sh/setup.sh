@@ -203,7 +203,7 @@ else
   pass 'docker running'
 fi
 
-if ! MOD_PATH=cmd/t0runner ./sh/workflows/module_pr/build.sh; then
+if ! ./sh/workflows/module_pr/build.sh cmd/t0runner; then
   fail 'build cmd/t0runner' 'build failed'
   fixProblems+=("cmd/t0runner build failed, ./run won't work")
 else

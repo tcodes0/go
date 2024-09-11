@@ -7,12 +7,11 @@ tasks:
   - name: build
     package: true
     env:
-      - MOD_PATH=<package>
       - HOME=<inherit>
       - PATH=<inherit>
       - BASH_ENV=./sh/lib/lib.sh
     exec:
-      - ./sh/workflows/module_pr/build.sh
+      - ./sh/workflows/module_pr/build.sh <package>
   - name: lint
     package: true
     exec:
@@ -36,12 +35,11 @@ tasks:
       - CACHE=true
       - GITHUB_OUTPUT=/dev/null
       - COVERAGE_FILE=coverage.out
-      - MOD_PATH=<package>
       - PATH=<inherit>
       - HOME=<inherit>
       - BASH_ENV=./sh/lib/lib.sh
     exec:
-      - ./sh/workflows/module_pr/test_pretty.sh
+      - ./sh/workflows/module_pr/test_pretty.sh <package>
   - name: format-configs
     exec:
       - "prettier --write ./**/*{.yml,.json}"

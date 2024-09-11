@@ -30,9 +30,8 @@ jobs:
 
       - name: Build
         env:
-          MOD_PATH: ${{ inputs.modulePath }}
           BASH_ENV: ./sh/lib/lib.sh
-        run: ./sh/workflows/module_pr/build.sh
+        run: ./sh/workflows/module_pr/build.sh "${{ inputs.modulePath }}"
 
   test:
     name: test
@@ -58,11 +57,10 @@ jobs:
       - name: Test pretty
         id: test-pretty
         env:
-          MOD_PATH: ${{ inputs.modulePath }}
           CACHE: true
           COVERAGE_FILE: coverage.out
           BASH_ENV: ./sh/lib/lib.sh
-        run: ./sh/workflows/module_pr/test_pretty.sh
+        run: ./sh/workflows/module_pr/test_pretty.sh "${{ inputs.modulePath }}"
 
       - name: Annotate
         if: always()
