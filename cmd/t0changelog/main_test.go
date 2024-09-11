@@ -95,7 +95,7 @@ func TestParseGitLog(t *testing.T) {
 	assert.Len(oldVers, 1)
 	assert.Equal(semver{0, 1, 4}, oldVers[0])
 	assert.Len(lines, len(expected))
-	assert.Equal([]string{"43", "42"}, prs)
+	assert.Equal([]string{"42", "43"}, prs)
 
 	for i, expect := range expected {
 		assert.Equal(expect, lines[i])
@@ -107,7 +107,7 @@ func TestParseGitLog(t *testing.T) {
 	assert.Equal(semver{0, 1, 4}, oldVers[0])
 	assert.Equal(semver{0, 2, 0}, oldVers[1])
 	assert.Len(lines, len(expected))
-	assert.Equal([]string{"43", "42"}, prs)
+	assert.Equal([]string{"42", "43"}, prs)
 
 	for i, expect := range expected {
 		assert.Equal(expect, lines[i])
