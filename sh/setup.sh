@@ -15,11 +15,11 @@ trap 'echo -e ERROR \($0:$LINENO\)' ERR
 fixProblems=()
 
 pass() {
-  printf "$LIB_COLOR_PASS$LIB_FORMAT_DIM %b$LIB_VISUAL_END\n" "$1"
+  printf "$LIB_TEXT_PASS_GREEN$LIB_FORMAT_DIM %b$LIB_VISUAL_END\n" "$1"
 }
 
 fail() {
-  printf "$LIB_COLOR_FAIL %b$LIB_VISUAL_END\n" "$1"
+  printf "$LIB_TEXT_FAIL_RED %b$LIB_VISUAL_END\n" "$1"
 }
 
 setup() {
