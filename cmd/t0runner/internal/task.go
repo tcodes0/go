@@ -17,6 +17,7 @@ import (
 	"github.com/lithammer/fuzzysearch/fuzzy"
 	"github.com/samber/lo"
 	"github.com/tcodes0/go/cmd"
+	"github.com/tcodes0/go/hue"
 	"github.com/tcodes0/go/logging"
 	"github.com/tcodes0/go/misc"
 )
@@ -105,9 +106,8 @@ func (task *Task) Execute(logger *logging.Logger, tasks []*Task, inputs ...strin
 		}
 
 		if stderrBuffer.Len() > 0 {
-			logger.Info("command stderr BEGINS")
-			fmt.Fprint(os.Stderr, stderrBuffer.String())
-			logger.Info("command stderr ENDS")
+			logger.Info("command stderr")
+			fmt.Fprint(os.Stderr, hue.TermColor(hue.Gray)+stderrBuffer.String()+hue.End)
 		}
 
 		if err != nil {
