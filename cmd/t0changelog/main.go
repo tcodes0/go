@@ -26,7 +26,7 @@ import (
 
 	"github.com/samber/lo"
 	"github.com/tcodes0/go/cmd"
-	"github.com/tcodes0/go/cmd/changelog/github"
+	"github.com/tcodes0/go/cmd/t0changelog/github"
 	"github.com/tcodes0/go/jsonutil"
 	"github.com/tcodes0/go/logging"
 	"github.com/tcodes0/go/misc"

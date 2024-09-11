@@ -118,7 +118,7 @@ exitShowProblems "missing basic gnu/linux binaries; please install for your plat
 
 # programming languages, package managers
 
-setup manual 'see https://github.com/nvm-sh/nvm?tab=readme-ov-file#installing-and-updating then run "nvm install node"' node javascript runtime built on top of v8
+setup manual 'see https://github.com/nvm-sh/nvm?tab=readme-ov-file#installing-and-updating then run "nvm install node"' "node (NVM)" javascript runtime built on top of v8, managed by node version manager, NVM.
 setup manual 'see https://go.dev/doc/install' go a static, compiled, minimalistic, garbage collected language
 
 exitShowProblems "install the programming languages then run this script again"
@@ -203,11 +203,11 @@ else
   pass 'docker running'
 fi
 
-if ! MOD_PATH=cmd/runner ./sh/workflows/module_pr/build.sh; then
-  fail 'build cmd/runner' 'build failed'
-  fixProblems+=("cmd/runner build failed, ./run won't work")
+if ! MOD_PATH=cmd/t0runner ./sh/workflows/module_pr/build.sh; then
+  fail 'build cmd/t0runner' 'build failed'
+  fixProblems+=("cmd/t0runner build failed, ./run won't work")
 else
-  pass 'build cmd/runner'
+  pass 'build cmd/t0runner'
 fi
 
 if [ ! -f .env ]; then
@@ -231,10 +231,10 @@ exitShowProblems "fix configuration issues:"
 msgln
 msgln note: before using ./run ci, run \'act\' once to set it up
 
-if [ ! "${CMD_COLOR:-}" ]; then
-  msgln note: run \'export CMD_COLOR=true\' to see colored output, or add to .env
+if [ ! "${T0_COLOR:-}" ]; then
+  msgln note: run \'export T0_COLOR=true\' to see colored output, add to .env, or shell init files
 fi
 
 if [ "${NVM_DIR:-}" ]; then
-  msgln note: when using nvm and upgrading node, global packages need to be reinstalled
+  msgln note: when using nvm and upgrading node, global packages need to be reinstalled. Re-running this script will tell you how.
 fi

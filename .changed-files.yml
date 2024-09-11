@@ -46,10 +46,10 @@ any_code:
   - "**/*.go"
   - "**/*.sh"
 cmd_copyright:
-  - cmd/copyright/**.go
+  - cmd/t0copyright/**.go
 cmd_gen_go_work:
   - cmd/gengowork/**.go
 cmd_filer:
-  - cmd/filer/**.go
+  - cmd/t0filer/**.go
 cmd_changelog:
-  - cmd/changelog/**.go
+  - cmd/t0changelog/**.go

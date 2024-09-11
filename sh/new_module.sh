@@ -77,7 +77,7 @@ init() {
 
 cleanup() {
   go run cmd/gengowork/main.go
-  go run cmd/copyright/main.go -fix -find "*.go" -comment '// '
+  go run cmd/t0copyright/main.go -fix -find "*.go" -comment '// '
 
   msgln "todo:
   - edit .github/workflows/main.yml to fix TODOs and add $files_entry output"

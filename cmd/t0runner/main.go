@@ -16,7 +16,7 @@ import (
 
 	"github.com/samber/lo"
 	"github.com/tcodes0/go/cmd"
-	"github.com/tcodes0/go/cmd/runner/internal"
+	"github.com/tcodes0/go/cmd/t0runner/internal"
 	"github.com/tcodes0/go/logging"
 	"github.com/tcodes0/go/misc"
 	"gopkg.in/yaml.v3"

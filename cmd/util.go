@@ -21,8 +21,8 @@ import (
 var (
 	ignore      = regexp.MustCompile(`test$|\.local.*|cmd/template`)
 	globs       = []string{"*/*.go", "*/*/*.go"}
-	EnvColor    = "CMD_COLOR"
-	EnvLogLevel = "CMD_LOGLEVEL"
+	EnvColor    = "T0_COLOR"
+	EnvLogLevel = "T0_LOGLEVEL"
 )
 
 func FindPackages(logger *logging.Logger) ([]string, error) {

@@ -250,8 +250,8 @@ jobs:
 
       - name: Run Copyright
         run: |
-          go run ./cmd/copyright -check '*.go'
-          go run ./cmd/copyright -check '*.sh'
+          go run ./cmd/t0copyright -check '*.go'
+          go run ./cmd/t0copyright -check '*.sh'
 
   ###########
   # modules #
@@ -321,13 +321,13 @@ jobs:
       modulePath: misc
 
   cmd-copyright:
-    name: cmd/copyright
+    name: cmd/t0copyright
     needs: changed-files
     if: needs.changed-files.outputs.modCmdCopyright
     uses: ./.github/workflows/module_pr.yml
     with:
       goVersion: 1.23
-      modulePath: cmd/copyright
+      modulePath: cmd/t0copyright
 
   generate-go-work:
     name: cmd/gengowork
@@ -339,19 +339,19 @@ jobs:
       modulePath: cmd/gengowork
 
   filer:
-    name: cmd/filer
+    name: cmd/t0filer
     needs: changed-files
     if: needs.changed-files.outputs.modCmdFiler
     uses: ./.github/workflows/module_pr.yml
     with:
       goVersion: 1.23
-      modulePath: cmd/filer
+      modulePath: cmd/t0filer
 
   cmd-changelog:
-    name: cmd/changelog
+    name: cmd/t0changelog
     needs: changed-files
     if: needs.changed-files.outputs.modCmdChangelog
     uses: ./.github/workflows/module_pr.yml
     with:
       goVersion: 1.23
-      modulePath: cmd/changelog
+      modulePath: cmd/t0changelog
