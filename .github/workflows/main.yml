@@ -89,12 +89,15 @@ jobs:
         with:
           node-version: lts/iron
           cache: npm
-      - run: npm --global install @commitlint/config-conventional
+      - run: |
+          npm --global install @commitlint/config-conventional
+          npm install --global @commitlint/cli@19.3.0
+          npm install --global cspell@8.14.2
 
       - name: Run commitlint
         env:
-          CONFIG_PATH: .commitlintrc.yml
-          VERSION: 19.3.0
+          COMMITLINT_CONFIG_PATH: .commitlintrc.yml
+          CSPELL_CONFIG_PATH: .cspell.config.yml
           # will not be set when running on push/merge to main
           BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: ./sh/lib/workflows/main/commit_lint.sh
@@ -198,8 +201,6 @@ jobs:
           SHELLCHECK_OPTS: -x --severity=warning
         with:
           sh_checker_only_diff: true
-          # needs write access https://github.com/luizm/action-sh-checker/pull/57
-          # sh_checker_comment: true
 
   config:
     name: format_config
