@@ -5,6 +5,8 @@
 
 package github
 
+var URLPrefix = "https://github.com/"
+
 type FatCommit struct {
 	SHA    string `json:"sha"`
 	Commit Commit `json:"commit"`

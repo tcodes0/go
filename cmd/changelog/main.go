@@ -92,7 +92,7 @@ func main() {
 	cfg := flagset.String("config", ".commitlintrc.yml", "path to commitlint config file")
 	title := flagset.String("title", "", "release title; new version and date will be added")
 	tagPrefixRaw := flagset.String("tagprefixes", "", "comma separated prefixes to find tags, i.e $PREFIXv1.0.0")
-	repoURL := flagset.String("url", "", "github repository URL to point links at, prefixed 'https://github.com/' (required)")
+	repoURL := flagset.String("url", "", "github repository URL to point links at, prefixed '"+github.URLPrefix+"' (required)")
 	tagsFile := flagset.String("tagsfile", "", "write tags to file")
 	fVerShort := flagset.Bool("v", false, "print version and exit")
 	fVerLong := flagset.Bool("version", false, "print version and exit")
@@ -340,7 +340,12 @@ func versionUp(current semver, unstable, breaking, minor bool) semver {
 }
 
 func fetchPullRequests(prs []string, ghURL string) (lines []changelogLine, err error) {
-	userRepo, limit, query, header := strings.TrimPrefix(ghURL, "https://github.com/"), 100, url.Values{}, http.Header{}
+	userRepo := strings.TrimPrefix(ghURL, github.URLPrefix)
+	if userRepo == ghURL {
+		return nil, fmt.Errorf("expected github URL to have prefix: %s", github.URLPrefix)
+	}
+
+	limit, query, header := 100, url.Values{}, http.Header{}
 	fatCommits, group, lock := map[int]*[]*github.FatCommit{}, errgroup.Group{}, sync.Mutex{}
 
 	token := os.Getenv("GITHUB_TOKEN")
