@@ -38,6 +38,12 @@ var (
 
 func main() {
 	defer func() {
+		// gracefully handles panics and fatal errors. The first deferred function will run last.
+		if msg := recover(); msg != nil {
+			logger.Stacktrace(logging.LError, true)
+			logger.Fatalf("%v", msg)
+		}
+
 		passAway(errFinal)
 	}()
 
@@ -87,14 +93,7 @@ func main() {
 	errFinal = run(cmdLineArgs)
 }
 
-// Defer from main() very early; the first deferred function will run last.
-// Gracefully handles panics and fatal errors. Replaces os.exit(1).
 func passAway(fatal error) {
-	if msg := recover(); msg != nil {
-		logger.Stacktrace(logging.LError, true)
-		logger.Fatalf("%v", msg)
-	}
-
 	if fatal != nil {
 		if errors.Is(fatal, internal.ErrUsage) || errors.Is(fatal, flag.ErrHelp) {
 			usage(fatal)
