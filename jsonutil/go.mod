@@ -1,6 +1,6 @@
 module github.com/tcodes0/go/jsonutil
 
-go 1.23
+go 1.23.1
 
 require (
 	github.com/stretchr/testify v1.9.0
