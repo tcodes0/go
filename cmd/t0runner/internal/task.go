@@ -38,22 +38,9 @@ type Task struct {
 }
 
 // validate <package or input1> ...inputs.
-func (task *Task) Validate(logger *logging.Logger, inputs ...string) error {
+func (task *Task) validate(logger *logging.Logger, inputs ...string) error {
 	_, help := lo.Find(inputs, func(input string) bool { return input == "-h" || input == "--help" })
 	if help {
-		return nil
-	}
-
-	err := task.ValidatePackage(logger, inputs...)
-	if err != nil {
-		return err
-	}
-
-	return err
-}
-
-func (task *Task) ValidatePackage(logger *logging.Logger, inputs ...string) error {
-	if !task.Package {
 		return nil
 	}
 
@@ -61,14 +48,14 @@ func (task *Task) ValidatePackage(logger *logging.Logger, inputs ...string) erro
 		return misc.Wrapf(ErrUsage, "%s: package is required", task.Name)
 	}
 
-	mods, err := cmd.FindPackages(logger)
+	pkgs, err := cmd.FindPackages(logger)
 	if err != nil {
-		return misc.Wrap(err, "FindPackages")
+		return misc.Wrapfl(err)
 	}
 
-	_, found := lo.Find(mods, func(m string) bool { return m == inputs[0] })
+	_, found := lo.Find(pkgs, func(m string) bool { return m == inputs[0] })
 	if !found {
-		meant, ok := DidYouMean(inputs[0], mods)
+		meant, ok := DidYouMean(inputs[0], pkgs)
 		if ok {
 			return misc.Wrapf(ErrUsage, "%s: unknown package, %s", inputs[0], meant)
 		}
@@ -80,6 +67,16 @@ func (task *Task) ValidatePackage(logger *logging.Logger, inputs ...string) erro
 }
 
 func (task *Task) Execute(logger *logging.Logger, tasks []*Task, inputs ...string) error {
+	if strings.HasSuffix(inputs[1], "/") {
+		// remove trailing slash, allows TAB to complete valid packages
+		inputs[1] = inputs[1][:len(inputs[1])-1]
+	}
+
+	err := task.validate(logger, inputs[1:]...)
+	if err != nil {
+		return misc.Wrapfl(err)
+	}
+
 	for _, line := range task.Exec {
 		cmdInput := slices.Concat(strings.Split(line, " "), inputs[1:])
 		cmdInput = lo.Map(cmdInput, varMapper(inputs))

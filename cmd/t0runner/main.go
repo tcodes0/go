@@ -228,10 +228,5 @@ func run(inputs []string) error {
 		return misc.Wrapf(internal.ErrUsage, "%s: unknown task", inputs[0])
 	}
 
-	err := theTask.Validate(logger, inputs[1:]...)
-	if err != nil {
-		return misc.Wrapfl(err)
-	}
-
 	return misc.Wrapfl(theTask.Execute(logger, cfg.Tasks, inputs...))
 }
