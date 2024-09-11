@@ -118,7 +118,7 @@ exitShowProblems "missing basic gnu/linux binaries; please install for your plat
 
 # programming languages, package managers
 
-setup manual 'see https://github.com/nvm-sh/nvm?tab=readme-ov-file#installing-and-updating then run "nvm install node"' "node (NVM)" javascript runtime built on top of v8, managed by node version manager, NVM.
+setup manual 'see https://github.com/nvm-sh/nvm?tab=readme-ov-file#installing-and-updating then run "nvm install node"' node javascript runtime built on top of v8, managed by node version manager, NVM.
 setup manual 'see https://go.dev/doc/install' go a static, compiled, minimalistic, garbage collected language
 
 exitShowProblems "install the programming languages then run this script again"
@@ -203,7 +203,7 @@ else
   pass 'docker running'
 fi
 
-if ! ./sh/workflows/module_pr/build.sh cmd/t0runner; then
+if ! ./sh/workflows/module_pr/build.sh cmd/t0runner >/dev/null 2>/dev/null; then
   fail 'build cmd/t0runner' 'build failed'
   fixProblems+=("cmd/t0runner build failed, ./run won't work")
 else
