@@ -35,7 +35,7 @@ tasks:
   - name: format
     package: true
     exec:
-      - gofumpt -l -w
+      - gofumpt -l -w <package>
       - prettier --write <package>/**/*.yml
   - name: test
     package: true
@@ -84,6 +84,13 @@ tasks:
       - BASH_ENV=./sh/lib/lib.sh
     exec:
       - ./sh/new_module.sh
+  - name: new-command
+    env:
+      - PATH=<inherit>
+      - HOME=<inherit>
+      - BASH_ENV=./sh/lib/lib.sh
+    exec:
+      - ./sh/new_module.sh -cmd
   - name: copyright-fix-go
     env:
       - PATH=<inherit>
