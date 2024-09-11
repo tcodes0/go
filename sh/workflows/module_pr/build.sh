@@ -17,6 +17,8 @@ flags+=(-mod=readonly)
 flags+=(-v)
 # detect race conditions
 flags+=(-race)
+# path to build
+flags+=("../$MOD_PATH")
 
 if requested_help "$*"; then
   msgln "Inputs:"
@@ -35,15 +37,6 @@ fi
 # building tests will fail
 if [[ "$MOD_PATH" =~ test$ ]]; then
   exit 0
-fi
-
-# module has a directory for main.go, adjust build flags
-# flags are relative to buildDir, MODPATH is not
-if [ -d "$MOD_PATH/main" ]; then
-  flags+=(-o "$(basename "$MOD_PATH")")
-  flags+=("../$MOD_PATH/main")
-else
-  flags+=("../$MOD_PATH")
 fi
 
 mkdir -p "$buildDir"

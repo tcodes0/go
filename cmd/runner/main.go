@@ -16,15 +16,15 @@ import (
 
 	"github.com/samber/lo"
 	"github.com/tcodes0/go/cmd"
-	"github.com/tcodes0/go/cmd/runner"
+	"github.com/tcodes0/go/cmd/runner/internal"
 	"github.com/tcodes0/go/logging"
 	"github.com/tcodes0/go/misc"
 	"gopkg.in/yaml.v3"
 )
 
 type config struct {
-	Version string         `yaml:"version"`
-	Tasks   []*runner.Task `yaml:"tasks"`
+	Version string           `yaml:"version"`
+	Tasks   []*internal.Task `yaml:"tasks"`
 }
 
 var (
@@ -46,6 +46,7 @@ func main() {
 	fColor := misc.LookupEnv(cmd.EnvColor, false)
 	fLogLevel := misc.LookupEnv(cmd.EnvLogLevel, int(logging.LInfo))
 
+	//nolint:gosec // log level fits in uint8.
 	opts := []logging.CreateOptions{logging.OptFlags(log.Lshortfile), logging.OptLevel(logging.Level(fLogLevel))}
 	if fColor {
 		opts = append(opts, logging.OptColor())
@@ -58,21 +59,21 @@ func main() {
 
 	cmdLineArgs, err := parseFlags(os.Args[1:])
 	if err != nil {
-		errFinal = errors.Join(err, runner.ErrUsage)
+		errFinal = errors.Join(err, internal.ErrUsage)
 
 		return
 	}
 
 	cfgRaw, err := readCfg(fConfig, cfgFiles)
 	if err != nil {
-		errFinal = errors.Join(err, runner.ErrUsage)
+		errFinal = errors.Join(err, internal.ErrUsage)
 
 		return
 	}
 
 	err = yaml.Unmarshal(cfgRaw, &cfg)
 	if err != nil {
-		errFinal = errors.Join(err, runner.ErrUsage)
+		errFinal = errors.Join(err, internal.ErrUsage)
 
 		return
 	}
@@ -95,7 +96,7 @@ func passAway(fatal error) {
 	}
 
 	if fatal != nil {
-		if errors.Is(fatal, runner.ErrUsage) || errors.Is(fatal, flag.ErrHelp) {
+		if errors.Is(fatal, internal.ErrUsage) || errors.Is(fatal, flag.ErrHelp) {
 			usage(fatal)
 		}
 
@@ -111,14 +112,14 @@ func usage(incomingErr error) {
 
 	packageTasks, repoTasks, builder := []string{}, []string{}, strings.Builder{}
 
-	for _, task := range lo.Filter(cfg.Tasks, func(t *runner.Task, _ int) bool { return t.Package }) {
+	for _, task := range lo.Filter(cfg.Tasks, func(t *internal.Task, _ int) bool { return t.Package }) {
 		line := "./run "
 		line += task.Name + "\t"
 
 		packageTasks = append(packageTasks, line)
 	}
 
-	for _, task := range lo.Filter(cfg.Tasks, func(t *runner.Task, _ int) bool { return !t.Package }) {
+	for _, task := range lo.Filter(cfg.Tasks, func(t *internal.Task, _ int) bool { return !t.Package }) {
 		line := "./run "
 		line += task.Name + "\t"
 
@@ -212,19 +213,19 @@ func readCfg(userCfg *string, defaults []string) (raw []byte, err error) {
 // run <task> <package or input1> ...inputs.
 func run(inputs []string) error {
 	if len(inputs) == 0 {
-		return misc.Wrap(runner.ErrUsage, "task is required")
+		return misc.Wrap(internal.ErrUsage, "task is required")
 	}
 
-	theTask, found := lo.Find(cfg.Tasks, func(t *runner.Task) bool { return t.Name == inputs[0] })
+	theTask, found := lo.Find(cfg.Tasks, func(t *internal.Task) bool { return t.Name == inputs[0] })
 	if !found {
-		taskNames := lo.Map(cfg.Tasks, func(t *runner.Task, _ int) string { return t.Name })
+		taskNames := lo.Map(cfg.Tasks, func(t *internal.Task, _ int) string { return t.Name })
 
-		meant, ok := runner.DidYouMean(inputs[0], taskNames)
+		meant, ok := internal.DidYouMean(inputs[0], taskNames)
 		if ok {
-			return misc.Wrapf(runner.ErrUsage, "%s: unknown task, %s", inputs[0], meant)
+			return misc.Wrapf(internal.ErrUsage, "%s: unknown task, %s", inputs[0], meant)
 		}
 
-		return misc.Wrapf(runner.ErrUsage, "%s: unknown task", inputs[0])
+		return misc.Wrapf(internal.ErrUsage, "%s: unknown task", inputs[0])
 	}
 
 	err := theTask.Validate(logger, inputs[1:]...)

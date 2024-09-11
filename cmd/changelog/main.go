@@ -26,7 +26,7 @@ import (
 
 	"github.com/samber/lo"
 	"github.com/tcodes0/go/cmd"
-	apigithub "github.com/tcodes0/go/cmd/changelog"
+	"github.com/tcodes0/go/cmd/changelog/github"
 	"github.com/tcodes0/go/jsonutil"
 	"github.com/tcodes0/go/logging"
 	"github.com/tcodes0/go/misc"
@@ -82,6 +82,7 @@ func main() {
 	fColor := misc.LookupEnv(cmd.EnvColor, false)
 	fLogLevel := misc.LookupEnv(cmd.EnvLogLevel, int(logging.LInfo))
 
+	//nolint:gosec // log level fits in uint8.
 	opts := []logging.CreateOptions{logging.OptFlags(log.Lshortfile), logging.OptLevel(logging.Level(fLogLevel))}
 	if fColor {
 		opts = append(opts, logging.OptColor())
@@ -340,7 +341,7 @@ func versionUp(current semver, unstable, breaking, minor bool) semver {
 
 func fetchPullRequests(prs []string, ghURL string) (lines []changelogLine, err error) {
 	userRepo, limit, query, header := strings.TrimPrefix(ghURL, "https://github.com/"), 100, url.Values{}, http.Header{}
-	fatCommits, group, lock := map[int]*[]*apigithub.FatCommit{}, errgroup.Group{}, sync.Mutex{}
+	fatCommits, group, lock := map[int]*[]*github.FatCommit{}, errgroup.Group{}, sync.Mutex{}
 
 	token := os.Getenv("GITHUB_TOKEN")
 	if token == "" {
@@ -388,8 +389,8 @@ func fetchPullRequests(prs []string, ghURL string) (lines []changelogLine, err e
 	return lines, nil
 }
 
-func fetchOne(ctx context.Context, path string, header http.Header, client *http.Client) (*[]*apigithub.FatCommit, error) {
-	res, err := apigithub.Get(ctx, path, header, client)
+func fetchOne(ctx context.Context, path string, header http.Header, client *http.Client) (*[]*github.FatCommit, error) {
+	res, err := github.Get(ctx, path, header, client)
 	if err != nil {
 		return nil, misc.Wrapfl(err)
 	}
@@ -398,7 +399,7 @@ func fetchOne(ctx context.Context, path string, header http.Header, client *http
 		return nil, fmt.Errorf("status code %d", res.StatusCode)
 	}
 
-	fatCommits, err := jsonutil.UnmarshalReader[[]*apigithub.FatCommit](res.Body)
+	fatCommits, err := jsonutil.UnmarshalReader[[]*github.FatCommit](res.Body)
 	res.Body.Close()
 
 	if err != nil {

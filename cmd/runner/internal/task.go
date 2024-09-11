@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file and online
 // at https://opensource.org/license/BSD-3-clause.
 
-package runner
+package internal
 
 import (
 	"bytes"

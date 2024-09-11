@@ -8,8 +8,11 @@ package hue
 import "fmt"
 
 var (
+	// ANSI escapes.
 	// end terminal formats and colors.
-	End       = "\033[0m"
+	End = "\033[0m"
+
+	// color ANSI codes.
 	Gray      = 240
 	Brown     = 100
 	BrightRed = 197
@@ -18,7 +21,7 @@ var (
 	Blue      = 69
 )
 
-// terminal ansi escape code for color.
+// terminal ANSI escape code for color, does not terminate color; append the exported var.
 func TermColor(n int) string {
 	return fmt.Sprintf("\033[38;05;%dm", n)
 }
