@@ -6,10 +6,12 @@
 
 set -euo pipefail
 shopt -s globstar nullglob
+trap 'err $LINENO' ERR
 
 while read -r line; do
   if [[ "$line" =~ cmd\/v([[:digit:]]+\.[[:digit:]]+.[[:digit:]]) ]]; then
     find cmd -name config.yml -exec yq eval ".version = ${BASH_REMATCH[1]}" -i {} \;
+    $SED --in-place --regexp-extended -e "s/programVer = \"[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+\"/programVer = \"${BASH_REMATCH[1]}\"/" cmd/t0runner/main.go
     break
   fi
 done <"$TAGS_FILE"

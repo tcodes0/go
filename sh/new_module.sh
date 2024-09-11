@@ -7,7 +7,7 @@
 ### options, imports, mocks ###
 
 set -euo pipefail
-shopt -s globstar
+shopt -s globstar nullglob
 trap 'err $LINENO' ERR
 
 ##########################

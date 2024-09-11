@@ -5,7 +5,7 @@
 # at https://opensource.org/license/BSD-3-clause.
 
 set -euo pipefail
-shopt -s globstar
+shopt -s globstar nullglob
 trap 'err $LINENO' ERR
 
 ##########################
