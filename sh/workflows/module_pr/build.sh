@@ -6,39 +6,57 @@
 
 set -euo pipefail
 shopt -s globstar
+trap 'err $LINENO' ERR
+
+##########################
+### vars and functions ###
+##########################
 
 build_dir=".build"
-package_path="$1"
 
-# cd to $build_dir/
-flags+=(-C "$build_dir")
-# fail if any dependencies are missing
-flags+=(-mod=readonly)
-# verbose
-flags+=(-v)
-# detect race conditions
-flags+=(-race)
-# path to build
-flags+=("../$package_path")
+usage() {
+  command cat <<-EOF
+Usage:
+$(basename "$0") <module>             build the module on $build_dir    (required)
+$(basename "$0") <module> -install    build and install to \$GOPATH
+EOF
+}
+
+main() {
+  local package_path="$1" command=build flags=()
+
+  # building tests will fail
+  if [[ "$package_path" =~ test$ ]]; then
+    exit 0
+  fi
+
+  # cd to $build_dir/
+  flags+=(-C "$build_dir")
+  # fail if any dependencies are missing
+  flags+=(-mod=readonly)
+  # verbose
+  flags+=(-v)
+  # detect race conditions
+  flags+=(-race)
+  # path to build
+  flags+=("../$package_path")
+
+  if [[ "$*" =~ -install ]]; then
+    msg "installing build"
+    command=install
+  fi
+
+  mkdir -p "$build_dir"
+  go $command "${flags[@]}"
+}
+
+##############
+### script ###
+##############
 
 if requested_help "$*"; then
-  msgln "Inputs:"
-  msgln "<module>\t build the module on $build_dir\t (required)"
-  msgln "-install\t install build output"
+  usage
   exit 1
 fi
 
-command=build
-
-if [[ "$*" =~ -install ]]; then
-  msg "installing build"
-  command=install
-fi
-
-# building tests will fail
-if [[ "$package_path" =~ test$ ]]; then
-  exit 0
-fi
-
-mkdir -p "$build_dir"
-go $command "${flags[@]}"
+main "$@"
