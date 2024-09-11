@@ -12,6 +12,14 @@ tasks:
       - BASH_ENV=./sh/lib/lib.sh
     exec:
       - ./sh/workflows/module_pr/build.sh <package>
+  - name: install
+    package: true
+    env:
+      - HOME=<inherit>
+      - PATH=<inherit>
+      - BASH_ENV=./sh/lib/lib.sh
+    exec:
+      - ./sh/workflows/module_pr/build.sh <package> -install
   - name: lint
     package: true
     exec:
