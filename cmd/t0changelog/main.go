@@ -74,6 +74,11 @@ func (sv semver) String() string {
 
 func main() {
 	defer func() {
+		if msg := recover(); msg != nil {
+			logger.Stacktrace(logging.LError, true)
+			logger.Fatalf("%v", msg)
+		}
+
 		passAway(errFinal)
 	}()
 
@@ -128,14 +133,7 @@ func main() {
 	errFinal = changelog(*cfg, *repoURL, *title, *tagsFile, prefixes)
 }
 
-// Defer from main() very early; the first deferred function will run last.
-// Gracefully handles panics and fatal errors. Replaces os.exit(1).
 func passAway(fatal error) {
-	if msg := recover(); msg != nil {
-		logger.Stacktrace(logging.LError, true)
-		logger.Fatalf("%v", msg)
-	}
-
 	if fatal != nil {
 		if errors.Is(fatal, errUsage) || errors.Is(fatal, flag.ErrHelp) {
 			usage(fatal)
