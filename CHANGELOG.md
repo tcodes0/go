@@ -18,6 +18,12 @@
 ### PRs in this release: [#62](https://github.com/tcodes0/go/pull/62), [#63](https://github.com/tcodes0/go/pull/63), [#64](https://github.com/tcodes0/go/pull/64)
 ## *Breaking Changes*
 - **cmd**: prefix commands with t0 ([69342288](https://github.com/tcodes0/go/commit/69342288124bb67965a8061a9db35751034202da))
+- - github.com/tcodes0/go/cmd/filer -> github.com/tcodes0/go/cmd/t0filer
+- - github.com/tcodes0/go/cmd/changelog -> github.com/tcodes0/go/cmd/t0changelog
+- - github.com/tcodes0/go/cmd/copyright -> github.com/tcodes0/go/cmd/t0copyright
+- - github.com/tcodes0/go/cmd/runner -> github.com/tcodes0/go/cmd/t0runner
+- - CMD_COLOR -> T0_COLOR
+- - CMD_LOGLEVEL -> T0_LOGLEVEL
 - **go**: go 1.23 ([79082b0e](https://github.com/tcodes0/go/commit/79082b0ea281e04a81808d57ca4430edf5abfb63))
 - **go**: bump to 1.23.1 ([48a2bbbf](https://github.com/tcodes0/go/commit/48a2bbbf2717fd9c47151a89d47edd2fb029d660))
 
