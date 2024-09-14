@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-if [[ "$1" =~ ci|ci-push ]]; then
+if [[ "$1" =~ ci ]]; then
   BASH_ENV=./sh/lib/lib.sh ./sh/lib/ci.sh "$@"
 else
   .build/t0runner "$@"
