@@ -67,6 +67,7 @@ tasks:
       - PATH=<inherit>
       - NVM_DIR=<inherit>
       - BASH_ENV=./sh/lib/lib.sh
+      - T0_COLOR=<inherit>
     exec:
       - ./sh/setup.sh
   - name: generate-go-work
