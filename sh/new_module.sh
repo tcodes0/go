@@ -45,7 +45,7 @@ init() {
 
   command mkdir -p "$name/${name}_test"
   command cd "$name"
-  go mod init "$module"
+  go mod init "$module" >/dev/null 2>&1
   printf "package %s\n" "$name" >"$name.go"
   command cd -
   # shellcheck disable=SC2059 # format variable
@@ -55,7 +55,7 @@ init() {
 
 cleanup() {
   go run cmd/gengowork/main.go
-  go run cmd/t0copyright/main.go -fix -find "*.go" -comment '// '
+  go run cmd/t0copyright/main.go -check "*.go" -fix -comment '// '
 
   msgln "next steps:
   - edit $MAIN_WORKFLOW and add output variable to changed-files step
