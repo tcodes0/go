@@ -45,11 +45,11 @@ misc:
 any_code:
   - "**/*.go"
   - "**/*.sh"
-cmd_copyright:
+cmd_t0copyright:
   - cmd/t0copyright/**.go
 cmd_gen_go_work:
   - cmd/gengowork/**.go
-cmd_filer:
+cmd_t0filer:
   - cmd/t0filer/**.go
-cmd_changelog:
+cmd_t0changelog:
   - cmd/t0changelog/**.go

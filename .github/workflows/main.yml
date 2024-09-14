@@ -20,10 +20,10 @@ jobs:
       modJsonutil: ${{ steps.list-changed-files.outputs.jsonutil_all_changed_files }}
       modLogging: ${{ steps.list-changed-files.outputs.logging_all_changed_files }}
       modMisc: ${{ steps.list-changed-files.outputs.misc_all_changed_files }}
-      modCmdCopyright: ${{ steps.list-changed-files.outputs.cmd_copyright_all_changed_files }}
+      modCmdCopyright: ${{ steps.list-changed-files.outputs.cmd_t0copyright_all_changed_files }}
       modCmdGenGoWork: ${{ steps.list-changed-files.outputs.cmd_gen_go_work_all_changed_files }}
-      modCmdFiler: ${{ steps.list-changed-files.outputs.cmd_filer_all_changed_files }}
-      modCmdChangelog: ${{ steps.list-changed-files.outputs.cmd_changelog_all_changed_files }}
+      modCmdFiler: ${{ steps.list-changed-files.outputs.cmd_t0filer_all_changed_files }}
+      modCmdChangelog: ${{ steps.list-changed-files.outputs.cmd_t0changelog_all_changed_files }}
       # others
       anyGoMod: ${{ steps.list-changed-files.outputs.any_go_mod_all_changed_files }}
       rootGoMod: ${{ steps.list-changed-files.outputs.root_go_mod_all_changed_files }}
@@ -321,7 +321,7 @@ jobs:
       goVersion: 1.23.1
       modulePath: misc
 
-  cmd-copyright:
+  cmd-t0copyright:
     name: cmd/t0copyright
     needs: changed-files
     if: needs.changed-files.outputs.modCmdCopyright
@@ -339,7 +339,7 @@ jobs:
       goVersion: 1.23.1
       modulePath: cmd/gengowork
 
-  filer:
+  cmd-t0filer:
     name: cmd/t0filer
     needs: changed-files
     if: needs.changed-files.outputs.modCmdFiler
@@ -348,7 +348,7 @@ jobs:
       goVersion: 1.23.1
       modulePath: cmd/t0filer
 
-  cmd-changelog:
+  cmd-t0changelog:
     name: cmd/t0changelog
     needs: changed-files
     if: needs.changed-files.outputs.modCmdChangelog
