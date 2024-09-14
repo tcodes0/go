@@ -44,6 +44,7 @@ init() {
 "
 
   command mkdir -p "$name/${name}_test"
+  echo "$name"
   command cd "$name"
   go mod init "$module" >/dev/null 2>&1
   printf "package %s\n" "$name" >"$name.go"
