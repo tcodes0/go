@@ -91,7 +91,7 @@ tasks:
       - HOME=<inherit>
       - BASH_ENV=./sh/lib/lib.sh
     exec:
-      - ./sh/new_module.sh -cmd
+      - ./sh/new_command.sh
   - name: copyright-fix-go
     env:
       - PATH=<inherit>

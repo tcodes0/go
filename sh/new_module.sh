@@ -14,73 +14,53 @@ trap 'err $LINENO' ERR
 ### vars and functions ###
 ##########################
 
+MAIN_WORKFLOW=.github/workflows/main.yml
+CHANGED_FILES=.changed-files.yml
+
 usage() {
   command cat <<-EOF
 Usage:
-Create a new module or new command
+Create a new module
 
 $0 pizza
 create a new module called pizza
-
-$0 pizza -cmd
-create a new command called pizza
 EOF
 }
 
 init() {
-  local formatMod="
+  local name="$1" changed_files_entry="$1" module="github.com/tcodes0/go/$1" go_ver
+
+  read -r _ _ go_ver _ < <(go version)
+
+  local format="
   %s:
     name: %s
     needs: changed-files
     if: needs.changed-files.outputs.TODO
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: TODO
+      goVersion: ${go_ver/go/}
       modulePath: %s
 "
-  local formatCmd="
-  cmd-%s:
-    name: cmd/%s
-    needs: changed-files
-    if: needs.changed-files.outputs.TODO
-    uses: ./.github/workflows/module_pr.yml
-    with:
-      goVersion: TODO
-      modulePath: cmd/%s
-"
-  local name="$1" format files_entry
-  local module="github.com/tcodes0/go/$name"
 
-  if [[ "$*" =~ -cmd ]]; then
-    command cp -RH cmd/template "cmd/$name"
-    format=$formatCmd
-  else
-    command mkdir -p "$name/${name}_test"
-    command cd "$name"
-    go mod init "$module"
-    printf "package %s\n" "$name" >"$name.go"
-    format=$formatMod
-    command cd -
-  fi
-
+  command mkdir -p "$name/${name}_test"
+  command cd "$name"
+  go mod init "$module"
+  printf "package %s\n" "$name" >"$name.go"
+  command cd -
   # shellcheck disable=SC2059 # format variable
-  printf "$format" "$name" "$name" "$name" >>.github/workflows/main.yml
-
-  if [[ "$*" =~ -cmd ]]; then
-    files_entry=$name
-    printf "cmd_%s:\n  - cmd/%s/**.go\n" "$name" "$name" >>.github/workflows/files.yml
-  else
-    files_entry="cmd_$name"
-    printf "%s:\n  - %s/**.go\n  - go.mod\n  - go.sum\n" "$name" "$name" >>.github/workflows/main.yml
-  fi
+  printf "$format" "$name" "$name" "$name" >>$MAIN_WORKFLOW
+  printf "%s:\n  - %s/**.go\n  - go.mod\n  - go.sum\n" "$changed_files_entry" "$changed_files_entry" >>$CHANGED_FILES
 }
 
 cleanup() {
   go run cmd/gengowork/main.go
   go run cmd/t0copyright/main.go -fix -find "*.go" -comment '// '
 
-  msgln "todo:
-  - edit .github/workflows/main.yml to fix TODOs and add $files_entry output"
+  msgln "next steps:
+  - edit $MAIN_WORKFLOW and add output variable to changed-files step
+  - update new module job with output variable (currently TODO)
+  - review $CHANGED_FILES"
 }
 
 ##############
