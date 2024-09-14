@@ -33,7 +33,7 @@ var (
 	cfg        config
 	flagset    = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 	errFinal   error
-	programVer = "0.2.0"
+	programVer = "0.3.0"
 )
 
 func main() {

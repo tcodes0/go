@@ -1,3 +1,9 @@
 # this file is generated to aid in automating releases
-cmd/v0.2.0
-logging/v0.2.0
+cmd/v0.3.0
+logging/v0.3.0
+clock/v0.2.0
+httpmisc/v0.2.0
+hue/v0.2.0
+identifier/v0.2.0
+jsonutil/v0.2.0
+misc/v0.2.0
