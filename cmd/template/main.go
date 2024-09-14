@@ -36,6 +36,7 @@ var (
 
 func main() {
 	defer func() {
+		// the first deferred function will run last.
 		if msg := recover(); msg != nil {
 			logger.Stacktrace(logging.LError, true)
 			logger.Fatalf("%v", msg)

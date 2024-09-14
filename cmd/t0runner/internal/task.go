@@ -39,7 +39,6 @@ type Task struct {
 	Package     bool `yaml:"package"`
 }
 
-// input[0] is task name, input[1] is package name.
 func (task *Task) SetInputs(inputs []string) {
 	if task.Package {
 		if strings.HasSuffix(inputs[1], "/") {
@@ -58,38 +57,6 @@ func (task *Task) SetInputs(inputs []string) {
 	return
 }
 
-func (task *Task) validatePackage(logger *logging.Logger) error {
-	if !task.Package {
-		return nil
-	}
-
-	_, help := lo.Find(task.inputs, func(input string) bool { return input == "-h" || input == "--help" })
-	if help {
-		return nil
-	}
-
-	if task.PackageName == "" {
-		return misc.Wrapf(ErrUsage, "%s: package is required", task.Name)
-	}
-
-	pkgs, err := cmd.FindPackages(logger)
-	if err != nil {
-		return misc.Wrapfl(err)
-	}
-
-	_, found := lo.Find(pkgs, func(m string) bool { return m == task.PackageName })
-	if !found {
-		meant, ok := DidYouMean(task.PackageName, pkgs)
-		if ok {
-			return misc.Wrapf(ErrUsage, "%s: unknown package, %s", task.PackageName, meant)
-		}
-
-		return misc.Wrapf(ErrUsage, "%s: unknown package", task.PackageName)
-	}
-
-	return nil
-}
-
 func (task *Task) Execute(logger *logging.Logger) error {
 	err := task.validatePackage(logger)
 	if err != nil {
@@ -100,8 +67,6 @@ func (task *Task) Execute(logger *logging.Logger) error {
 		cmdInput := slices.Concat(strings.Split(line, " "), task.inputs)
 		cmdInput = lo.Map(cmdInput, varMapper(task))
 		cmdInput = lo.Map(cmdInput, unescapeMapper)
-
-		logger.Debug(cmdInput)
 
 		//nolint:gosec // has validation
 		command := exec.Command(cmdInput[0], cmdInput[1:]...)
@@ -141,25 +106,36 @@ func (task *Task) Execute(logger *logging.Logger) error {
 	return nil
 }
 
-func envVarMapper(task *Task, logger *logging.Logger) func(pair string, _ int) string {
-	return func(pair string, _ int) string {
-		if strings.Contains(pair, varPackage) {
-			return strings.Replace(pair, varPackage, task.PackageName, 1)
-		}
-
-		if strings.Contains(pair, varInherit) {
-			key := strings.Split(pair, "=")[0]
-
-			val, ok := os.LookupEnv(key)
-			if !ok {
-				logger.Debugf("env value inherited is empty: %s", key)
-			}
-
-			return strings.Replace(pair, varInherit, val, 1)
-		}
-
-		return pair
+func (task *Task) validatePackage(logger *logging.Logger) error {
+	if !task.Package {
+		return nil
 	}
+
+	_, help := lo.Find(task.inputs, func(input string) bool { return input == "-h" || input == "--help" })
+	if help {
+		return nil
+	}
+
+	if task.PackageName == "" {
+		return misc.Wrapf(ErrUsage, "%s: package is required", task.Name)
+	}
+
+	pkgs, err := cmd.FindPackages(logger)
+	if err != nil {
+		return misc.Wrapfl(err)
+	}
+
+	_, found := lo.Find(pkgs, func(m string) bool { return m == task.PackageName })
+	if !found {
+		meant, ok := DidYouMean(task.PackageName, pkgs)
+		if ok {
+			return misc.Wrapf(ErrUsage, "%s: unknown package, %s", task.PackageName, meant)
+		}
+
+		return misc.Wrapf(ErrUsage, "%s: unknown package", task.PackageName)
+	}
+
+	return nil
 }
 
 func varMapper(task *Task) func(input string, _ int) string {
@@ -179,6 +155,27 @@ func varMapper(task *Task) func(input string, _ int) string {
 func unescapeMapper(input string, _ int) string {
 	// literal # is desired but is considered yaml comment
 	return strings.ReplaceAll(input, `\#`, "#")
+}
+
+func envVarMapper(task *Task, logger *logging.Logger) func(pair string, _ int) string {
+	return func(pair string, _ int) string {
+		if strings.Contains(pair, varPackage) {
+			return strings.Replace(pair, varPackage, task.PackageName, 1)
+		}
+
+		if strings.Contains(pair, varInherit) {
+			key := strings.Split(pair, "=")[0]
+
+			val, ok := os.LookupEnv(key)
+			if !ok {
+				logger.Debugf("env value inherited is empty: %s", key)
+			}
+
+			return strings.Replace(pair, varInherit, val, 1)
+		}
+
+		return pair
+	}
 }
 
 func DidYouMean(input string, candidates []string) (string, bool) {

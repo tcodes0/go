@@ -38,7 +38,6 @@ var (
 
 func main() {
 	defer func() {
-		// gracefully handles panics and fatal errors. The first deferred function will run last.
 		if msg := recover(); msg != nil {
 			logger.Stacktrace(logging.LError, true)
 			logger.Fatalf("%v", msg)
@@ -122,10 +121,11 @@ func usage() {
 	}
 
 	builder.WriteString(`runner: miscellaneous automation tool
-run task:      ./run <task> <args...>
-task help:     ./run <task> -h
-version:       ./run -v
-custom config: ./run -config <file>`)
+run repository task: ./run <repo-task> <args...>
+run package task:    ./run <pkg-task> <package> <args...>
+task help:           ./run <task> -h (simpler tasks don't support)
+version:             ./run -v
+custom config:       ./run -config <file>`)
 
 	if len(packageTasks) > 0 {
 		builder.WriteString("\n" + `
