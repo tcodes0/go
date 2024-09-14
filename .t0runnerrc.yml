@@ -7,12 +7,19 @@ tasks:
   - name: build
     package: true
     env:
-      - MOD_PATH=<package>
       - HOME=<inherit>
       - PATH=<inherit>
       - BASH_ENV=./sh/lib/lib.sh
     exec:
-      - ./sh/workflows/module_pr/build.sh
+      - ./sh/workflows/module_pr/build.sh <package>
+  - name: install
+    package: true
+    env:
+      - HOME=<inherit>
+      - PATH=<inherit>
+      - BASH_ENV=./sh/lib/lib.sh
+    exec:
+      - ./sh/workflows/module_pr/build.sh <package> -install
   - name: lint
     package: true
     exec:
@@ -28,7 +35,7 @@ tasks:
   - name: format
     package: true
     exec:
-      - gofumpt -l -w
+      - gofumpt -l -w <package>
       - prettier --write <package>/**/*.yml
   - name: test
     package: true
@@ -36,12 +43,11 @@ tasks:
       - CACHE=true
       - GITHUB_OUTPUT=/dev/null
       - COVERAGE_FILE=coverage.out
-      - MOD_PATH=<package>
       - PATH=<inherit>
       - HOME=<inherit>
       - BASH_ENV=./sh/lib/lib.sh
     exec:
-      - ./sh/workflows/module_pr/test_pretty.sh
+      - ./sh/workflows/module_pr/test_pretty.sh <package>
   - name: format-configs
     exec:
       - "prettier --write ./**/*{.yml,.json}"
@@ -61,14 +67,15 @@ tasks:
       - PATH=<inherit>
       - NVM_DIR=<inherit>
       - BASH_ENV=./sh/lib/lib.sh
+      - T0_COLOR=<inherit>
     exec:
       - ./sh/setup.sh
   - name: generate-go-work
     env:
       - PATH=<inherit>
       - HOME=<inherit>
-      - CMD_COLOR=<inherit>
-      - CMD_LOGLEVEL=<inherit>
+      - T0_COLOR=<inherit>
+      - T0_LOGLEVEL=<inherit>
     exec:
       - go run cmd/gengowork/main.go
   - name: new-module
@@ -78,19 +85,26 @@ tasks:
       - BASH_ENV=./sh/lib/lib.sh
     exec:
       - ./sh/new_module.sh
+  - name: new-command
+    env:
+      - PATH=<inherit>
+      - HOME=<inherit>
+      - BASH_ENV=./sh/lib/lib.sh
+    exec:
+      - ./sh/new_command.sh
   - name: copyright-fix-go
     env:
       - PATH=<inherit>
       - HOME=<inherit>
-      - CMD_COLOR=<inherit>
-      - CMD_LOGLEVEL=<inherit>
+      - T0_COLOR=<inherit>
+      - T0_LOGLEVEL=<inherit>
     exec:
-      - go run cmd/copyright/main.go -check *.go -fix -comment //<space>
+      - go run cmd/t0copyright/main.go -check *.go -fix -comment //<space>
   - name: copyright-fix-sh
     env:
       - PATH=<inherit>
       - HOME=<inherit>
-      - CMD_COLOR=<inherit>
-      - CMD_LOGLEVEL=<inherit>
+      - T0_COLOR=<inherit>
+      - T0_LOGLEVEL=<inherit>
     exec:
-      - go run cmd/copyright/main.go -check *.sh -fix -comment \#<space> -shebang
+      - go run cmd/t0copyright/main.go -check *.sh -fix -comment \#<space> -shebang

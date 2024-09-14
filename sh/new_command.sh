@@ -20,38 +20,34 @@ CHANGED_FILES=.changed-files.yml
 usage() {
   command cat <<-EOF
 Usage:
-Create a new module
+Create a new command
 
 $0 pizza
-create a new module called pizza
+create a new cmd called t0pizza
 EOF
 }
 
 init() {
-  local name="$1" changed_files_entry="$1" module="github.com/tcodes0/go/$1" go_ver
+  local name="t0$1" go_ver
 
   read -r _ _ go_ver _ < <(go version)
 
   local format="
-  %s:
-    name: %s
+  cmd-%s:
+    name: cmd/%s
     needs: changed-files
     if: needs.changed-files.outputs.TODO
     uses: ./.github/workflows/module_pr.yml
     with:
       goVersion: ${go_ver/go/}
-      modulePath: %s
+      modulePath: cmd/%s
 "
 
-  command mkdir -p "$name/${name}_test"
-  echo "$name"
-  command cd "$name"
-  go mod init "$module" >/dev/null 2>&1
-  printf "package %s\n" "$name" >"$name.go"
-  command cd -
+  command cp -RH cmd/template "cmd/$name"
+  echo "cmd/$name"
   # shellcheck disable=SC2059 # format variable
   printf "$format" "$name" "$name" "$name" >>$MAIN_WORKFLOW
-  printf "%s:\n  - %s/**.go\n  - go.mod\n  - go.sum\n" "$changed_files_entry" "$changed_files_entry" >>$CHANGED_FILES
+  printf "cmd_%s:\n  - cmd/%s/**.go\n" "$name" "$name" >>$CHANGED_FILES
 }
 
 cleanup() {

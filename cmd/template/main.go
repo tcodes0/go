@@ -36,6 +36,12 @@ var (
 
 func main() {
 	defer func() {
+		// the first deferred function will run last.
+		if msg := recover(); msg != nil {
+			logger.Stacktrace(logging.LError, true)
+			logger.Fatalf("%v", msg)
+		}
+
 		passAway(errFinal)
 	}()
 
@@ -44,6 +50,7 @@ func main() {
 	fColor := misc.LookupEnv(cmd.EnvColor, false)
 	fLogLevel := misc.LookupEnv(cmd.EnvLogLevel, int(logging.LInfo))
 
+	//nolint:gosec // log level does not overflow here
 	opts := []logging.CreateOptions{logging.OptFlags(log.Lshortfile), logging.OptLevel(logging.Level(fLogLevel))}
 	if fColor {
 		opts = append(opts, logging.OptColor())
@@ -77,17 +84,10 @@ func main() {
 	errFinal = template()
 }
 
-// Defer from main() very early; the first deferred function will run last.
-// Gracefully handles panics and fatal errors. Replaces os.exit(1).
 func passAway(fatal error) {
-	if msg := recover(); msg != nil {
-		logger.Stacktrace(logging.LError, true)
-		logger.Fatalf("%v", msg)
-	}
-
 	if fatal != nil {
-		if errors.Is(fatal, errUsage) || errors.Is(fatal, flag.ErrHelp) {
-			usage(fatal)
+		if errors.Is(fatal, errUsage) {
+			usage()
 		}
 
 		logger.Stacktrace(logging.LDebug, true)
@@ -95,13 +95,10 @@ func passAway(fatal error) {
 	}
 }
 
-func usage(err error) {
-	if !errors.Is(err, flag.ErrHelp) {
-		flagset.Usage()
-	}
-
+func usage() {
 	fmt.Printf(`
-Template
+template
+pass -h for flag documentation
 
 %s
 `, cmd.EnvVarUsage())

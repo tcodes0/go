@@ -20,10 +20,10 @@ jobs:
       modJsonutil: ${{ steps.list-changed-files.outputs.jsonutil_all_changed_files }}
       modLogging: ${{ steps.list-changed-files.outputs.logging_all_changed_files }}
       modMisc: ${{ steps.list-changed-files.outputs.misc_all_changed_files }}
-      modCmdCopyright: ${{ steps.list-changed-files.outputs.cmd_copyright_all_changed_files }}
+      modCmdCopyright: ${{ steps.list-changed-files.outputs.cmd_t0copyright_all_changed_files }}
       modCmdGenGoWork: ${{ steps.list-changed-files.outputs.cmd_gen_go_work_all_changed_files }}
-      modCmdFiler: ${{ steps.list-changed-files.outputs.cmd_filer_all_changed_files }}
-      modCmdChangelog: ${{ steps.list-changed-files.outputs.cmd_changelog_all_changed_files }}
+      modCmdFiler: ${{ steps.list-changed-files.outputs.cmd_t0filer_all_changed_files }}
+      modCmdChangelog: ${{ steps.list-changed-files.outputs.cmd_t0changelog_all_changed_files }}
       # others
       anyGoMod: ${{ steps.list-changed-files.outputs.any_go_mod_all_changed_files }}
       rootGoMod: ${{ steps.list-changed-files.outputs.root_go_mod_all_changed_files }}
@@ -50,7 +50,7 @@ jobs:
 
       - name: Changed files
         id: list-changed-files
-        uses: tj-actions/changed-files@v44
+        uses: tj-actions/changed-files@v45.0.1
         with:
           # since_last_remote_commit: true # use only for testing, it's easy to produce no changed files
           files_yaml_from_source_file: .changed-files.yml
@@ -89,12 +89,15 @@ jobs:
         with:
           node-version: lts/iron
           cache: npm
-      - run: npm --global install @commitlint/config-conventional
+      - run: |
+          npm --global install @commitlint/config-conventional
+          npm install --global @commitlint/cli@19.3.0
+          npm install --global cspell@8.14.2
 
       - name: Run commitlint
         env:
-          CONFIG_PATH: .commitlintrc.yml
-          VERSION: 19.3.0
+          COMMITLINT_CONFIG_PATH: .commitlintrc.yml
+          CSPELL_CONFIG_PATH: .cspell.config.yml
           # will not be set when running on push/merge to main
           BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: ./sh/lib/workflows/main/commit_lint.sh
@@ -111,7 +114,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5.0.2
         with:
-          go-version: 1.23
+          go-version: 1.23.1
 
       - name: Go mod
         uses: j0hnsmith/go-mod-check@v1
@@ -130,7 +133,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5.0.2
         with:
-          go-version: 1.23
+          go-version: 1.23.1
 
       - name: Go mod
         uses: j0hnsmith/go-mod-check@v1
@@ -168,7 +171,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5.0.2
         with:
-          go-version: 1.23
+          go-version: 1.23.1
 
       - name: Mockery
         uses: brokeyourbike/go-mockery-action@v0.1.7
@@ -198,8 +201,6 @@ jobs:
           SHELLCHECK_OPTS: -x --severity=warning
         with:
           sh_checker_only_diff: true
-          # needs write access https://github.com/luizm/action-sh-checker/pull/57
-          # sh_checker_comment: true
 
   config:
     name: format_config
@@ -246,12 +247,12 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5.0.2
         with:
-          go-version: 1.23
+          go-version: 1.23.1
 
       - name: Run Copyright
         run: |
-          go run ./cmd/copyright -check '*.go'
-          go run ./cmd/copyright -check '*.sh'
+          go run ./cmd/t0copyright -check '*.go'
+          go run ./cmd/t0copyright -check '*.sh'
 
   ###########
   # modules #
@@ -263,7 +264,7 @@ jobs:
     if: needs.changed-files.outputs.modClock
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.23
+      goVersion: 1.23.1
       modulePath: clock
 
   httpmisc:
@@ -272,7 +273,7 @@ jobs:
     if: needs.changed-files.outputs.modHttpMisc
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.23
+      goVersion: 1.23.1
       modulePath: httpmisc
 
   hue:
@@ -281,7 +282,7 @@ jobs:
     if: needs.changed-files.outputs.modHue
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.23
+      goVersion: 1.23.1
       modulePath: hue
 
   identifier:
@@ -290,7 +291,7 @@ jobs:
     if: needs.changed-files.outputs.modIdentifier
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.23
+      goVersion: 1.23.1
       modulePath: identifier
 
   jsonutil:
@@ -299,7 +300,7 @@ jobs:
     if: needs.changed-files.outputs.modJsonutil
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.23
+      goVersion: 1.23.1
       modulePath: jsonutil
 
   logging:
@@ -308,7 +309,7 @@ jobs:
     if: needs.changed-files.outputs.modLogging
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.23
+      goVersion: 1.23.1
       modulePath: logging
 
   misc:
@@ -317,17 +318,17 @@ jobs:
     if: needs.changed-files.outputs.modMisc
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.23
+      goVersion: 1.23.1
       modulePath: misc
 
-  cmd-copyright:
-    name: cmd/copyright
+  cmd-t0copyright:
+    name: cmd/t0copyright
     needs: changed-files
     if: needs.changed-files.outputs.modCmdCopyright
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.23
-      modulePath: cmd/copyright
+      goVersion: 1.23.1
+      modulePath: cmd/t0copyright
 
   generate-go-work:
     name: cmd/gengowork
@@ -335,23 +336,23 @@ jobs:
     if: needs.changed-files.outputs.modCmdGenGoWork
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.23
+      goVersion: 1.23.1
       modulePath: cmd/gengowork
 
-  filer:
-    name: cmd/filer
+  cmd-t0filer:
+    name: cmd/t0filer
     needs: changed-files
     if: needs.changed-files.outputs.modCmdFiler
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.23
-      modulePath: cmd/filer
+      goVersion: 1.23.1
+      modulePath: cmd/t0filer
 
-  cmd-changelog:
-    name: cmd/changelog
+  cmd-t0changelog:
+    name: cmd/t0changelog
     needs: changed-files
     if: needs.changed-files.outputs.modCmdChangelog
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: 1.23
-      modulePath: cmd/changelog
+      goVersion: 1.23.1
+      modulePath: cmd/t0changelog

@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file and online
 // at https://opensource.org/license/BSD-3-clause.
 
-package runner
+package internal
 
 import (
 	"bytes"
@@ -17,6 +17,7 @@ import (
 	"github.com/lithammer/fuzzysearch/fuzzy"
 	"github.com/samber/lo"
 	"github.com/tcodes0/go/cmd"
+	"github.com/tcodes0/go/hue"
 	"github.com/tcodes0/go/logging"
 	"github.com/tcodes0/go/misc"
 )
@@ -30,58 +31,41 @@ const (
 var ErrUsage = errors.New("see usage")
 
 type Task struct {
-	Env     []string `yaml:"env"`
-	Name    string   `yaml:"name"`
-	Exec    []string `yaml:"exec"`
-	Package bool     `yaml:"package"`
+	Name        string `yaml:"name"`
+	PackageName string
+	Env         []string `yaml:"env"`
+	Exec        []string `yaml:"exec"`
+	inputs      []string
+	Package     bool `yaml:"package"`
 }
 
-// validate <package or input1> ...inputs.
-func (task *Task) Validate(logger *logging.Logger, inputs ...string) error {
-	_, help := lo.Find(inputs, func(input string) bool { return input == "-h" || input == "--help" })
-	if help {
-		return nil
-	}
-
-	err := task.ValidatePackage(logger, inputs...)
-	if err != nil {
-		return err
-	}
-
-	return err
-}
-
-func (task *Task) ValidatePackage(logger *logging.Logger, inputs ...string) error {
-	if !task.Package {
-		return nil
-	}
-
-	if len(inputs) < 1 {
-		return misc.Wrapf(ErrUsage, "%s: package is required", task.Name)
-	}
-
-	mods, err := cmd.FindPackages(logger)
-	if err != nil {
-		return misc.Wrap(err, "FindPackages")
-	}
-
-	_, found := lo.Find(mods, func(m string) bool { return m == inputs[0] })
-	if !found {
-		meant, ok := DidYouMean(inputs[0], mods)
-		if ok {
-			return misc.Wrapf(ErrUsage, "%s: unknown package, %s", inputs[0], meant)
+func (task *Task) SetInputs(inputs []string) {
+	if task.Package {
+		if strings.HasSuffix(inputs[1], "/") {
+			// remove trailing slash, allows TAB to complete valid packages
+			inputs[1] = inputs[1][:len(inputs[1])-1]
 		}
 
-		return misc.Wrapf(ErrUsage, "%s: unknown package", inputs[0])
+		task.PackageName = inputs[1]
+		task.inputs = inputs[2:]
+
+		return
 	}
 
-	return nil
+	task.inputs = inputs[1:]
+
+	return
 }
 
-func (task *Task) Execute(logger *logging.Logger, tasks []*Task, inputs ...string) error {
+func (task *Task) Execute(logger *logging.Logger) error {
+	err := task.validatePackage(logger)
+	if err != nil {
+		return misc.Wrapfl(err)
+	}
+
 	for _, line := range task.Exec {
-		cmdInput := slices.Concat(strings.Split(line, " "), inputs[1:])
-		cmdInput = lo.Map(cmdInput, varMapper(inputs))
+		cmdInput := slices.Concat(strings.Split(line, " "), task.inputs)
+		cmdInput = lo.Map(cmdInput, varMapper(task))
 		cmdInput = lo.Map(cmdInput, unescapeMapper)
 
 		//nolint:gosec // has validation
@@ -90,7 +74,7 @@ func (task *Task) Execute(logger *logging.Logger, tasks []*Task, inputs ...strin
 		logger.Debug(line)
 
 		if len(task.Env) > 0 {
-			envs := lo.Map(task.Env, envVarMapper(inputs, logger))
+			envs := lo.Map(task.Env, envVarMapper(task, logger))
 			command.Env = append(command.Env, envs...)
 		}
 
@@ -105,9 +89,8 @@ func (task *Task) Execute(logger *logging.Logger, tasks []*Task, inputs ...strin
 		}
 
 		if stderrBuffer.Len() > 0 {
-			logger.Info("command stderr BEGINS")
-			fmt.Fprint(os.Stderr, stderrBuffer.String())
-			logger.Info("command stderr ENDS")
+			logger.Info("command stderr")
+			fmt.Fprint(os.Stderr, hue.TermColor(hue.Gray)+stderrBuffer.String()+hue.End)
 		}
 
 		if err != nil {
@@ -123,10 +106,61 @@ func (task *Task) Execute(logger *logging.Logger, tasks []*Task, inputs ...strin
 	return nil
 }
 
-func envVarMapper(inputs []string, logger *logging.Logger) func(pair string, _ int) string {
+func (task *Task) validatePackage(logger *logging.Logger) error {
+	if !task.Package {
+		return nil
+	}
+
+	_, help := lo.Find(task.inputs, func(input string) bool { return input == "-h" || input == "--help" })
+	if help {
+		return nil
+	}
+
+	if task.PackageName == "" {
+		return misc.Wrapf(ErrUsage, "%s: package is required", task.Name)
+	}
+
+	pkgs, err := cmd.FindPackages(logger)
+	if err != nil {
+		return misc.Wrapfl(err)
+	}
+
+	_, found := lo.Find(pkgs, func(m string) bool { return m == task.PackageName })
+	if !found {
+		meant, ok := DidYouMean(task.PackageName, pkgs)
+		if ok {
+			return misc.Wrapf(ErrUsage, "%s: unknown package, %s", task.PackageName, meant)
+		}
+
+		return misc.Wrapf(ErrUsage, "%s: unknown package", task.PackageName)
+	}
+
+	return nil
+}
+
+func varMapper(task *Task) func(input string, _ int) string {
+	return func(input string, _ int) string {
+		if strings.Contains(input, varPackage) {
+			return strings.ReplaceAll(input, varPackage, task.PackageName)
+		}
+
+		if strings.Contains(input, varSpace) {
+			return strings.ReplaceAll(input, varSpace, " ")
+		}
+
+		return input
+	}
+}
+
+func unescapeMapper(input string, _ int) string {
+	// literal # is desired but is considered yaml comment
+	return strings.ReplaceAll(input, `\#`, "#")
+}
+
+func envVarMapper(task *Task, logger *logging.Logger) func(pair string, _ int) string {
 	return func(pair string, _ int) string {
 		if strings.Contains(pair, varPackage) {
-			return strings.Replace(pair, varPackage, inputs[1], 1)
+			return strings.Replace(pair, varPackage, task.PackageName, 1)
 		}
 
 		if strings.Contains(pair, varInherit) {
@@ -142,25 +176,6 @@ func envVarMapper(inputs []string, logger *logging.Logger) func(pair string, _ i
 
 		return pair
 	}
-}
-
-func varMapper(inputs []string) func(input string, _ int) string {
-	return func(input string, _ int) string {
-		if strings.Contains(input, varPackage) {
-			return strings.ReplaceAll(input, varPackage, inputs[1])
-		}
-
-		if strings.Contains(input, varSpace) {
-			return strings.ReplaceAll(input, varSpace, " ")
-		}
-
-		return input
-	}
-}
-
-func unescapeMapper(input string, _ int) string {
-	// literal # is desired but is considered yaml comment
-	return strings.ReplaceAll(input, `\#`, "#")
 }
 
 func DidYouMean(input string, candidates []string) (string, bool) {

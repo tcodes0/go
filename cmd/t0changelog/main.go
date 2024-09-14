@@ -26,7 +26,7 @@ import (
 
 	"github.com/samber/lo"
 	"github.com/tcodes0/go/cmd"
-	apigithub "github.com/tcodes0/go/cmd/changelog"
+	"github.com/tcodes0/go/cmd/t0changelog/github"
 	"github.com/tcodes0/go/jsonutil"
 	"github.com/tcodes0/go/logging"
 	"github.com/tcodes0/go/misc"
@@ -74,6 +74,11 @@ func (sv semver) String() string {
 
 func main() {
 	defer func() {
+		if msg := recover(); msg != nil {
+			logger.Stacktrace(logging.LError, true)
+			logger.Fatalf("%v", msg)
+		}
+
 		passAway(errFinal)
 	}()
 
@@ -82,6 +87,7 @@ func main() {
 	fColor := misc.LookupEnv(cmd.EnvColor, false)
 	fLogLevel := misc.LookupEnv(cmd.EnvLogLevel, int(logging.LInfo))
 
+	//nolint:gosec // log level fits in uint8.
 	opts := []logging.CreateOptions{logging.OptFlags(log.Lshortfile), logging.OptLevel(logging.Level(fLogLevel))}
 	if fColor {
 		opts = append(opts, logging.OptColor())
@@ -91,7 +97,7 @@ func main() {
 	cfg := flagset.String("config", ".commitlintrc.yml", "path to commitlint config file")
 	title := flagset.String("title", "", "release title; new version and date will be added")
 	tagPrefixRaw := flagset.String("tagprefixes", "", "comma separated prefixes to find tags, i.e $PREFIXv1.0.0")
-	repoURL := flagset.String("url", "", "github repository URL to point links at, prefixed 'https://github.com/' (required)")
+	repoURL := flagset.String("url", "", "github repository URL to point links at, prefixed '"+github.URLPrefix+"' (required)")
 	tagsFile := flagset.String("tagsfile", "", "write tags to file")
 	fVerShort := flagset.Bool("v", false, "print version and exit")
 	fVerLong := flagset.Bool("version", false, "print version and exit")
@@ -127,17 +133,10 @@ func main() {
 	errFinal = changelog(*cfg, *repoURL, *title, *tagsFile, prefixes)
 }
 
-// Defer from main() very early; the first deferred function will run last.
-// Gracefully handles panics and fatal errors. Replaces os.exit(1).
 func passAway(fatal error) {
-	if msg := recover(); msg != nil {
-		logger.Stacktrace(logging.LError, true)
-		logger.Fatalf("%v", msg)
-	}
-
 	if fatal != nil {
-		if errors.Is(fatal, errUsage) || errors.Is(fatal, flag.ErrHelp) {
-			usage(fatal)
+		if errors.Is(fatal, errUsage) {
+			usage()
 		}
 
 		logger.Stacktrace(logging.LDebug, true)
@@ -145,14 +144,11 @@ func passAway(fatal error) {
 	}
 }
 
-func usage(err error) {
-	if !errors.Is(err, flag.ErrHelp) {
-		flagset.Usage()
-	}
-
+func usage() {
 	fmt.Printf(`generate a markdown changelog from git log
 a prior tag with format ${PREFIX}vx.x.x must exist on main
 unstable tags (0.x.x) will not be promoted to 1.0.0 automatically, do it manually
+pass -h for flag documentation
 
 %s
 `, cmd.EnvVarUsage())
@@ -339,8 +335,13 @@ func versionUp(current semver, unstable, breaking, minor bool) semver {
 }
 
 func fetchPullRequests(prs []string, ghURL string) (lines []changelogLine, err error) {
-	userRepo, limit, query, header := strings.TrimPrefix(ghURL, "https://github.com/"), 100, url.Values{}, http.Header{}
-	fatCommits, group, lock := map[int]*[]*apigithub.FatCommit{}, errgroup.Group{}, sync.Mutex{}
+	userRepo := strings.TrimPrefix(ghURL, github.URLPrefix)
+	if userRepo == ghURL {
+		return nil, fmt.Errorf("expected github URL to have prefix: %s", github.URLPrefix)
+	}
+
+	limit, query, header := 100, url.Values{}, http.Header{}
+	fatCommits, group, lock := map[int]*[]*github.FatCommit{}, errgroup.Group{}, sync.Mutex{}
 
 	token := os.Getenv("GITHUB_TOKEN")
 	if token == "" {
@@ -388,8 +389,8 @@ func fetchPullRequests(prs []string, ghURL string) (lines []changelogLine, err e
 	return lines, nil
 }
 
-func fetchOne(ctx context.Context, path string, header http.Header, client *http.Client) (*[]*apigithub.FatCommit, error) {
-	res, err := apigithub.Get(ctx, path, header, client)
+func fetchOne(ctx context.Context, path string, header http.Header, client *http.Client) (*[]*github.FatCommit, error) {
+	res, err := github.Get(ctx, path, header, client)
 	if err != nil {
 		return nil, misc.Wrapfl(err)
 	}
@@ -398,7 +399,7 @@ func fetchOne(ctx context.Context, path string, header http.Header, client *http
 		return nil, fmt.Errorf("status code %d", res.StatusCode)
 	}
 
-	fatCommits, err := jsonutil.UnmarshalReader[[]*apigithub.FatCommit](res.Body)
+	fatCommits, err := jsonutil.UnmarshalReader[[]*github.FatCommit](res.Body)
 	res.Body.Close()
 
 	if err != nil {

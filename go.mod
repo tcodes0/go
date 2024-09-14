@@ -1,7 +1,7 @@
 // generated do not edit.
 module github.com/tcodes0/go
 
-go 1.23
+go 1.23.1
 
 retract (
 	v0.1.3 // test version

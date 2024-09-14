@@ -8,7 +8,6 @@ package main
 import (
 	"bufio"
 	"errors"
-	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -22,7 +21,6 @@ import (
 )
 
 var (
-	flagset  = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 	logger   = &logging.Logger{}
 	errUsage = errors.New("see usage")
 	errFinal error
@@ -30,6 +28,11 @@ var (
 
 func main() {
 	defer func() {
+		if msg := recover(); msg != nil {
+			logger.Stacktrace(logging.LError, true)
+			logger.Fatalf("%v", msg)
+		}
+
 		passAway(errFinal)
 	}()
 
@@ -38,6 +41,7 @@ func main() {
 	fColor := misc.LookupEnv(cmd.EnvColor, false)
 	fLogLevel := misc.LookupEnv(cmd.EnvLogLevel, int(logging.LInfo))
 
+	//nolint:gosec // log level does not overflow here
 	opts := []logging.CreateOptions{logging.OptFlags(log.Lshortfile), logging.OptLevel(logging.Level(fLogLevel))}
 	if fColor {
 		opts = append(opts, logging.OptColor())
@@ -45,27 +49,13 @@ func main() {
 
 	logger = logging.Create(opts...)
 
-	errFinal = flagset.Parse(os.Args[1:])
-	if errFinal != nil {
-		errFinal = errors.Join(errFinal, errUsage)
-
-		return
-	}
-
 	errFinal = genGoWork()
 }
 
-// Defer from main() very early; the first deferred function will run last.
-// Gracefully handles panics and fatal errors. Replaces os.exit(1).
 func passAway(fatal error) {
-	if msg := recover(); msg != nil {
-		logger.Stacktrace(logging.LError, true)
-		logger.Fatalf("%v", msg)
-	}
-
 	if fatal != nil {
-		if errors.Is(fatal, errUsage) || errors.Is(fatal, flag.ErrHelp) {
-			usage(fatal)
+		if errors.Is(fatal, errUsage) {
+			usage()
 		}
 
 		logger.Stacktrace(logging.LDebug, true)
@@ -73,11 +63,7 @@ func passAway(fatal error) {
 	}
 }
 
-func usage(err error) {
-	if errors.Is(err, flag.ErrHelp) {
-		fmt.Println()
-	}
-
+func usage() {
 	fmt.Printf(`
 generates go.work file
 
@@ -102,7 +88,8 @@ go %s
 use (
 	.
 	%s
-)`
+)
+`
 	prettyMods := strings.Join(mods, "\n\t")
 	newFile := fmt.Sprintf(format, version, prettyMods)
 
@@ -121,7 +108,7 @@ func parseGoVersion() (string, error) {
 	}
 
 	scanner := bufio.NewScanner(file)
-	goVersion := regexp.MustCompile(`go (\d+\.\d+)`)
+	goVersion := regexp.MustCompile(`go (\d+\.\d+\.\d+)`)
 
 	for scanner.Scan() {
 		err := scanner.Err()
@@ -136,7 +123,7 @@ func parseGoVersion() (string, error) {
 		}
 	}
 
-	return "", errors.New("parsing")
+	return "", errors.New("unable to parse go version")
 }
 
 func findModules() ([]string, error) {

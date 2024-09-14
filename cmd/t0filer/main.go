@@ -50,6 +50,11 @@ var (
 
 func main() {
 	defer func() {
+		if msg := recover(); msg != nil {
+			logger.Stacktrace(logging.LError, true)
+			logger.Fatalf("%v", msg)
+		}
+
 		passAway(errFinal)
 	}()
 
@@ -58,6 +63,7 @@ func main() {
 	fColor := misc.LookupEnv(cmd.EnvColor, false)
 	fLogLevel := misc.LookupEnv(cmd.EnvLogLevel, int(logging.LInfo))
 
+	//nolint:gosec // level does not overflow here.
 	opts := []logging.CreateOptions{logging.OptFlags(log.Lshortfile), logging.OptLevel(logging.Level(fLogLevel))}
 	if fColor {
 		opts = append(opts, logging.OptColor())
@@ -104,17 +110,10 @@ func main() {
 	errFinal = filer(files, action, fDryrun)
 }
 
-// Defer from main() very early; the first deferred function will run last.
-// Gracefully handles panics and fatal errors. Replaces os.exit(1).
 func passAway(fatal error) {
-	if msg := recover(); msg != nil {
-		logger.Stacktrace(logging.LError, true)
-		logger.Fatalf("%v", msg)
-	}
-
 	if fatal != nil {
-		if errors.Is(fatal, errUsage) || errors.Is(fatal, flag.ErrHelp) {
-			usage(fatal)
+		if errors.Is(fatal, errUsage) {
+			usage()
 		}
 
 		logger.Stacktrace(logging.LDebug, true)
@@ -122,11 +121,7 @@ func passAway(fatal error) {
 	}
 }
 
-func usage(err error) {
-	if !errors.Is(err, flag.ErrHelp) {
-		flagset.Usage()
-	}
-
+func usage() {
 	actionLines := []string{}
 
 	for i, action := range actions {
@@ -134,9 +129,10 @@ func usage(err error) {
 	}
 
 	fmt.Printf(`Perform an action on a list of files.
-First line of config file should be the action.
-Changes nothing by default, pass -commit
-Comments with # and newlines are ignored in config file
+first line of config file should be the action
+changes nothing by default, pass -commit or -c
+comments with # and newlines are ignored in config file
+pass -h for flag documentation
 
 Actions available:
 %s
