@@ -264,7 +264,7 @@ jobs:
     if: needs.changed-files.outputs.modClock
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: "1.23.1"
+      goVersion: 1.23.1
       modulePath: clock
 
   httpmisc:
@@ -273,7 +273,7 @@ jobs:
     if: needs.changed-files.outputs.modHttpMisc
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: "1.23.1"
+      goVersion: 1.23.1
       modulePath: httpmisc
 
   hue:
@@ -282,7 +282,7 @@ jobs:
     if: needs.changed-files.outputs.modHue
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: "1.23.1"
+      goVersion: 1.23.1
       modulePath: hue
 
   identifier:
@@ -291,7 +291,7 @@ jobs:
     if: needs.changed-files.outputs.modIdentifier
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: "1.23.1"
+      goVersion: 1.23.1
       modulePath: identifier
 
   jsonutil:
@@ -300,7 +300,7 @@ jobs:
     if: needs.changed-files.outputs.modJsonutil
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: "1.23.1"
+      goVersion: 1.23.1
       modulePath: jsonutil
 
   logging:
@@ -309,7 +309,7 @@ jobs:
     if: needs.changed-files.outputs.modLogging
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: "1.23.1"
+      goVersion: 1.23.1
       modulePath: logging
 
   misc:
@@ -318,7 +318,7 @@ jobs:
     if: needs.changed-files.outputs.modMisc
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: "1.23.1"
+      goVersion: 1.23.1
       modulePath: misc
 
   cmd-t0copyright:
@@ -327,7 +327,7 @@ jobs:
     if: needs.changed-files.outputs.modCmdCopyright
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: "1.23.1"
+      goVersion: 1.23.1
       modulePath: cmd/t0copyright
 
   generate-go-work:
@@ -336,7 +336,7 @@ jobs:
     if: needs.changed-files.outputs.modCmdGenGoWork
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: "1.23.1"
+      goVersion: 1.23.1
       modulePath: cmd/gengowork
 
   cmd-t0filer:
@@ -345,7 +345,7 @@ jobs:
     if: needs.changed-files.outputs.modCmdFiler
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: "1.23.1"
+      goVersion: 1.23.1
       modulePath: cmd/t0filer
 
   cmd-t0changelog:
@@ -354,5 +354,5 @@ jobs:
     if: needs.changed-files.outputs.modCmdChangelog
     uses: ./.github/workflows/module_pr.yml
     with:
-      goVersion: "1.23.1"
+      goVersion: 1.23.1
       modulePath: cmd/t0changelog

@@ -7,7 +7,7 @@ on:
       goVersion:
         description: "Go version"
         required: true
-        type: number
+        type: string
       modulePath:
         description: "Module path"
         required: true
