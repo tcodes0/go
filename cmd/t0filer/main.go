@@ -112,8 +112,8 @@ func main() {
 
 func passAway(fatal error) {
 	if fatal != nil {
-		if errors.Is(fatal, errUsage) || errors.Is(fatal, flag.ErrHelp) {
-			usage(fatal)
+		if errors.Is(fatal, errUsage) {
+			usage()
 		}
 
 		logger.Stacktrace(logging.LDebug, true)
@@ -121,11 +121,7 @@ func passAway(fatal error) {
 	}
 }
 
-func usage(err error) {
-	if !errors.Is(err, flag.ErrHelp) {
-		flagset.Usage()
-	}
-
+func usage() {
 	actionLines := []string{}
 
 	for i, action := range actions {
@@ -133,9 +129,10 @@ func usage(err error) {
 	}
 
 	fmt.Printf(`Perform an action on a list of files.
-First line of config file should be the action.
-Changes nothing by default, pass -commit
-Comments with # and newlines are ignored in config file
+first line of config file should be the action
+changes nothing by default, pass -commit or -c
+comments with # and newlines are ignored in config file
+pass -h for flag documentation
 
 Actions available:
 %s

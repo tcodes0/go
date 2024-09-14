@@ -95,8 +95,8 @@ func main() {
 
 func passAway(fatal error) {
 	if fatal != nil {
-		if errors.Is(fatal, internal.ErrUsage) || errors.Is(fatal, flag.ErrHelp) {
-			usage(fatal)
+		if errors.Is(fatal, internal.ErrUsage) {
+			usage()
 		}
 
 		logger.Stacktrace(logging.LDebug, true)
@@ -104,11 +104,7 @@ func passAway(fatal error) {
 	}
 }
 
-func usage(incomingErr error) {
-	if errors.Is(incomingErr, flag.ErrHelp) {
-		fmt.Println()
-	}
-
+func usage() {
 	packageTasks, repoTasks, builder := []string{}, []string{}, strings.Builder{}
 
 	for _, task := range lo.Filter(cfg.Tasks, func(t *internal.Task, _ int) bool { return t.Package }) {

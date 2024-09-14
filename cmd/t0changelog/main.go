@@ -135,8 +135,8 @@ func main() {
 
 func passAway(fatal error) {
 	if fatal != nil {
-		if errors.Is(fatal, errUsage) || errors.Is(fatal, flag.ErrHelp) {
-			usage(fatal)
+		if errors.Is(fatal, errUsage) {
+			usage()
 		}
 
 		logger.Stacktrace(logging.LDebug, true)
@@ -144,14 +144,11 @@ func passAway(fatal error) {
 	}
 }
 
-func usage(err error) {
-	if !errors.Is(err, flag.ErrHelp) {
-		flagset.Usage()
-	}
-
+func usage() {
 	fmt.Printf(`generate a markdown changelog from git log
 a prior tag with format ${PREFIX}vx.x.x must exist on main
 unstable tags (0.x.x) will not be promoted to 1.0.0 automatically, do it manually
+pass -h for flag documentation
 
 %s
 `, cmd.EnvVarUsage())

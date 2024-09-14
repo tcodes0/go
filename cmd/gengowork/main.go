@@ -8,7 +8,6 @@ package main
 import (
 	"bufio"
 	"errors"
-	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -22,7 +21,6 @@ import (
 )
 
 var (
-	flagset  = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 	logger   = &logging.Logger{}
 	errUsage = errors.New("see usage")
 	errFinal error
@@ -51,20 +49,13 @@ func main() {
 
 	logger = logging.Create(opts...)
 
-	errFinal = flagset.Parse(os.Args[1:])
-	if errFinal != nil {
-		errFinal = errors.Join(errFinal, errUsage)
-
-		return
-	}
-
 	errFinal = genGoWork()
 }
 
 func passAway(fatal error) {
 	if fatal != nil {
-		if errors.Is(fatal, errUsage) || errors.Is(fatal, flag.ErrHelp) {
-			usage(fatal)
+		if errors.Is(fatal, errUsage) {
+			usage()
 		}
 
 		logger.Stacktrace(logging.LDebug, true)
@@ -72,11 +63,7 @@ func passAway(fatal error) {
 	}
 }
 
-func usage(err error) {
-	if errors.Is(err, flag.ErrHelp) {
-		fmt.Println()
-	}
-
+func usage() {
 	fmt.Printf(`
 generates go.work file
 
