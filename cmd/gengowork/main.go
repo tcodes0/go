@@ -101,7 +101,8 @@ go %s
 use (
 	.
 	%s
-)`
+)
+`
 	prettyMods := strings.Join(mods, "\n\t")
 	newFile := fmt.Sprintf(format, version, prettyMods)
 
@@ -120,7 +121,7 @@ func parseGoVersion() (string, error) {
 	}
 
 	scanner := bufio.NewScanner(file)
-	goVersion := regexp.MustCompile(`go (\d+\.\d+)`)
+	goVersion := regexp.MustCompile(`go (\d+\.\d+\.\d+)`)
 
 	for scanner.Scan() {
 		err := scanner.Err()
@@ -135,7 +136,7 @@ func parseGoVersion() (string, error) {
 		}
 	}
 
-	return "", errors.New("parsing")
+	return "", errors.New("unable to parse go version")
 }
 
 func findModules() ([]string, error) {
